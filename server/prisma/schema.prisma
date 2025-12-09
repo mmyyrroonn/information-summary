@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AiRunKind {
+  TWEET_CLASSIFY
+  REPORT_SUMMARY
+}
+
+enum AiRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model Subscription {
+  id            String   @id @default(uuid())
+  screenName    String   @unique
+  displayName   String?
+  avatarUrl     String?
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastFetchedAt DateTime?
+  tweets        Tweet[]
+}
+
+model Tweet {
+  id             String   @id @default(uuid())
+  tweetId        String   @unique
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String
+  authorName     String
+  authorScreen   String
+  text           String
+  lang           String?
+  raw            Json
+  tweetedAt      DateTime
+  createdAt      DateTime @default(now())
+  tweetUrl       String?
+  processedAt    DateTime?
+  insights       TweetInsight?
+}
+
+model TweetInsight {
+  id          String   @id @default(uuid())
+  tweet       Tweet    @relation(fields: [tweetId], references: [tweetId])
+  tweetId     String   @unique
+  verdict     String
+  summary     String?
+  importance  Int?
+  tags        String[]
+  suggestions String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  aiRun       AiRun?   @relation(fields: [aiRunId], references: [id])
+  aiRunId     String?
+}
+
+model AiRun {
+  id          String      @id @default(uuid())
+  kind        AiRunKind
+  status      AiRunStatus @default(PENDING)
+  prompt      String?
+  response    String?
+  error       String?
+  createdAt   DateTime    @default(now())
+  completedAt DateTime?
+  insights    TweetInsight[]
+  report      Report?
+}
+
+model Report {
+  id             String   @id @default(uuid())
+  periodStart    DateTime
+  periodEnd      DateTime
+  headline       String
+  content        String
+  outline        Json?
+  createdAt      DateTime @default(now())
+  publishedAt    DateTime?
+  aiRun          AiRun?   @relation(fields: [aiRunId], references: [id])
+  aiRunId        String?  @unique
+  deliveredAt    DateTime?
+  deliveryTarget String?
+}
+
+model NotificationConfig {
+  id         Int      @id @default(1)
+  tgBotToken String?
+  tgChatId   String?
+  updatedAt  DateTime @updatedAt
+}
