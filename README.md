@@ -31,7 +31,12 @@
 | `RAPIDAPI_HOST` / `RAPIDAPI_KEY` | RapidAPI 推特接口配置 |
 | `DEEPSEEK_API_KEY` | DeepSeek API key（OpenAI 兼容） |
 | `TG_BOT_TOKEN` / `TG_CHAT_ID` | Telegram 推送默认配置，可在 UI 中覆盖 |
-| `CRON_SCHEDULE` | `node-cron` 表达式，默认每天 03:00 |
+| `REPORT_CRON_SCHEDULE` | 汇总/推送报告的 `node-cron` 表达式，默认每天 03:00 |
+| `FETCH_CRON_SCHEDULE` | 批量抓取订阅的 `node-cron` 表达式，默认每 30 分钟一次 |
+| `CLASSIFY_CRON_SCHEDULE` | AI 筛选兜底定时器，默认每 20 分钟检查一次 |
+| `FETCH_BATCH_SIZE` | 每个抓取周期处理的订阅数量，默认 5 个，方便分散压力 |
+| `FETCH_COOLDOWN_HOURS` | 单个订阅的抓取冷却时间（小时），默认 12 小时内最多抓取两次 |
+| `CLASSIFY_MIN_TWEETS` | 自动触发 AI 筛选所需的最少待处理推文数量 |
 | `REPORT_TIMEZONE` | 统计/展示使用的时区 |
 | `BASE_WEB_URL` | 生成报告时引用的 Web 端地址 |
 
@@ -86,10 +91,10 @@
 
 ## 功能流程
 1. **订阅管理**：UI 可添加/删除查看订阅，也可单独对某个账号抓取当日推文。
-2. **抓取任务**：`/api/tasks/fetch` 会遍历订阅账号，通过 RapidAPI 拉取当日新推文并落库。
+2. **抓取任务**：`/api/tasks/fetch` 会遍历订阅账号，通过 RapidAPI 拉取当日新推文并落库；同一账号默认 12 小时冷却，可根据 `limit` 参数或定时器设置分批执行。
 3. **AI 筛选**：`/api/tasks/analyze` 读取未分析推文，调用 DeepSeek 批量打分，结构化写入 `TweetInsight`。
 4. **报告生成**：`/api/tasks/report` 根据当日洞察生成 Markdown 周报，可选择是否立刻推送 Telegram。
-5. **定时器**：`node-cron` 根据 `CRON_SCHEDULE` 串联以上 3 步并尝试推送。
+5. **定时器**：抓取任务按 `FETCH_CRON_SCHEDULE` 分批运行（每批遵守 12 小时冷却，只处理少量订阅），积累到一定数量的未处理推文后自动触发 AI 筛选；`CLASSIFY_CRON_SCHEDULE` 兜底检查，`REPORT_CRON_SCHEDULE` 负责每日汇总与推送。
 6. **前端面板**：
    - 手动触发「抓取/AI/报告」
    - 配置 Telegram token/chat id

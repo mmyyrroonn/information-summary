@@ -12,6 +12,8 @@ export interface FetchResult {
   processed: number;
   inserted: number;
   error?: string;
+  skipped?: boolean;
+  reason?: string;
 }
 
 export interface NotificationConfig {

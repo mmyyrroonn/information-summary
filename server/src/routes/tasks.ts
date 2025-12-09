@@ -5,9 +5,22 @@ import { classifyTweets, generateReport, sendReportAndNotify } from '../services
 
 const router = Router();
 
-router.post('/fetch', async (_req, res, next) => {
+router.post('/fetch', async (req, res, next) => {
   try {
-    const result = await fetchAllSubscriptions();
+    const body = z
+      .object({
+        limit: z.coerce.number().int().positive().optional(),
+        force: z.boolean().optional()
+      })
+      .parse(req.body ?? {});
+    const options: { limit?: number; force?: boolean } = {};
+    if (typeof body.limit === 'number') {
+      options.limit = body.limit;
+    }
+    if (typeof body.force === 'boolean') {
+      options.force = body.force;
+    }
+    const result = await fetchAllSubscriptions(options);
     res.json(result);
   } catch (error) {
     next(error);

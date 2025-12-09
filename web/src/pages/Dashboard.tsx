@@ -41,7 +41,21 @@ export function DashboardPage() {
     try {
       if (task === 'fetch') {
         const result = await api.runFetchTask();
-        setStatusMessage(`完成抓取：${result.length} 个订阅`);
+        const completed = result.filter((item) => !item.skipped && !item.error);
+        const skipped = result.filter((item) => item.skipped);
+        const failed = result.filter((item) => item.error && !item.skipped);
+        const inserted = completed.reduce((sum, item) => sum + item.inserted, 0);
+        const parts = [`处理 ${completed.length} 个订阅`];
+        if (inserted) {
+          parts.push(`新增 ${inserted} 条推文`);
+        }
+        if (skipped.length) {
+          parts.push(`跳过 ${skipped.length}`);
+        }
+        if (failed.length) {
+          parts.push(`失败 ${failed.length}`);
+        }
+        setStatusMessage(`抓取完成：${parts.join('，')}`);
       } else if (task === 'analyze') {
         const result = await api.runAnalyzeTask();
         setStatusMessage(`AI 已处理 ${result.processed} 条推文`);

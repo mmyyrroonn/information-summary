@@ -43,6 +43,15 @@ function defaultWindow() {
   };
 }
 
+export async function countPendingTweets(window = defaultWindow()) {
+  return prisma.tweet.count({
+    where: {
+      tweetedAt: { gte: window.start, lte: window.end },
+      insights: null
+    }
+  });
+}
+
 export async function classifyTweets(window = defaultWindow()) {
   const tweets = await prisma.tweet.findMany({
     where: {

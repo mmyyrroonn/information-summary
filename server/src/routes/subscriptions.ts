@@ -42,7 +42,12 @@ router.delete('/:id', async (req, res, next) => {
 router.post('/:id/fetch', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const result = await fetchTweetsForSubscription(id);
+    const body = z.object({ force: z.boolean().optional() }).parse(req.body ?? {});
+    const options: { force?: boolean } = {};
+    if (typeof body.force === 'boolean') {
+      options.force = body.force;
+    }
+    const result = await fetchTweetsForSubscription(id, options);
     res.json(result);
   } catch (error) {
     next(error);
