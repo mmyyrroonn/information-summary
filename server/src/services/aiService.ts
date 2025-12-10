@@ -27,6 +27,15 @@ const CLASSIFY_ALLOWED_TAGS = [
   'ecosystem'
 ];
 
+const REPORT_CHUNK_SIZE = 30;
+const TRIAGE_CHUNK_SIZE = 40;
+const TRIAGE_MAX_KEEP_PER_CHUNK = 15;
+const HIGH_PRIORITY_IMPORTANCE = 4;
+const MEDIUM_MIN_IMPORTANCE = 2;
+const MEDIUM_MAX_IMPORTANCE = 3;
+
+type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: true } }>;
+
 interface TweetInsightPayload {
   tweetId: string;
   verdict: 'ignore' | 'watch' | 'actionable';
@@ -51,6 +60,18 @@ interface ReportActionItem {
 interface OverflowInsight {
   tweetId: string;
   summary: string;
+}
+
+interface CondensedInsight {
+  tweetId: string;
+  summary: string;
+  importance?: number;
+  tags?: string[];
+  suggestions?: string;
+  verdict?: string;
+  url?: string;
+  author?: string;
+  handle?: string;
 }
 
 interface ReportPayload {
@@ -273,6 +294,186 @@ function buildBatchPrompt(batch: Tweet[]) {
   return JSON.stringify(template, null, 2);
 }
 
+async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
+  if (!insights.length) {
+    return [];
+  }
+  const openai = ensureClient();
+  const batches = chunk(insights, TRIAGE_CHUNK_SIZE);
+  const keptIds = new Set<string>();
+
+  for (const [batchIndex, batch] of batches.entries()) {
+    logger.info('Running mid-priority triage batch', {
+      batchIndex: batchIndex + 1,
+      batchSize: batch.length
+    });
+    const prompt = buildTriagePrompt(batch, TRIAGE_MAX_KEEP_PER_CHUNK);
+    const completion = await openai.chat.completions.create({
+      model: 'deepseek-chat',
+      temperature: 0,
+      messages: [
+        {
+          role: 'system',
+          content: '你是资讯编辑，需要快速筛选重要推文，按指引只选择最值得保留的条目。'
+        },
+        { role: 'user', content: prompt }
+      ]
+    });
+    const content = completion.choices?.[0]?.message?.content ?? '{}';
+    const parsed = safeJsonParse<{ decisions?: Array<{ tweetId: string; include: boolean }> }>(content);
+    const includes = (parsed.decisions ?? []).filter((decision) => decision.include);
+    includes.slice(0, TRIAGE_MAX_KEEP_PER_CHUNK).forEach((decision) => keptIds.add(decision.tweetId));
+  }
+
+  return insights.filter((insight) => keptIds.has(insight.tweetId));
+}
+
+function buildTriagePrompt(batch: InsightWithTweet[], maxKeep: number) {
+  const template = {
+    goal: '审阅 importance 在 2-3 的推文洞察，只保留最有价值的少量条目，其余标记为 false。',
+    rules: [
+      `每个 chunk 最多保留 ${maxKeep} 条，优先 actionable、具有明确行动价值或重大信号的内容。`,
+      '如果内容重复、缺乏上下文或影响较小，应标记 include=false。',
+      '只能使用已有的 summary / tags 做判断，不要臆测新信息。'
+    ],
+    outputSchema: '{"decisions":[{"tweetId":"id","include":true|false,"reason":"简短原因"}]}',
+    candidates: batch.map((insight) => ({
+      tweetId: insight.tweetId,
+      importance: insight.importance ?? null,
+      verdict: insight.verdict,
+      summary: insight.summary ?? '',
+      tags: insight.tags ?? [],
+      suggestions: insight.suggestions ?? undefined
+    }))
+  };
+  return JSON.stringify(template, null, 2);
+}
+
+async function summarizeSelectedInsights(insights: InsightWithTweet[]) {
+  if (!insights.length) {
+    return [];
+  }
+  const openai = ensureClient();
+  const batches = chunk(insights, REPORT_CHUNK_SIZE);
+  const condensed: CondensedInsight[] = [];
+
+  for (const [batchIndex, batch] of batches.entries()) {
+    logger.info('Running chunk summary batch', {
+      batchIndex: batchIndex + 1,
+      batchSize: batch.length
+    });
+    const prompt = buildChunkSummaryPrompt(batch);
+    const completion = await openai.chat.completions.create({
+      model: 'deepseek-chat',
+      temperature: 0.2,
+      messages: [
+        {
+          role: 'system',
+          content: '你是资深分析官，需重新审视原文并输出精炼洞察，确保每条推文都被覆盖。'
+        },
+        { role: 'user', content: prompt }
+      ]
+    });
+    const content = completion.choices?.[0]?.message?.content ?? '{}';
+    const parsed = safeJsonParse<{ items?: CondensedInsight[] }>(content);
+    const normalized = normalizeCondensedItems(parsed.items ?? [], batch);
+    condensed.push(...normalized);
+  }
+
+  return condensed;
+}
+
+function buildChunkSummaryPrompt(batch: InsightWithTweet[]) {
+  const template = {
+    instructions: [
+      '逐条阅读原文 text，结合已有 summary/tags，生成更精炼的一句话洞察。',
+      '如果可以执行，请在 suggestions 中给出清晰动作；无法判断则省略。',
+      '输出必须覆盖所有输入 tweetId，不得遗漏或合并。'
+    ],
+    schema:
+      '{"items":[{"tweetId":"原始 id","summary":"50 字以内重点","importance":1-5,"tags":["airdrop"],"suggestions":"可选"}]}',
+    tweets: batch.map((insight) => ({
+      tweetId: insight.tweetId,
+      importance: insight.importance ?? null,
+      verdict: insight.verdict,
+      summary: insight.summary ?? '',
+      tags: insight.tags ?? [],
+      suggestions: insight.suggestions ?? undefined,
+      author: insight.tweet.authorName,
+      handle: insight.tweet.authorScreen,
+      url: insight.tweet.tweetUrl,
+      text: insight.tweet.text
+    }))
+  };
+  return JSON.stringify(template, null, 2);
+}
+
+function normalizeCondensedItems(items: CondensedInsight[], batch: InsightWithTweet[]) {
+  const lookup = new Map(batch.map((insight) => [insight.tweetId, insight]));
+  const normalized = new Map<string, CondensedInsight>();
+
+  items.forEach((item) => {
+    const source = item.tweetId ? lookup.get(item.tweetId) : undefined;
+    if (!source) {
+      return;
+    }
+    const summary = (item.summary ?? source.summary ?? source.tweet.text).trim();
+    if (!summary) {
+      return;
+    }
+    const merged: CondensedInsight = {
+      tweetId: source.tweetId,
+      summary,
+      tags: item.tags?.length ? item.tags : source.tags ?? [],
+      verdict: source.verdict,
+      author: source.tweet.authorName,
+      handle: source.tweet.authorScreen
+    };
+    const importance = item.importance ?? source.importance ?? undefined;
+    if (importance !== undefined) {
+      merged.importance = importance;
+    }
+    const suggestions = item.suggestions ?? source.suggestions ?? undefined;
+    if (suggestions !== undefined) {
+      merged.suggestions = suggestions;
+    }
+    const url = source.tweet.tweetUrl ?? undefined;
+    if (url !== undefined) {
+      merged.url = url;
+    }
+    normalized.set(source.tweetId, merged);
+  });
+
+  batch.forEach((insight) => {
+    if (!normalized.has(insight.tweetId)) {
+      normalized.set(insight.tweetId, fallbackCondensedInsight(insight));
+    }
+  });
+
+  return Array.from(normalized.values());
+}
+
+function fallbackCondensedInsight(insight: InsightWithTweet): CondensedInsight {
+  const fallback: CondensedInsight = {
+    tweetId: insight.tweetId,
+    summary: insight.summary ?? insight.tweet.text.slice(0, 120),
+    tags: insight.tags ?? [],
+    verdict: insight.verdict,
+    author: insight.tweet.authorName,
+    handle: insight.tweet.authorScreen
+  };
+  if (insight.importance !== null && insight.importance !== undefined) {
+    fallback.importance = insight.importance;
+  }
+  if (insight.suggestions) {
+    fallback.suggestions = insight.suggestions;
+  }
+  if (insight.tweet.tweetUrl) {
+    fallback.url = insight.tweet.tweetUrl;
+  }
+  return fallback;
+}
+
 export async function generateReport(window = defaultWindow()) {
   const windowMeta = { start: window.start.toISOString(), end: window.end.toISOString() };
   logger.info('Report generation requested', windowMeta);
@@ -298,21 +499,40 @@ export async function generateReport(window = defaultWindow()) {
   });
 
   try {
-    const formatted = insights.map((insight) =>
-      mapInsight({
-        tweetId: insight.tweetId,
-        verdict: insight.verdict,
-        summary: insight.summary,
-        importance: insight.importance,
-        tags: insight.tags,
-        suggestions: insight.suggestions,
-        text: insight.tweet.text,
-        author: insight.tweet.authorName,
-        handle: insight.tweet.authorScreen,
-        url: insight.tweet.tweetUrl
-      })
-    );
-    const prompt = buildReportPrompt(formatted, window);
+    const highPriority = insights.filter((insight) => (insight.importance ?? 0) > HIGH_PRIORITY_IMPORTANCE);
+    const mediumCandidates = insights.filter((insight) => {
+      const importance = insight.importance ?? 0;
+      return importance >= MEDIUM_MIN_IMPORTANCE && importance <= MEDIUM_MAX_IMPORTANCE;
+    });
+
+    logger.info('Report insight pools prepared', {
+      total: insights.length,
+      highPriority: highPriority.length,
+      mediumCandidates: mediumCandidates.length
+    });
+
+    const selectedMedium = await selectMidPriorityInsights(mediumCandidates);
+    logger.info('Mid-priority triage completed', {
+      mediumCandidates: mediumCandidates.length,
+      selectedMedium: selectedMedium.length
+    });
+
+    const selectedSet = new Set(highPriority.map((insight) => insight.tweetId));
+    selectedMedium.forEach((insight) => selectedSet.add(insight.tweetId));
+    const selectedInsights = insights.filter((insight) => selectedSet.has(insight.tweetId));
+
+    if (!selectedInsights.length) {
+      logger.info('No insights qualified after triage', windowMeta);
+      return null;
+    }
+
+    const condensedInsights = await summarizeSelectedInsights(selectedInsights);
+    if (!condensedInsights.length) {
+      logger.info('Chunk summarization produced no condensed insights', windowMeta);
+      return null;
+    }
+
+    const prompt = buildReportPrompt(condensedInsights, window);
 
     const completion = await openai.chat.completions.create({
       model: 'deepseek-chat',
@@ -348,7 +568,9 @@ export async function generateReport(window = defaultWindow()) {
     logger.info('Report generation completed', {
       ...windowMeta,
       reportId: report.id,
-      insights: insights.length
+      insights: insights.length,
+      selectedInsights: selectedInsights.length,
+      condensedEntries: condensedInsights.length
     });
 
     return report;
@@ -366,11 +588,14 @@ export async function generateReport(window = defaultWindow()) {
   }
 }
 
-function buildReportPrompt(items: Array<ReturnType<typeof mapInsight>>, window: { start: Date; end: Date }) {
+function buildReportPrompt(items: CondensedInsight[], window: { start: Date; end: Date }) {
   const template = {
     window,
+    meta: {
+      totalItems: items.length
+    },
     instructions:
-      '根据这些推文洞察生成「每日价值信息 JSON」，保持结构化呈现并确保所有高价值内容都被收录。',
+      '根据这些已精炼的推文洞察生成「每日价值信息 JSON」，保持结构化呈现并确保所有条目都被引用。',
     schema:
       '{"headline":"总标题","overview":["精炼 bullet"],"sections":[{"title":"主题","insight":"一句话总结","tweets":["tweet url 或 id"],"items":[{"tweetId":"原始 tweet id","summary":"一句话洞察","importance":1-5,"tags":["airdrop"]}]}],"actionItems":[{"description":"需要执行的事项","tweetId":"可选引用"}],"overflow":[{"tweetId":"仍未聚合的推文","summary":"一句话说明"}]}',
     reminders: [
@@ -378,37 +603,12 @@ function buildReportPrompt(items: Array<ReturnType<typeof mapInsight>>, window: 
       'sections 需按主题/标签聚合，但每条 input 都要被引用在某个 section.items 或 overflow 中，禁止丢失。',
       'actionable 的洞察若有具体步骤，请写到 actionItems，并引用来源 tweetId。',
       '信息太多时，可以把不适合合并的内容放进 overflow，仍需保留关键细节。',
+      'overview 中请添加一条 bullet 说明本次共保留多少条洞察（使用 meta.totalItems）。',
       '输出必须是严格 JSON，不要添加额外文本。'
     ],
     insights: items
   };
   return JSON.stringify(template, null, 2);
-}
-
-function mapInsight(insight: {
-  tweetId: string;
-  verdict: string;
-  summary: string | null;
-  importance: number | null;
-  tags: string[] | null;
-  suggestions: string | null;
-  text: string;
-  author: string;
-  handle: string;
-  url: string | null;
-}) {
-  return {
-    tweetId: insight.tweetId,
-    verdict: insight.verdict,
-    summary: insight.summary ?? '',
-    importance: insight.importance ?? undefined,
-    tags: insight.tags ?? [],
-    suggestions: insight.suggestions ?? undefined,
-    text: insight.text,
-    author: insight.author,
-    handle: insight.handle,
-    url: insight.url ?? undefined
-  };
 }
 
 function renderReportMarkdown(payload: ReportPayload, window: { start: Date; end: Date }) {
