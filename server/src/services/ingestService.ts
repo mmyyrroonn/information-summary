@@ -2,10 +2,9 @@ import { Prisma, Subscription } from '@prisma/client';
 import { prisma } from '../db';
 import { fetchTimeline } from './twitterService';
 import { config } from '../config';
-import { endOfDay, formatDisplayDate, startOfDay } from '../utils/time';
+import { formatDisplayDate } from '../utils/time';
 import { logger } from '../logger';
 
-const tz = config.REPORT_TIMEZONE;
 const COOLDOWN_MS = config.FETCH_COOLDOWN_HOURS * 60 * 60 * 1000;
 
 export interface SubscriptionFetchResult {
@@ -61,15 +60,10 @@ export async function fetchTweetsForSubscription(subscriptionId: string, options
 export async function fetchTweets(subscription: { id: string; screenName: string; displayName?: string | null }) {
   const timeline = await fetchTimeline(subscription.screenName);
   const tweets = timeline.timeline ?? [];
-  const startWindow = startOfDay(new Date(), tz).toDate();
-  const endWindow = endOfDay(new Date(), tz).toDate();
 
   let inserted = 0;
   for (const tweet of tweets) {
     const createdAt = new Date(tweet.created_at);
-    if (createdAt < startWindow || createdAt > endWindow) {
-      continue;
-    }
 
     try {
       await prisma.tweet.upsert({
