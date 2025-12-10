@@ -33,3 +33,35 @@ export interface ReportSummary {
 export interface ReportDetail extends ReportSummary {
   content: string;
 }
+
+export interface TweetInsight {
+  verdict: string;
+  summary?: string | null;
+  importance?: number | null;
+  tags?: string[] | null;
+  suggestions?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TweetRecord {
+  id: string;
+  tweetId: string;
+  subscriptionId: string;
+  authorName: string;
+  authorScreen: string;
+  text: string;
+  tweetUrl?: string | null;
+  tweetedAt: string;
+  createdAt: string;
+  processedAt?: string | null;
+  insights?: TweetInsight | null;
+}
+
+export interface TweetListResponse {
+  items: TweetRecord[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}

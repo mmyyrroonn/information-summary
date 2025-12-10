@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { DashboardPage } from './pages/Dashboard';
 import { SubscriptionsPage } from './pages/Subscriptions';
+import { TweetsPage } from './pages/Tweets';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'subscriptions'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tweets' | 'subscriptions'>('dashboard');
 
   return (
     <div className="app-shell">
@@ -18,13 +19,16 @@ function App() {
           <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
             控制台
           </button>
+          <button className={activeTab === 'tweets' ? 'active' : ''} onClick={() => setActiveTab('tweets')}>
+            推文浏览
+          </button>
           <button className={activeTab === 'subscriptions' ? 'active' : ''} onClick={() => setActiveTab('subscriptions')}>
             订阅管理
           </button>
         </nav>
       </header>
 
-      {activeTab === 'dashboard' ? <DashboardPage /> : <SubscriptionsPage />}
+      {activeTab === 'dashboard' ? <DashboardPage /> : activeTab === 'tweets' ? <TweetsPage /> : <SubscriptionsPage />}
     </div>
   );
 }

@@ -104,17 +104,49 @@ export async function classifyTweets() {
     return { processed: 0, insights: 0 };
   }
 
+  return runTweetClassification(tweets, { mode: 'pending' });
+}
+
+export async function classifyTweetsByIds(tweetIds: string[]) {
+  if (!tweetIds.length) {
+    return { processed: 0, insights: 0 };
+  }
+
+  const tweets = await prisma.tweet.findMany({
+    where: {
+      id: { in: tweetIds },
+      insights: null
+    },
+    orderBy: { tweetedAt: 'asc' }
+  });
+
+  logger.info('Loaded targeted tweets for classification', {
+    requested: tweetIds.length,
+    pending: tweets.length
+  });
+
+  if (!tweets.length) {
+    logger.info('No eligible tweets found for targeted classification');
+    return { processed: 0, insights: 0 };
+  }
+
+  return runTweetClassification(tweets, { mode: 'targeted' });
+}
+
+async function runTweetClassification(tweets: Tweet[], context: Record<string, unknown> = {}) {
   const aiRun = await prisma.aiRun.create({
     data: { kind: AiRunKind.TWEET_CLASSIFY, status: AiRunStatus.RUNNING }
   });
 
   try {
     const batches = chunk(tweets, 6);
+    const tweetMap = new Map(tweets.map((tweet) => [tweet.tweetId, tweet]));
     let totalInsights = 0;
     logger.info('Tweet classification run started', {
       aiRunId: aiRun.id,
       batches: batches.length,
-      pending: tweets.length
+      pending: tweets.length,
+      ...context
     });
 
     for (const [batchIndex, batch] of batches.entries()) {
@@ -130,7 +162,7 @@ export async function classifyTweets() {
         insights: batchInsights.length
       });
       for (const insight of batchInsights) {
-        const targetTweet = tweets.find((t) => t.tweetId === insight.tweetId);
+        const targetTweet = tweetMap.get(insight.tweetId);
         if (!targetTweet) continue;
 
         await prisma.tweetInsight.upsert({
@@ -169,7 +201,8 @@ export async function classifyTweets() {
     logger.info('Tweet classification run completed', {
       aiRunId: aiRun.id,
       processed: tweets.length,
-      insights: totalInsights
+      insights: totalInsights,
+      ...context
     });
     return { processed: tweets.length, insights: totalInsights };
   } catch (error) {

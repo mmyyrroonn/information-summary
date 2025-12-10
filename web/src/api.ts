@@ -1,4 +1,11 @@
-import type { Subscription, NotificationConfig, ReportDetail, ReportSummary, FetchResult } from './types';
+import type {
+  Subscription,
+  NotificationConfig,
+  ReportDetail,
+  ReportSummary,
+  FetchResult,
+  TweetListResponse
+} from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
@@ -42,6 +49,13 @@ interface ApiClient {
   listReports: () => Promise<ReportSummary[]>;
   getReport: (id: string) => Promise<ReportDetail>;
   sendReport: (id: string) => Promise<unknown>;
+  listTweets: (params?: {
+    page?: number;
+    pageSize?: number;
+    order?: 'asc' | 'desc';
+    subscriptionId?: string;
+  }) => Promise<TweetListResponse>;
+  analyzeTweets: (tweetIds: string[]) => Promise<{ processed: number; insights: number }>;
 }
 
 export const api: ApiClient = {
@@ -61,5 +75,28 @@ export const api: ApiClient = {
     request<NotificationConfig>('/config/notification', { method: 'PUT', body: JSON.stringify(payload) }),
   listReports: () => request<ReportSummary[]>('/reports'),
   getReport: (id) => request<ReportDetail>(`/reports/${id}`),
-  sendReport: (id) => request(`/reports/${id}/send`, { method: 'POST' })
+  sendReport: (id) => request(`/reports/${id}/send`, { method: 'POST' }),
+  listTweets: (params = {}) => {
+    const search = new URLSearchParams();
+    if (typeof params.page === 'number') {
+      search.set('page', String(params.page));
+    }
+    if (typeof params.pageSize === 'number') {
+      search.set('pageSize', String(params.pageSize));
+    }
+    if (params.order) {
+      search.set('order', params.order);
+    }
+    if (params.subscriptionId) {
+      search.set('subscriptionId', params.subscriptionId);
+    }
+    const query = search.toString();
+    const path = query ? `/tweets?${query}` : '/tweets';
+    return request<TweetListResponse>(path);
+  },
+  analyzeTweets: (tweetIds) =>
+    request<{ processed: number; insights: number }>('/tweets/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ tweetIds })
+    })
 };
