@@ -27,6 +27,10 @@ const CLASSIFY_ALLOWED_TAGS = [
   'ecosystem'
 ];
 
+const CLASSIFY_BATCH_SIZE = 6;
+const CLASSIFY_CONCURRENCY = Math.max(1, config.CLASSIFY_CONCURRENCY ?? 2);
+const CLASSIFY_MAX_RETRIES = 3;
+const CLASSIFY_RETRY_DELAY_MS = 1500;
 const REPORT_CHUNK_SIZE = 30;
 const TRIAGE_CHUNK_SIZE = 40;
 const TRIAGE_MAX_KEEP_PER_CHUNK = 15;
@@ -160,7 +164,7 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
   });
 
   try {
-    const batches = chunk(tweets, 6);
+    const batches = chunk(tweets, CLASSIFY_BATCH_SIZE);
     const tweetMap = new Map(tweets.map((tweet) => [tweet.tweetId, tweet]));
     let totalInsights = 0;
     logger.info('Tweet classification run started', {
@@ -170,13 +174,13 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
       ...context
     });
 
-    for (const [batchIndex, batch] of batches.entries()) {
+    await runWithConcurrency(batches, CLASSIFY_CONCURRENCY, async (batch, batchIndex) => {
       logger.info('Submitting batch for AI classification', {
         aiRunId: aiRun.id,
         batchIndex: batchIndex + 1,
         batchSize: batch.length
       });
-      const batchInsights = await runTweetBatch(batch);
+      const batchInsights = await runTweetBatchWithRetry(batch, batchIndex);
       logger.info('AI classification batch completed', {
         aiRunId: aiRun.id,
         batchIndex: batchIndex + 1,
@@ -213,7 +217,7 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
         });
         totalInsights += 1;
       }
-    }
+    });
 
     await prisma.aiRun.update({
       where: { id: aiRun.id },
@@ -263,6 +267,38 @@ async function runTweetBatch(batch: Tweet[]): Promise<TweetInsightPayload[]> {
   return parsed.items ?? [];
 }
 
+async function runTweetBatchWithRetry(batch: Tweet[], batchIndex: number) {
+  let attempt = 0;
+  let lastError: unknown = null;
+  while (attempt < CLASSIFY_MAX_RETRIES) {
+    attempt += 1;
+    try {
+      return await runTweetBatch(batch);
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : 'unknown error';
+      if (attempt >= CLASSIFY_MAX_RETRIES) {
+        logger.error('AI classification batch failed after retries', {
+          batchIndex: batchIndex + 1,
+          attempt,
+          error: message
+        });
+        break;
+      }
+      logger.warn('AI classification batch failed, retrying', {
+        batchIndex: batchIndex + 1,
+        attempt,
+        error: message
+      });
+      await delay(CLASSIFY_RETRY_DELAY_MS * attempt);
+    }
+  }
+  if (lastError) {
+    throw lastError;
+  }
+  return [];
+}
+
 function buildBatchPrompt(batch: Tweet[]) {
   const template = {
     role: '你是每日 Web3 情报分析官，需要完整筛查所有输入推文，绝不能漏掉任何有价值的内容。',
@@ -292,6 +328,37 @@ function buildBatchPrompt(batch: Tweet[]) {
     }))
   };
   return JSON.stringify(template, null, 2);
+}
+
+function delay(ms: number) {
+  if (ms <= 0) {
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+async function runWithConcurrency<T>(items: T[], limit: number, worker: (item: T, index: number) => Promise<void>) {
+  if (!items.length) {
+    return;
+  }
+  const poolSize = Math.max(1, Math.min(limit, items.length));
+  let nextIndex = 0;
+  async function runNext(): Promise<void> {
+    const current = nextIndex;
+    if (current >= items.length) {
+      return;
+    }
+    nextIndex += 1;
+    const value = items[current];
+    if (value === undefined) {
+      return;
+    }
+    await worker(value, current);
+    if (nextIndex < items.length) {
+      await runNext();
+    }
+  }
+  await Promise.all(Array.from({ length: poolSize }, () => runNext()));
 }
 
 async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
