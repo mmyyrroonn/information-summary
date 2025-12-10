@@ -303,10 +303,53 @@ button.ghost {
   min-height: 280px;
 }
 
-.report-view pre {
-  white-space: pre-wrap;
-  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+.report-view .markdown-body {
+  font-size: 0.95rem;
+  line-height: 1.7;
   color: #0f172a;
+}
+
+.report-view .markdown-body h1,
+.report-view .markdown-body h2,
+.report-view .markdown-body h3,
+.report-view .markdown-body h4,
+.report-view .markdown-body h5,
+.report-view .markdown-body h6 {
+  margin: 0 0 0.75rem;
+  line-height: 1.4;
+}
+
+.report-view .markdown-body p {
+  margin: 0 0 0.75rem;
+}
+
+.report-view .markdown-body ul,
+.report-view .markdown-body ol {
+  margin: 0 0 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+.report-view .markdown-body blockquote {
+  margin: 0 0 0.75rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid #cbd5f5;
+  color: #475569;
+}
+
+.report-view .markdown-body code {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  background: #f1f5f9;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.3rem;
+}
+
+.report-view .markdown-body a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.report-view .markdown-body a:hover {
+  text-decoration: underline;
 }
 
 .empty {

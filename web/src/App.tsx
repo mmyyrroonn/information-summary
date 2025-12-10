@@ -12,8 +12,8 @@ function App() {
       <header className="app-header">
         <div>
           <p className="eyebrow">自动信息雷达</p>
-          <h1>Twitter 周报控制台</h1>
-          <p className="hint">配置订阅、触发 AI 工作流、查看周报与推送状态。</p>
+          <h1>Twitter 日报控制台</h1>
+          <p className="hint">配置订阅、触发 AI 工作流、查看日报与推送状态。</p>
         </div>
         <nav className="nav-tabs">
           <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>

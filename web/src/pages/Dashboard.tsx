@@ -1,6 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import DOMPurify from 'dompurify';
+import { marked } from 'marked';
 import { api } from '../api';
 import type { ReportDetail, ReportSummary } from '../types';
+
+marked.setOptions({
+  gfm: true,
+  breaks: true
+});
+
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A') {
+    node.setAttribute('target', '_blank');
+    node.setAttribute('rel', 'noreferrer noopener');
+  }
+});
 
 export function DashboardPage() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
@@ -8,6 +22,15 @@ export function DashboardPage() {
   const [notifyOnReport, setNotifyOnReport] = useState(true);
   const [statusMessage, setStatusMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const reportHtml = useMemo(() => {
+    if (!selectedReport?.content) {
+      return '';
+    }
+    const withLinks = linkifyTweetIds(selectedReport.content);
+    const parsed = marked.parse(withLinks);
+    const rawHtml = typeof parsed === 'string' ? parsed : '';
+    return DOMPurify.sanitize(rawHtml);
+  }, [selectedReport?.content]);
 
   useEffect(() => {
     refreshReports();
@@ -23,7 +46,7 @@ export function DashboardPage() {
         setSelectedReport(null);
       }
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '加载周报失败');
+      setStatusMessage(error instanceof Error ? error.message : '加载日报失败');
     }
   }
 
@@ -32,7 +55,7 @@ export function DashboardPage() {
       const data = await api.getReport(id);
       setSelectedReport(data);
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '读取周报失败');
+      setStatusMessage(error instanceof Error ? error.message : '读取日报失败');
     }
   }
 
@@ -64,7 +87,7 @@ export function DashboardPage() {
         if ('message' in report) {
           setStatusMessage(report.message);
         } else {
-          setStatusMessage('周报生成完成');
+          setStatusMessage('日报生成完成');
           await refreshReports();
           if (!notifyOnReport) {
             await loadReport(report.id);
@@ -120,7 +143,7 @@ export function DashboardPage() {
               生成后自动推送到 Telegram
             </label>
             <button onClick={() => runTask('report')} disabled={busy === 'task-report'}>
-              {busy === 'task-report' ? '执行中...' : '生成周报'}
+              {busy === 'task-report' ? '执行中...' : '生成日报'}
             </button>
           </div>
         </div>
@@ -128,12 +151,12 @@ export function DashboardPage() {
 
       <section>
         <div className="section-head">
-          <h2>周报记录</h2>
+          <h2>日报记录</h2>
           <button onClick={refreshReports}>刷新列表</button>
         </div>
         <div className="reports-panel">
           <div className="reports-list">
-            {reports.length === 0 && <p className="empty">暂无周报</p>}
+            {reports.length === 0 && <p className="empty">暂无日报</p>}
             {reports.map((report) => (
               <div
                 key={report.id}
@@ -172,14 +195,27 @@ export function DashboardPage() {
             {selectedReport ? (
               <>
                 <h3>{selectedReport.headline}</h3>
-                <pre>{selectedReport.content}</pre>
+                {reportHtml ? (
+                  <div className="markdown-body" dangerouslySetInnerHTML={{ __html: reportHtml }} />
+                ) : (
+                  <p className="empty">报告内容为空</p>
+                )}
               </>
             ) : (
-              <p className="empty">选择左侧的周报查看详情</p>
+              <p className="empty">选择左侧的日报查看详情</p>
             )}
           </article>
         </div>
       </section>
     </>
   );
+}
+
+function linkifyTweetIds(markdown: string) {
+  const wrap = (id: string) => `[${id}](https://x.com/i/web/status/${id})`;
+  return markdown
+    .replace(/(\()(\d{10,})(\))/g, (_, open: string, id: string, close: string) => `${open}${wrap(id)}${close}`)
+    .replace(/(（来源[:：]?\s*)(\d{10,})(）)/g, (_, prefix: string, id: string, suffix: string) => `${prefix}${wrap(id)}${suffix}`)
+    .replace(/(^-\s+)(\d{10,})(\s*)$/gm, (_, bullet: string, id: string, trailing: string) => `${bullet}${wrap(id)}${trailing}`)
+    .replace(/(tweet\s*id[:：]\s*)(\d{10,})/gi, (_, prefix: string, id: string) => `${prefix}${wrap(id)}`);
 }
