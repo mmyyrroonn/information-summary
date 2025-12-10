@@ -4,7 +4,8 @@ import type {
   ReportDetail,
   ReportSummary,
   FetchResult,
-  TweetListResponse
+  TweetListResponse,
+  SubscriptionImportResult
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
@@ -41,6 +42,8 @@ interface ApiClient {
   createSubscription: (payload: { screenName: string; displayName?: string }) => Promise<Subscription>;
   deleteSubscription: (id: string) => Promise<void>;
   fetchSubscription: (id: string) => Promise<FetchResult>;
+  importListMembers: (payload: { listId: string; cursor?: string }) => Promise<SubscriptionImportResult>;
+  importFollowingUsers: (payload: { screenName?: string; userId?: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   runFetchTask: () => Promise<FetchResult[]>;
   runAnalyzeTask: () => Promise<{ processed: number; insights: number }>;
   runReportTask: (notify: boolean) => Promise<ReportSummary | { message: string }>;
@@ -63,6 +66,20 @@ export const api: ApiClient = {
   createSubscription: (payload) => request<Subscription>('/subscriptions', { method: 'POST', body: JSON.stringify(payload) }),
   deleteSubscription: (id) => request<null>(`/subscriptions/${id}`, { method: 'DELETE' }).then(() => undefined),
   fetchSubscription: (id) => request<FetchResult>(`/subscriptions/${id}/fetch`, { method: 'POST' }),
+  importListMembers: ({ listId, cursor }) =>
+    request<SubscriptionImportResult>('/subscriptions/import/list', {
+      method: 'POST',
+      body: JSON.stringify({ listId, ...(cursor ? { cursor } : {}) })
+    }),
+  importFollowingUsers: ({ screenName, userId, cursor }) =>
+    request<SubscriptionImportResult>('/subscriptions/import/following', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...(screenName ? { screenName } : {}),
+        ...(userId ? { userId } : {}),
+        ...(cursor ? { cursor } : {})
+      })
+    }),
   runFetchTask: () => request<FetchResult[]>('/tasks/fetch', { method: 'POST' }),
   runAnalyzeTask: () => request<{ processed: number; insights: number }>('/tasks/analyze', { method: 'POST' }),
   runReportTask: (notify: boolean) =>

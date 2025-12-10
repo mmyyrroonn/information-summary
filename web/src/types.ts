@@ -65,3 +65,20 @@ export interface TweetListResponse {
   total: number;
   hasMore: boolean;
 }
+
+export interface SubscriptionImportUser {
+  subscriptionId: string;
+  screenName: string;
+  displayName: string | null;
+  created: boolean;
+}
+
+export interface SubscriptionImportResult {
+  fetched: number;
+  created: number;
+  existing: number;
+  skipped: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+  users: SubscriptionImportUser[];
+}

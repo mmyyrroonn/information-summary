@@ -1,6 +1,6 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from 'react';
 import { api } from '../api';
-import type { Subscription } from '../types';
+import type { Subscription, SubscriptionImportResult } from '../types';
 
 function normalizeHandle(value: string) {
   return value.replace(/^@/, '').trim().toLowerCase();
@@ -47,6 +47,10 @@ export function SubscriptionsPage() {
   const [bulkResult, setBulkResult] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [listImportForm, setListImportForm] = useState({ listId: '', cursor: '' });
+  const [listImportLogs, setListImportLogs] = useState<string[]>([]);
+  const [followingImportForm, setFollowingImportForm] = useState({ screenName: '', userId: '', cursor: '' });
+  const [followingImportLogs, setFollowingImportLogs] = useState<string[]>([]);
 
   useEffect(() => {
     refreshSubscriptions();
@@ -128,6 +132,74 @@ export function SubscriptionsPage() {
     }
   }
 
+  function formatImportResult(source: string, identifier: string, result: SubscriptionImportResult) {
+    const timestamp = new Date().toLocaleTimeString();
+    const summary = `[${timestamp}] ${source} ${identifier}｜获取 ${result.fetched}，新增 ${result.created}，已存在 ${result.existing}，跳过 ${result.skipped}，nextCursor=${
+      result.nextCursor ?? '无'
+    }，${result.hasMore ? '还有更多' : '没有更多'}`;
+    if (!result.users.length) return summary;
+    const detail = result.users
+      .map((user, index) => {
+        const label = user.created ? '新增 ✅' : '已存在';
+        const name = user.displayName ? `（${user.displayName}）` : '';
+        return `${index + 1}. @${user.screenName}${name} - ${label}`;
+      })
+      .join('\n');
+    return `${summary}\n${detail}`;
+  }
+
+  function appendLog(setter: Dispatch<SetStateAction<string[]>>, entry: string) {
+    setter((prev) => [entry, ...prev].slice(0, 20));
+  }
+
+  async function handleListImport() {
+    if (!listImportForm.listId.trim()) {
+      setStatusMessage('请输入 List ID');
+      return;
+    }
+    setBusy('import-list');
+    try {
+      const result = await api.importListMembers({
+        listId: listImportForm.listId.trim(),
+        cursor: listImportForm.cursor.trim() || undefined
+      });
+      appendLog(setListImportLogs, formatImportResult('List', listImportForm.listId.trim(), result));
+      setListImportForm((prev) => ({ ...prev, cursor: result.nextCursor ?? '' }));
+      setStatusMessage(`List 导入完成，本页新增 ${result.created} 条订阅`);
+      await refreshSubscriptions();
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'List 导入失败');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleFollowingImport() {
+    const screenName = followingImportForm.screenName.trim();
+    const userId = followingImportForm.userId.trim();
+    if (!screenName && !userId) {
+      setStatusMessage('请输入 @账号或用户 ID');
+      return;
+    }
+    setBusy('import-following');
+    try {
+      const payload: { screenName?: string; userId?: string; cursor?: string } = {};
+      if (screenName) payload.screenName = screenName;
+      if (userId) payload.userId = userId;
+      if (followingImportForm.cursor.trim()) payload.cursor = followingImportForm.cursor.trim();
+      const identifier = screenName ? `@${screenName}` : userId;
+      const result = await api.importFollowingUsers(payload);
+      appendLog(setFollowingImportLogs, formatImportResult('关注', identifier, result));
+      setFollowingImportForm((prev) => ({ ...prev, cursor: result.nextCursor ?? '' }));
+      setStatusMessage(`关注导入完成，本页新增 ${result.created} 条订阅`);
+      await refreshSubscriptions();
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : '关注导入失败');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <>
       {statusMessage && <p className="status">{statusMessage}</p>}
@@ -173,6 +245,63 @@ export function SubscriptionsPage() {
           onChange={(e) => setBulkInput(e.target.value)}
         />
         {bulkResult && <pre className="bulk-result">{bulkResult}</pre>}
+      </section>
+
+      <section>
+        <div className="section-head">
+          <div>
+            <h2>从 Twitter List 导入</h2>
+            <p className="hint">输入 list_id，逐页抓取成员并自动订阅，cursor 可用于继续下一页。</p>
+          </div>
+          <button onClick={handleListImport} disabled={busy === 'import-list'}>
+            {busy === 'import-list' ? '导入中...' : '获取并订阅'}
+          </button>
+        </div>
+        <div className="subscription-form">
+          <input
+            placeholder="List ID"
+            value={listImportForm.listId}
+            onChange={(e) => setListImportForm((prev) => ({ ...prev, listId: e.target.value }))}
+          />
+          <input
+            placeholder="Cursor（可选）"
+            value={listImportForm.cursor}
+            onChange={(e) => setListImportForm((prev) => ({ ...prev, cursor: e.target.value }))}
+          />
+        </div>
+        {listImportLogs.length > 0 && <pre className="bulk-result">{listImportLogs.join('\n\n')}</pre>}
+      </section>
+
+      <section>
+        <div className="section-head">
+          <div>
+            <h2>导入某账号的 Following</h2>
+            <p className="hint">输入 @账号或用户 ID，逐页抓取其关注列表并订阅，可用 cursor 分批执行。</p>
+          </div>
+          <button onClick={handleFollowingImport} disabled={busy === 'import-following'}>
+            {busy === 'import-following' ? '导入中...' : '获取并订阅'}
+          </button>
+        </div>
+        <div className="subscription-form">
+          <input
+            placeholder="@账号（可选）"
+            value={followingImportForm.screenName}
+            onChange={(e) =>
+              setFollowingImportForm((prev) => ({ ...prev, screenName: normalizeHandle(e.target.value) }))
+            }
+          />
+          <input
+            placeholder="用户 ID（可选）"
+            value={followingImportForm.userId}
+            onChange={(e) => setFollowingImportForm((prev) => ({ ...prev, userId: e.target.value.trim() }))}
+          />
+          <input
+            placeholder="Cursor（可选）"
+            value={followingImportForm.cursor}
+            onChange={(e) => setFollowingImportForm((prev) => ({ ...prev, cursor: e.target.value }))}
+          />
+        </div>
+        {followingImportLogs.length > 0 && <pre className="bulk-result">{followingImportLogs.join('\n\n')}</pre>}
       </section>
 
       <section>
