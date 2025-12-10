@@ -3,6 +3,7 @@ ARG NODE_VERSION=20
 ARG VITE_API_BASE_URL=http://localhost:4000/api
 
 FROM node:${NODE_VERSION}-alpine AS build
+ARG VITE_API_BASE_URL
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
