@@ -4,8 +4,10 @@ import { prisma } from '../db';
 export interface ListTweetsOptions {
   page: number;
   pageSize: number;
-  order: 'asc' | 'desc';
+  sort: 'newest' | 'oldest' | 'priority';
   subscriptionId?: string;
+  startTime?: Date;
+  endTime?: Date;
 }
 
 export async function listTweets(options: ListTweetsOptions) {
@@ -17,12 +19,29 @@ export async function listTweets(options: ListTweetsOptions) {
   if (options.subscriptionId) {
     where.subscriptionId = options.subscriptionId;
   }
+  if (options.startTime || options.endTime) {
+    where.tweetedAt = {};
+    if (options.startTime) {
+      where.tweetedAt.gte = options.startTime;
+    }
+    if (options.endTime) {
+      where.tweetedAt.lte = options.endTime;
+    }
+  }
+
+  const orderBy: Prisma.Enumerable<Prisma.TweetOrderByWithRelationInput> =
+    options.sort === 'priority'
+      ? [
+          { insights: { importance: { sort: 'desc', nulls: 'last' } } },
+          { tweetedAt: 'desc' }
+        ]
+      : [{ tweetedAt: options.sort === 'oldest' ? 'asc' : 'desc' }];
 
   const [total, tweets] = await prisma.$transaction([
     prisma.tweet.count({ where }),
     prisma.tweet.findMany({
       where,
-      orderBy: { tweetedAt: options.order === 'asc' ? 'asc' : 'desc' },
+      orderBy,
       select: {
         id: true,
         tweetId: true,

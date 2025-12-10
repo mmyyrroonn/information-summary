@@ -21,8 +21,10 @@ export function TweetsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [tweets, setTweets] = useState<TweetRecord[]>([]);
   const [page, setPage] = useState(1);
-  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [sort, setSort] = useState<'newest' | 'oldest' | 'priority'>('newest');
   const [subscriptionId, setSubscriptionId] = useState<string | undefined>(undefined);
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,8 +36,8 @@ export function TweetsPage() {
   }, []);
 
   useEffect(() => {
-    loadTweets(page, order, subscriptionId);
-  }, [page, order, subscriptionId]);
+    loadTweets();
+  }, [page, sort, subscriptionId, startTime, endTime]);
 
   async function loadSubscriptions() {
     try {
@@ -46,14 +48,27 @@ export function TweetsPage() {
     }
   }
 
-  async function loadTweets(targetPage = page, targetOrder = order, targetSubscriptionId = subscriptionId) {
+  function toIso(value: string) {
+    if (!value) {
+      return undefined;
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return undefined;
+    }
+    return date.toISOString();
+  }
+
+  async function loadTweets() {
     setLoading(true);
     try {
       const response = await api.listTweets({
-        page: targetPage,
+        page,
         pageSize: PAGE_SIZE,
-        order: targetOrder,
-        subscriptionId: targetSubscriptionId
+        sort,
+        subscriptionId,
+        startTime: toIso(startTime),
+        endTime: toIso(endTime)
       });
       setTweets(response.items);
       setTotal(response.total);
@@ -75,7 +90,7 @@ export function TweetsPage() {
     try {
       const result = await api.analyzeTweets(pendingIds);
       setStatusMessage(`AI 已处理 ${result.insights} 条推文`);
-      await loadTweets(page, order, subscriptionId);
+      await loadTweets();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '分析失败');
     } finally {
@@ -85,15 +100,25 @@ export function TweetsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pendingCount = tweets.filter((tweet) => !tweet.insights).length;
+  const hasTimeFilter = Boolean(startTime || endTime);
+
+  function clearTimeRange() {
+    if (!hasTimeFilter) {
+      return;
+    }
+    setStartTime('');
+    setEndTime('');
+    setPage(1);
+  }
 
   return (
     <>
       {statusMessage && <p className="status">{statusMessage}</p>}
-      <section>
+      <section className="tweet-section">
         <div className="section-head">
           <div>
             <h2>推文浏览</h2>
-            <p className="hint">筛选账号、按时间排序，并查看对应的 AI 洞察。</p>
+            <p className="hint">筛选账号、按优先级或时间过滤，并查看对应的 AI 洞察。</p>
           </div>
           <div className="tweet-actions">
             <button onClick={() => loadTweets()} disabled={loading}>
@@ -125,18 +150,45 @@ export function TweetsPage() {
           </label>
 
           <label>
-            <span>时间排序</span>
+            <span>排序方式</span>
             <select
-              value={order}
+              value={sort}
               onChange={(e) => {
-                setOrder(e.target.value as 'asc' | 'desc');
+                setSort(e.target.value as 'newest' | 'oldest' | 'priority');
                 setPage(1);
               }}
             >
-              <option value="desc">最新优先</option>
-              <option value="asc">最早优先</option>
+              <option value="newest">最新优先</option>
+              <option value="oldest">最早优先</option>
+              <option value="priority">最高优先级</option>
             </select>
           </label>
+
+          <div className="tweet-range">
+            <span>时间范围</span>
+            <div className="tweet-range-inputs">
+              <input
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => {
+                  setStartTime(e.target.value);
+                  setPage(1);
+                }}
+              />
+              <span className="tweet-range-sep">至</span>
+              <input
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => {
+                  setEndTime(e.target.value);
+                  setPage(1);
+                }}
+              />
+              <button type="button" className="ghost" onClick={clearTimeRange} disabled={!hasTimeFilter}>
+                清除
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="tweet-list">
@@ -184,8 +236,12 @@ export function TweetsPage() {
           <button onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page === 1 || loading}>
             上一页
           </button>
-          <span>
-            第 {page} / {totalPages} 页 · 共 {total} 条
+          <span className="tweet-pagination-info">
+            第 {page} /{' '}
+            <button type="button" onClick={() => setPage(totalPages)} disabled={page === totalPages || loading}>
+              {totalPages}
+            </button>{' '}
+            页 · 共 {total} 条
           </span>
           <button onClick={() => hasMore && setPage((prev) => prev + 1)} disabled={!hasMore || loading}>
             下一页

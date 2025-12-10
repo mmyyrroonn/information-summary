@@ -55,8 +55,10 @@ interface ApiClient {
   listTweets: (params?: {
     page?: number;
     pageSize?: number;
-    order?: 'asc' | 'desc';
+    sort?: 'newest' | 'oldest' | 'priority';
     subscriptionId?: string;
+    startTime?: string;
+    endTime?: string;
   }) => Promise<TweetListResponse>;
   analyzeTweets: (tweetIds: string[]) => Promise<{ processed: number; insights: number }>;
 }
@@ -101,11 +103,17 @@ export const api: ApiClient = {
     if (typeof params.pageSize === 'number') {
       search.set('pageSize', String(params.pageSize));
     }
-    if (params.order) {
-      search.set('order', params.order);
+    if (params.sort) {
+      search.set('sort', params.sort);
     }
     if (params.subscriptionId) {
       search.set('subscriptionId', params.subscriptionId);
+    }
+    if (params.startTime) {
+      search.set('startTime', params.startTime);
+    }
+    if (params.endTime) {
+      search.set('endTime', params.endTime);
     }
     const query = search.toString();
     const path = query ? `/tweets?${query}` : '/tweets';
