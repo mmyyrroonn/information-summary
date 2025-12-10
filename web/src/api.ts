@@ -67,6 +67,7 @@ interface ApiClient {
   analyzeTweets: (tweetIds: string[]) => Promise<{ processed: number; insights: number }>;
   listJobs: (params?: { type?: string; status?: BackgroundJobStatus; limit?: number }) => Promise<BackgroundJobSummary[]>;
   getJob: (id: string) => Promise<BackgroundJobSummary>;
+  deleteJob: (id: string) => Promise<void>;
 }
 
 export const api: ApiClient = {
@@ -149,5 +150,6 @@ export const api: ApiClient = {
     const path = query ? `/tasks/jobs?${query}` : '/tasks/jobs';
     return request<BackgroundJobSummary[]>(path);
   },
-  getJob: (id) => request<BackgroundJobSummary>(`/tasks/jobs/${id}`)
+  getJob: (id) => request<BackgroundJobSummary>(`/tasks/jobs/${id}`),
+  deleteJob: (id) => request<null>(`/dev/jobs/${id}`, { method: 'DELETE' }).then(() => undefined)
 };

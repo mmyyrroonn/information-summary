@@ -67,3 +67,9 @@ export async function getJobById(id: string) {
   });
   return job ? serializeJob(job) : null;
 }
+
+export async function deleteJob(id: string) {
+  return prisma.backgroundJob.delete({
+    where: { id }
+  });
+}

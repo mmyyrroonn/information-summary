@@ -255,6 +255,51 @@ button.ghost {
   color: #dc2626;
 }
 
+.jobs-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.jobs-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-weight: 600;
+  color: #0f172a;
+  min-width: 220px;
+}
+
+.jobs-table-wrapper {
+  overflow-x: auto;
+}
+
+.jobs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.jobs-table th,
+.jobs-table td {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 0.6rem;
+  text-align: left;
+}
+
+.jobs-table th {
+  font-weight: 600;
+  color: #475569;
+}
+
+.jobs-error {
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .notify-toggle {
   display: flex;
   gap: 0.5rem;

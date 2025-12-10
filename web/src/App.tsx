@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { DashboardPage } from './pages/Dashboard';
 import { SubscriptionsPage } from './pages/Subscriptions';
 import { TweetsPage } from './pages/Tweets';
+import { DevJobsPage } from './pages/DevJobs';
 import './App.css';
 
+type TabKey = 'dashboard' | 'tweets' | 'subscriptions' | 'dev';
+
 function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tweets' | 'subscriptions'>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
 
   return (
     <div className="app-shell">
@@ -25,10 +28,16 @@ function App() {
           <button className={activeTab === 'subscriptions' ? 'active' : ''} onClick={() => setActiveTab('subscriptions')}>
             订阅管理
           </button>
+          <button className={activeTab === 'dev' ? 'active' : ''} onClick={() => setActiveTab('dev')}>
+            DEV 工具
+          </button>
         </nav>
       </header>
 
-      {activeTab === 'dashboard' ? <DashboardPage /> : activeTab === 'tweets' ? <TweetsPage /> : <SubscriptionsPage />}
+      {activeTab === 'dashboard' && <DashboardPage />}
+      {activeTab === 'tweets' && <TweetsPage />}
+      {activeTab === 'subscriptions' && <SubscriptionsPage />}
+      {activeTab === 'dev' && <DevJobsPage />}
     </div>
   );
 }
