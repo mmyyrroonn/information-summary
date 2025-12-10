@@ -97,7 +97,10 @@ export async function classifyTweets() {
     orderBy: { tweetedAt: 'asc' }
   });
 
+  logger.info('Loaded pending tweets for classification', { pending: tweets.length });
+
   if (!tweets.length) {
+    logger.info('No pending tweets found, skipping classification run');
     return { processed: 0, insights: 0 };
   }
 
@@ -108,9 +111,24 @@ export async function classifyTweets() {
   try {
     const batches = chunk(tweets, 6);
     let totalInsights = 0;
+    logger.info('Tweet classification run started', {
+      aiRunId: aiRun.id,
+      batches: batches.length,
+      pending: tweets.length
+    });
 
-    for (const batch of batches) {
+    for (const [batchIndex, batch] of batches.entries()) {
+      logger.info('Submitting batch for AI classification', {
+        aiRunId: aiRun.id,
+        batchIndex: batchIndex + 1,
+        batchSize: batch.length
+      });
       const batchInsights = await runTweetBatch(batch);
+      logger.info('AI classification batch completed', {
+        aiRunId: aiRun.id,
+        batchIndex: batchIndex + 1,
+        insights: batchInsights.length
+      });
       for (const insight of batchInsights) {
         const targetTweet = tweets.find((t) => t.tweetId === insight.tweetId);
         if (!targetTweet) continue;
@@ -148,7 +166,11 @@ export async function classifyTweets() {
       where: { id: aiRun.id },
       data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
     });
-
+    logger.info('Tweet classification run completed', {
+      aiRunId: aiRun.id,
+      processed: tweets.length,
+      insights: totalInsights
+    });
     return { processed: tweets.length, insights: totalInsights };
   } catch (error) {
     await prisma.aiRun.update({
@@ -219,6 +241,8 @@ function buildBatchPrompt(batch: Tweet[]) {
 }
 
 export async function generateReport(window = defaultWindow()) {
+  const windowMeta = { start: window.start.toISOString(), end: window.end.toISOString() };
+  logger.info('Report generation requested', windowMeta);
   const insights = await prisma.tweetInsight.findMany({
     where: {
       tweet: {
@@ -231,6 +255,7 @@ export async function generateReport(window = defaultWindow()) {
   });
 
   if (!insights.length) {
+    logger.info('No insights available for report generation', windowMeta);
     return null;
   }
 
@@ -286,6 +311,11 @@ export async function generateReport(window = defaultWindow()) {
     await prisma.aiRun.update({
       where: { id: aiRun.id },
       data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
+    });
+    logger.info('Report generation completed', {
+      ...windowMeta,
+      reportId: report.id,
+      insights: insights.length
     });
 
     return report;
@@ -406,7 +436,9 @@ function renderReportMarkdown(payload: ReportPayload, window: { start: Date; end
 
 export async function sendReportAndNotify(report: Report | null) {
   if (!report) return null;
+  logger.info('Dispatching report notification', { reportId: report.id });
   await sendMarkdownToTelegram(report.content);
+  logger.info('Report notification delivered', { reportId: report.id });
   return prisma.report.update({
     where: { id: report.id },
     data: { deliveredAt: new Date(), deliveryTarget: 'telegram' }
