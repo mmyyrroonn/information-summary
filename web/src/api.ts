@@ -5,7 +5,11 @@ import type {
   ReportSummary,
   FetchResult,
   TweetListResponse,
-  SubscriptionImportResult
+  SubscriptionImportResult,
+  BackgroundJobSummary,
+  BackgroundJobStatus,
+  JobEnqueueResponse,
+  ClassificationJobResponse
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
@@ -44,9 +48,9 @@ interface ApiClient {
   fetchSubscription: (id: string) => Promise<FetchResult>;
   importListMembers: (payload: { listId: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   importFollowingUsers: (payload: { screenName?: string; userId?: string; cursor?: string }) => Promise<SubscriptionImportResult>;
-  runFetchTask: () => Promise<FetchResult[]>;
-  runAnalyzeTask: () => Promise<{ processed: number; insights: number }>;
-  runReportTask: (notify: boolean) => Promise<ReportSummary | { message: string }>;
+  runFetchTask: () => Promise<JobEnqueueResponse>;
+  runAnalyzeTask: () => Promise<ClassificationJobResponse>;
+  runReportTask: (notify: boolean) => Promise<JobEnqueueResponse>;
   getNotificationConfig: () => Promise<NotificationConfig>;
   updateNotificationConfig: (payload: NotificationConfig) => Promise<NotificationConfig>;
   listReports: () => Promise<ReportSummary[]>;
@@ -61,6 +65,8 @@ interface ApiClient {
     endTime?: string;
   }) => Promise<TweetListResponse>;
   analyzeTweets: (tweetIds: string[]) => Promise<{ processed: number; insights: number }>;
+  listJobs: (params?: { type?: string; status?: BackgroundJobStatus; limit?: number }) => Promise<BackgroundJobSummary[]>;
+  getJob: (id: string) => Promise<BackgroundJobSummary>;
 }
 
 export const api: ApiClient = {
@@ -82,12 +88,16 @@ export const api: ApiClient = {
         ...(cursor ? { cursor } : {})
       })
     }),
-  runFetchTask: () => request<FetchResult[]>('/tasks/fetch', { method: 'POST' }),
-  runAnalyzeTask: () => request<{ processed: number; insights: number }>('/tasks/analyze', { method: 'POST' }),
-  runReportTask: (notify: boolean) =>
-    request<ReportSummary | { message: string }>('/tasks/report', {
+  runFetchTask: () =>
+    request<JobEnqueueResponse>('/tasks/fetch', {
       method: 'POST',
-      body: JSON.stringify({ notify })
+      body: JSON.stringify({ dedupe: true })
+    }),
+  runAnalyzeTask: () => request<ClassificationJobResponse>('/tasks/analyze', { method: 'POST' }),
+  runReportTask: (notify: boolean) =>
+    request<JobEnqueueResponse>('/tasks/report', {
+      method: 'POST',
+      body: JSON.stringify({ notify, dedupe: true })
     }),
   getNotificationConfig: () => request<NotificationConfig>('/config/notification'),
   updateNotificationConfig: (payload) =>
@@ -123,5 +133,21 @@ export const api: ApiClient = {
     request<{ processed: number; insights: number }>('/tweets/analyze', {
       method: 'POST',
       body: JSON.stringify({ tweetIds })
-    })
+    }),
+  listJobs: (params = {}) => {
+    const search = new URLSearchParams();
+    if (params.type) {
+      search.set('type', params.type);
+    }
+    if (params.status) {
+      search.set('status', params.status);
+    }
+    if (typeof params.limit === 'number') {
+      search.set('limit', String(params.limit));
+    }
+    const query = search.toString();
+    const path = query ? `/tasks/jobs?${query}` : '/tasks/jobs';
+    return request<BackgroundJobSummary[]>(path);
+  },
+  getJob: (id) => request<BackgroundJobSummary>(`/tasks/jobs/${id}`)
 };

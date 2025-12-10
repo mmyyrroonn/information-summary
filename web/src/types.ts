@@ -1,3 +1,36 @@
+export type BackgroundJobStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+
+export interface BackgroundJobSummary {
+  id: string;
+  type: string;
+  status: BackgroundJobStatus;
+  attempts: number;
+  maxAttempts: number;
+  scheduledAt: string;
+  lockedAt: string | null;
+  lockedBy: string | null;
+  completedAt: string | null;
+  lastError: string | null;
+  payload: unknown;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JobEnqueueResponse {
+  job: BackgroundJobSummary;
+  created: boolean;
+  message?: string;
+}
+
+export interface ClassificationJobResponse {
+  job?: BackgroundJobSummary;
+  created?: boolean;
+  skipped?: boolean;
+  reason?: 'none-pending' | 'below-threshold';
+  pending: number;
+  threshold?: number;
+}
+
 export interface Subscription {
   id: string;
   screenName: string;

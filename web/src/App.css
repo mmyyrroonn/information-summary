@@ -229,6 +229,32 @@ button.ghost {
   margin: 0;
 }
 
+.job-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.job-status.muted {
+  color: #94a3b8;
+}
+
+.job-status.status-pending {
+  color: #2563eb;
+}
+
+.job-status.status-running {
+  color: #1d4ed8;
+}
+
+.job-status.status-completed {
+  color: #16a34a;
+}
+
+.job-status.status-failed {
+  color: #dc2626;
+}
+
 .notify-toggle {
   display: flex;
   gap: 0.5rem;

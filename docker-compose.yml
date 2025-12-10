@@ -35,6 +35,26 @@ services:
     ports:
       - '4000:4000'
 
+  worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-information_summary}
+      RAPIDAPI_HOST: ${RAPIDAPI_HOST:-twitter-api45.p.rapidapi.com}
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
+      TG_CHAT_ID: ${TG_CHAT_ID}
+      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 3 * * *}
+      REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Asia/Shanghai}
+      BASE_WEB_URL: ${BASE_WEB_URL:-http://localhost:4173}
+    command: sh -c "npx prisma migrate deploy && node dist/worker.js"
+
   web:
     build:
       context: ./web
