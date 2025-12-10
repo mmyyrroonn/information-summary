@@ -308,26 +308,29 @@ export function SubscriptionsPage() {
         <div className="section-head">
           <h2>订阅列表</h2>
         </div>
-        <div className="list">
-          {subscriptions.length === 0 && <p className="empty">暂无订阅</p>}
-          {subscriptions.map((sub) => (
-            <div key={sub.id} className="list-item">
-              <div>
-                <p className="title">@{sub.screenName}</p>
-                {sub.displayName && <p className="subtitle">{sub.displayName}</p>}
-                {sub.lastFetchedAt && <p className="meta">上次抓取：{new Date(sub.lastFetchedAt).toLocaleString()}</p>}
+        {subscriptions.length === 0 ? (
+          <p className="empty list-empty">暂无订阅</p>
+        ) : (
+          <div className="list">
+            {subscriptions.map((sub) => (
+              <div key={sub.id} className="list-item">
+                <div>
+                  <p className="title">@{sub.screenName}</p>
+                  {sub.displayName && <p className="subtitle">{sub.displayName}</p>}
+                  {sub.lastFetchedAt && <p className="meta">上次抓取：{new Date(sub.lastFetchedAt).toLocaleString()}</p>}
+                </div>
+                <div className="item-actions">
+                  <button onClick={() => handleFetchSubscription(sub.id)} disabled={busy === `fetch-${sub.id}`}>
+                    {busy === `fetch-${sub.id}` ? '抓取中' : '抓取'}
+                  </button>
+                  <button onClick={() => handleDeleteSubscription(sub.id)} disabled={busy === `delete-${sub.id}`} className="danger">
+                    删除
+                  </button>
+                </div>
               </div>
-              <div className="item-actions">
-                <button onClick={() => handleFetchSubscription(sub.id)} disabled={busy === `fetch-${sub.id}`}>
-                  {busy === `fetch-${sub.id}` ? '抓取中' : '抓取'}
-                </button>
-                <button onClick={() => handleDeleteSubscription(sub.id)} disabled={busy === `delete-${sub.id}`} className="danger">
-                  删除
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </>
   );

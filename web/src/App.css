@@ -159,18 +159,25 @@ button.ghost {
 
 .list {
   margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.list-empty {
+  margin-top: 1.5rem;
 }
 
 .list-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
   background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  height: 100%;
 }
 
 .list-item .title {
@@ -192,6 +199,14 @@ button.ghost {
 .item-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: auto;
+}
+
+.item-actions button {
+  flex: 1;
+  min-width: 110px;
 }
 
 .task-grid {
