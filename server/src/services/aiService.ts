@@ -47,6 +47,22 @@ const MEDIUM_MAX_IMPORTANCE = 3;
 const CHAT_COMPLETION_MAX_RETRIES = 3;
 const CHAT_COMPLETION_RETRY_DELAY_MS = 2000;
 const CHAT_COMPLETION_PREVIEW_LIMIT = 2000;
+const TAG_FALLBACK_KEY = 'others';
+const TAG_DISPLAY_NAMES: Record<string, string> = {
+  airdrop: '空投 / 福利',
+  token: '代币 / 市场',
+  defi: 'DeFi',
+  security: '安全 / 风险',
+  infrastructure: '基础设施',
+  narrative: '叙事 / 主题',
+  market: '宏观 / 行情',
+  funding: '融资 / 投资',
+  community: '社区 / 生态',
+  governance: '治理',
+  policy: '政策 / 合规',
+  ecosystem: '生态升级',
+  [TAG_FALLBACK_KEY]: '其他' 
+};
 
 type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: true } }>;
 
@@ -64,6 +80,7 @@ interface ReportSectionInsight {
   summary: string;
   importance?: number;
   tags?: string[];
+  tweetUrl?: string;
 }
 
 interface ReportActionItem {
@@ -942,6 +959,155 @@ function ensureOverviewList(overview: string | string[] | undefined, totalItems:
   return list;
 }
 
+interface TagBucketItem {
+  data: ReportSectionInsight;
+  tweetedAt: number;
+  importance: number;
+}
+
+interface TagBucket {
+  key: string;
+  title: string;
+  items: TagBucketItem[];
+}
+
+function buildTagReportPayload(insights: InsightWithTweet[], window: { start: Date; end: Date }): ReportPayload {
+  const sections = buildTagSectionsFromInsights(insights);
+  const headline = `${formatDisplayDate(window.end, config.REPORT_TIMEZONE)} 分类资讯汇总`;
+  const overview = ensureOverviewList(buildTagReportOverview(sections, insights.length), insights.length);
+
+  return {
+    headline,
+    overview,
+    sections
+  };
+}
+
+function buildTagSectionsFromInsights(insights: InsightWithTweet[]): ReportSection[] {
+  const buckets = new Map<string, TagBucket>();
+
+  insights.forEach((insight) => {
+    const tagKey = pickPrimaryTag(insight.tags);
+    const bucket = ensureBucket(buckets, tagKey);
+    const sectionItem: ReportSectionInsight = {
+      tweetId: insight.tweetId,
+      summary: getInsightSummary(insight),
+      tags: insight.tags ?? [],
+      tweetUrl: resolveTweetUrl(insight.tweet)
+    };
+    if (typeof insight.importance === 'number') {
+      sectionItem.importance = insight.importance;
+    }
+    bucket.items.push({
+      data: sectionItem,
+      tweetedAt: insight.tweet.tweetedAt.getTime(),
+      importance: insight.importance ?? 0
+    });
+  });
+
+  const orderedBuckets = Array.from(buckets.values()).map((bucket) => sortBucketItems(bucket));
+  orderedBuckets.sort((a, b) => {
+    const diff = bucketPeakImportance(b) - bucketPeakImportance(a);
+    if (diff !== 0) {
+      return diff;
+    }
+    if (b.items.length !== a.items.length) {
+      return b.items.length - a.items.length;
+    }
+    return a.title.localeCompare(b.title, 'zh-Hans');
+  });
+
+  return orderedBuckets.map((bucket) => ({
+    title: bucket.title,
+    insight: describeBucket(bucket),
+    items: bucket.items.map((entry) => entry.data)
+  }));
+}
+
+function sortBucketItems(bucket: TagBucket) {
+  bucket.items.sort((a, b) => {
+    const importanceDelta = (b.importance ?? 0) - (a.importance ?? 0);
+    if (importanceDelta !== 0) {
+      return importanceDelta;
+    }
+    return b.tweetedAt - a.tweetedAt;
+  });
+  return bucket;
+}
+
+function bucketPeakImportance(bucket: TagBucket) {
+  return bucket.items.reduce((max, entry) => Math.max(max, entry.importance ?? 0), 0);
+}
+
+function describeBucket(bucket: TagBucket) {
+  const peak = bucketPeakImportance(bucket);
+  const rating = peak > 0 ? `${peak}⭐` : '暂无评分';
+  return `共 ${bucket.items.length} 条洞察，最高 ${rating}，已按重要度降序排列。`;
+}
+
+function pickPrimaryTag(tags?: string[] | null) {
+  if (!tags?.length) {
+    return TAG_FALLBACK_KEY;
+  }
+  const normalized = tags
+    .map((tag) => tag?.trim().toLowerCase())
+    .find((tag): tag is string => Boolean(tag)) ?? TAG_FALLBACK_KEY;
+  return TAG_DISPLAY_NAMES[normalized] ? normalized : TAG_FALLBACK_KEY;
+}
+
+function ensureBucket(store: Map<string, TagBucket>, key: string) {
+  const normalized = key ? key.toLowerCase() : TAG_FALLBACK_KEY;
+  const existing = store.get(normalized);
+  if (existing) {
+    return existing;
+  }
+  const bucket: TagBucket = {
+    key: normalized,
+    title: TAG_DISPLAY_NAMES[normalized] ?? normalized,
+    items: []
+  };
+  store.set(normalized, bucket);
+  return bucket;
+}
+
+function buildTagReportOverview(sections: ReportSection[], totalItems: number) {
+  const overview: string[] = [];
+  if (sections.length) {
+    const highlights = sections
+      .slice(0, 3)
+      .map((section) => `${section.title}（${section.items?.length ?? 0}）`)
+      .join('、');
+    if (highlights) {
+      overview.push(`重点分类：${highlights}`);
+    }
+  }
+  overview.push(`本次共保留 ${totalItems} 条洞察，均按标签与重要度排序，便于直接引用。`);
+  return overview;
+}
+
+function resolveTweetUrl(tweet: Tweet) {
+  if (tweet.tweetUrl?.startsWith('http')) {
+    return tweet.tweetUrl;
+  }
+  const handle = tweet.authorScreen?.replace(/^@/, '') ?? 'i/web';
+  return `https://twitter.com/${handle}/status/${tweet.tweetId}`;
+}
+
+function getInsightSummary(insight: InsightWithTweet) {
+  if (insight.summary?.trim()) {
+    return insight.summary.trim();
+  }
+  return truncateText(insight.tweet.text);
+}
+
+function truncateText(text: string, maxLength = 160) {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (compact.length <= maxLength) {
+    return compact;
+  }
+  return `${compact.slice(0, maxLength - 1)}…`;
+}
+
 export async function generateReport(window = defaultWindow()) {
   const windowMeta = { start: window.start.toISOString(), end: window.end.toISOString() };
   logger.info('Report generation requested', windowMeta);
@@ -993,13 +1159,11 @@ export async function generateReport(window = defaultWindow()) {
       return null;
     }
 
-    const condensedInsights = await summarizeSelectedInsights(selectedInsights);
-    if (!condensedInsights.length) {
-      logger.info('Chunk summarization produced no condensed insights', windowMeta);
+    const blueprint = buildTagReportPayload(selectedInsights, window);
+    if (!blueprint.sections?.length) {
+      logger.info('Tag-based report builder produced no sections', windowMeta);
       return null;
     }
-
-    const blueprint = await buildReportBlueprint(condensedInsights, window);
     const markdown = renderReportMarkdown(blueprint, window);
 
     const report = await prisma.report.create({
@@ -1022,7 +1186,7 @@ export async function generateReport(window = defaultWindow()) {
       reportId: report.id,
       insights: insights.length,
       selectedInsights: selectedInsights.length,
-      condensedEntries: condensedInsights.length
+      sections: blueprint.sections?.length ?? 0
     });
 
     return report;
@@ -1141,7 +1305,9 @@ function renderReportMarkdown(payload: ReportPayload, window: { start: Date; end
         section.items.forEach((item) => {
           const stars = item.importance ? `${item.importance}⭐ ` : '';
           const tags = item.tags?.length ? ` [${item.tags.join(', ')}]` : '';
-          lines.push(`- ${stars}${item.summary} (${item.tweetId})${tags}`);
+          const reference = item.tweetUrl ?? item.tweetId;
+          const suffix = reference ? ` (${reference})` : '';
+          lines.push(`- ${stars}${item.summary}${suffix}${tags}`);
         });
       }
       if (!section.items?.length && section.tweets?.length) {
