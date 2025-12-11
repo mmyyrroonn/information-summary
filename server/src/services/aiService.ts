@@ -34,11 +34,16 @@ const CLASSIFY_CONCURRENCY = Math.max(1, config.CLASSIFY_CONCURRENCY ?? 4);
 const CLASSIFY_MAX_RETRIES = 3;
 const CLASSIFY_RETRY_DELAY_MS = 1500;
 const REPORT_CHUNK_SIZE = 30;
-const TRIAGE_CHUNK_SIZE = 40;
+const REPORT_PROMPT_DIRECT_LIMIT = 40;
+const REPORT_PROMPT_CHUNK_SIZE = 30;
+const TRIAGE_CHUNK_SIZE = 30;
 const TRIAGE_MAX_KEEP_PER_CHUNK = 15;
 const HIGH_PRIORITY_IMPORTANCE = 4;
 const MEDIUM_MIN_IMPORTANCE = 2;
 const MEDIUM_MAX_IMPORTANCE = 3;
+const CHAT_COMPLETION_MAX_RETRIES = 3;
+const CHAT_COMPLETION_RETRY_DELAY_MS = 2000;
+const CHAT_COMPLETION_PREVIEW_LIMIT = 2000;
 
 type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: true } }>;
 
@@ -91,6 +96,19 @@ interface ReportPayload {
   }>;
   actionItems?: ReportActionItem[];
   overflow?: OverflowInsight[];
+}
+
+type ReportSection = NonNullable<ReportPayload['sections']>[number];
+
+interface ReportChunkPayload {
+  sections?: ReportSection[];
+  actionItems?: ReportActionItem[];
+  overflow?: OverflowInsight[];
+}
+
+interface ReportOverviewPayload {
+  headline: string;
+  overview: string | string[];
 }
 
 function ensureClient() {
@@ -348,6 +366,77 @@ function delay(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+type ChatCompletionRequest = Parameters<OpenAI['chat']['completions']['create']>[0];
+type ChatCompletionResponse = Awaited<ReturnType<OpenAI['chat']['completions']['create']>>;
+
+function isResponseFormatError(error: unknown) {
+  if (!error) return false;
+  const message = error instanceof Error ? error.message : String(error);
+  return message.toLowerCase().includes('response_format');
+}
+
+function extractCompletionContent(response: ChatCompletionResponse) {
+  if ('choices' in response) {
+    return response.choices?.[0]?.message?.content ?? '';
+  }
+  return '';
+}
+
+async function runStructuredCompletion<T>(
+  request: ChatCompletionRequest,
+  context?: Record<string, unknown>
+): Promise<T> {
+  const openai = ensureClient();
+  let attempt = 0;
+  let lastError: unknown = null;
+  let forceJsonFormat = !request.response_format;
+
+  while (attempt < CHAT_COMPLETION_MAX_RETRIES) {
+    attempt += 1;
+    let responsePreview: string | undefined;
+    let payload: ChatCompletionRequest = { ...request };
+    if (forceJsonFormat) {
+      payload = { ...payload, response_format: { type: 'json_object' } };
+    }
+    try {
+      const completion = await openai.chat.completions.create(payload);
+      const content = extractCompletionContent(completion);
+      responsePreview = content.slice(0, CHAT_COMPLETION_PREVIEW_LIMIT);
+      return safeJsonParse<T>(content);
+    } catch (error) {
+      if (forceJsonFormat && isResponseFormatError(error)) {
+        forceJsonFormat = false;
+        attempt -= 1;
+        logger.warn('Structured completion response_format unsupported, retrying without forced JSON', {
+          ...(context ?? {}),
+          error: error instanceof Error ? error.message : 'unknown error'
+        });
+        continue;
+      }
+      lastError = error;
+      const message = error instanceof Error ? error.message : 'unknown error';
+      const errorPayload: Record<string, unknown> = {
+        attempt,
+        maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
+        ...(context ?? {}),
+        error: message,
+        errorType: error instanceof SyntaxError ? 'json-parse' : 'api'
+      };
+      if (responsePreview) {
+        errorPayload.preview = responsePreview;
+      }
+      if (attempt >= CHAT_COMPLETION_MAX_RETRIES) {
+        logger.error('Structured completion failed', errorPayload);
+        break;
+      }
+      logger.warn('Structured completion attempt failed', errorPayload);
+      await delay(CHAT_COMPLETION_RETRY_DELAY_MS * attempt);
+    }
+  }
+
+  throw lastError ?? new Error('Structured completion failed');
+}
+
 async function runWithConcurrency<T>(items: T[], limit: number, worker: (item: T, index: number) => Promise<void>) {
   if (!items.length) {
     return;
@@ -376,7 +465,6 @@ async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
   if (!insights.length) {
     return [];
   }
-  const openai = ensureClient();
   const batches = chunk(insights, TRIAGE_CHUNK_SIZE);
   const keptIds = new Set<string>();
 
@@ -386,19 +474,22 @@ async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
       batchSize: batch.length
     });
     const prompt = buildTriagePrompt(batch, TRIAGE_MAX_KEEP_PER_CHUNK);
-    const completion = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      temperature: 0,
-      messages: [
-        {
-          role: 'system',
-          content: '你是资讯编辑，需要快速筛选重要推文，按指引只选择最值得保留的条目。'
-        },
-        { role: 'user', content: prompt }
-      ]
-    });
-    const content = completion.choices?.[0]?.message?.content ?? '{}';
-    const parsed = safeJsonParse<{ decisions?: Array<{ tweetId: string; include: boolean }> }>(content);
+    const parsed = await runStructuredCompletion<{
+      decisions?: Array<{ tweetId: string; include: boolean }>;
+    }>(
+      {
+        model: 'deepseek-chat',
+        temperature: 0,
+        messages: [
+          {
+            role: 'system',
+            content: '你是资讯编辑，需要快速筛选重要推文，按指引只选择最值得保留的条目。'
+          },
+          { role: 'user', content: prompt }
+        ]
+      },
+      { stage: 'mid-triage', batchIndex: batchIndex + 1, batchSize: batch.length }
+    );
     const includes = (parsed.decisions ?? []).filter((decision) => decision.include);
     includes.slice(0, TRIAGE_MAX_KEEP_PER_CHUNK).forEach((decision) => keptIds.add(decision.tweetId));
   }
@@ -412,7 +503,8 @@ function buildTriagePrompt(batch: InsightWithTweet[], maxKeep: number) {
     rules: [
       `每个 chunk 最多保留 ${maxKeep} 条，优先 actionable、具有明确行动价值或重大信号的内容。`,
       '如果内容重复、缺乏上下文或影响较小，应标记 include=false。',
-      '只能使用已有的 summary / tags 做判断，不要臆测新信息。'
+      '只能使用已有的 summary / tags 做判断，不要臆测新信息。',
+      '务必以 json 对象输出，禁止添加额外文字说明。'
     ],
     outputSchema: '{"decisions":[{"tweetId":"id","include":true|false,"reason":"简短原因"}]}',
     candidates: batch.map((insight) => ({
@@ -431,7 +523,6 @@ async function summarizeSelectedInsights(insights: InsightWithTweet[]) {
   if (!insights.length) {
     return [];
   }
-  const openai = ensureClient();
   const batches = chunk(insights, REPORT_CHUNK_SIZE);
   const condensed: CondensedInsight[] = [];
 
@@ -441,19 +532,20 @@ async function summarizeSelectedInsights(insights: InsightWithTweet[]) {
       batchSize: batch.length
     });
     const prompt = buildChunkSummaryPrompt(batch);
-    const completion = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      temperature: 0.2,
-      messages: [
-        {
-          role: 'system',
-          content: '你是资深分析官，需重新审视原文并输出精炼洞察，确保每条推文都被覆盖。'
-        },
-        { role: 'user', content: prompt }
-      ]
-    });
-    const content = completion.choices?.[0]?.message?.content ?? '{}';
-    const parsed = safeJsonParse<{ items?: CondensedInsight[] }>(content);
+    const parsed = await runStructuredCompletion<{ items?: CondensedInsight[] }>(
+      {
+        model: 'deepseek-chat',
+        temperature: 0.2,
+        messages: [
+          {
+            role: 'system',
+            content: '你是资深分析官，需重新审视原文并输出精炼洞察，确保每条推文都被覆盖。'
+          },
+          { role: 'user', content: prompt }
+        ]
+      },
+      { stage: 'chunk-summary', batchIndex: batchIndex + 1, batchSize: batch.length }
+    );
     const normalized = normalizeCondensedItems(parsed.items ?? [], batch);
     condensed.push(...normalized);
   }
@@ -466,7 +558,8 @@ function buildChunkSummaryPrompt(batch: InsightWithTweet[]) {
     instructions: [
       '逐条阅读原文 text，结合已有 summary/tags，生成更精炼的一句话洞察。',
       '如果可以执行，请在 suggestions 中给出清晰动作；无法判断则省略。',
-      '输出必须覆盖所有输入 tweetId，不得遗漏或合并。'
+      '输出必须覆盖所有输入 tweetId，不得遗漏或合并。',
+      '最终答案必须是 json 对象，不要写自然语言描述。'
     ],
     schema:
       '{"items":[{"tweetId":"原始 id","summary":"50 字以内重点","importance":1-5,"tags":["airdrop"],"suggestions":"可选"}]}',
@@ -552,6 +645,211 @@ function fallbackCondensedInsight(insight: InsightWithTweet): CondensedInsight {
   return fallback;
 }
 
+function estimateReportMaxTokens(insightCount: number) {
+  const base = 1500;
+  const perItem = 55;
+  const estimate = base + insightCount * perItem;
+  // return Math.min(8000, Math.max(2000, estimate));
+  return 8000;
+}
+
+function shouldChunkReportPrompt(insightCount: number) {
+  return insightCount > REPORT_PROMPT_DIRECT_LIMIT;
+}
+
+async function buildReportBlueprint(items: CondensedInsight[], window: { start: Date; end: Date }) {
+  if (!shouldChunkReportPrompt(items.length)) {
+    return buildSinglePromptBlueprint(items, window);
+  }
+  logger.info('Report blueprint exceeds direct prompt limit, enabling chunked assembly', {
+    insights: items.length,
+    chunkSize: REPORT_PROMPT_CHUNK_SIZE
+  });
+  return buildChunkedReportBlueprint(items, window);
+}
+
+async function buildSinglePromptBlueprint(items: CondensedInsight[], window: { start: Date; end: Date }) {
+  const prompt = buildReportPrompt(items, window);
+  const reportMaxTokens = estimateReportMaxTokens(items.length);
+  return runStructuredCompletion<ReportPayload>(
+    {
+      model: 'deepseek-chat',
+      temperature: 0.4,
+      max_tokens: reportMaxTokens,
+      messages: [
+        {
+          role: 'system',
+          content: '你是一名专业每日情报整理师，只能输出结构化 JSON，不写段落文章。'
+        },
+        { role: 'user', content: prompt }
+      ]
+    },
+    {
+      stage: 'report-outline',
+      insights: items.length,
+      maxTokens: reportMaxTokens
+    }
+  );
+}
+
+async function buildChunkedReportBlueprint(items: CondensedInsight[], window: { start: Date; end: Date }) {
+  const batches = chunk(items, REPORT_PROMPT_CHUNK_SIZE);
+  const sectionsMap = new Map<string, ReportSection>();
+  const sectionOrder: string[] = [];
+  const actionItems: ReportActionItem[] = [];
+  const overflow: OverflowInsight[] = [];
+
+  for (const [index, batch] of batches.entries()) {
+    logger.info('Submitting chunk for partial report outline', {
+      chunkIndex: index + 1,
+      chunkSize: batch.length,
+      totalChunks: batches.length
+    });
+    const prompt = buildChunkedReportPrompt(batch, index + 1, batches.length);
+    const chunkMaxTokens = estimateReportMaxTokens(batch.length);
+    const partial = await runStructuredCompletion<ReportChunkPayload>(
+      {
+        model: 'deepseek-chat',
+        temperature: 0.3,
+        max_tokens: chunkMaxTokens,
+        messages: [
+          {
+            role: 'system',
+            content: '你是专业信息编辑，需为本 chunk 的推文输出结构化 sections，不写段落。'
+          },
+          { role: 'user', content: prompt }
+        ]
+      },
+      {
+        stage: 'report-chunk',
+        chunkIndex: index + 1,
+        totalChunks: batches.length,
+        chunkSize: batch.length,
+        maxTokens: chunkMaxTokens
+      }
+    );
+    mergeReportSections(sectionsMap, sectionOrder, partial.sections);
+    if (partial.actionItems?.length) {
+      actionItems.push(...partial.actionItems);
+    }
+    if (partial.overflow?.length) {
+      overflow.push(...partial.overflow);
+    }
+  }
+
+  const mergedSections = sectionOrder
+    .map((key) => sectionsMap.get(key))
+    .filter((section): section is ReportSection => Boolean(section));
+  const overviewPayload = await buildReportOverviewFromSections(mergedSections, items.length, window);
+  const normalizedOverview = ensureOverviewList(overviewPayload.overview, items.length);
+
+  return {
+    headline: overviewPayload.headline,
+    overview: normalizedOverview,
+    sections: mergedSections,
+    actionItems,
+    overflow
+  };
+}
+
+async function buildReportOverviewFromSections(
+  sections: ReportSection[] | undefined,
+  totalItems: number,
+  window: { start: Date; end: Date }
+) {
+  const prompt = buildReportOverviewPrompt(sections ?? [], totalItems, window);
+  return runStructuredCompletion<ReportOverviewPayload>(
+    {
+      model: 'deepseek-chat',
+      temperature: 0.3,
+      max_tokens: 800,
+      messages: [
+        {
+          role: 'system',
+          content: '你是资深主编，需要基于已完成的 sections 输出最终 headline 与 overview。'
+        },
+        { role: 'user', content: prompt }
+      ]
+    },
+    { stage: 'report-overview', sections: sections?.length ?? 0, totalItems }
+  );
+}
+
+function mergeReportSections(sectionsMap: Map<string, ReportSection>, order: string[], incoming?: ReportSection[]) {
+  if (!incoming?.length) {
+    return;
+  }
+  incoming.forEach((section) => {
+    const title = section.title?.trim();
+    if (!title) {
+      return;
+    }
+    const key = title.toLowerCase();
+    const existing = sectionsMap.get(key);
+    if (existing) {
+      existing.items = mergeSectionItems(existing.items ?? [], section.items ?? []);
+      existing.tweets = mergeTweetRefs(existing.tweets ?? [], section.tweets ?? []);
+      if (!existing.insight && section.insight) {
+        existing.insight = section.insight;
+      }
+      return;
+    }
+    const stored: ReportSection = { title: section.title };
+    if (section.tweets?.length) {
+      stored.tweets = [...section.tweets];
+    }
+    if (section.items?.length) {
+      stored.items = [...section.items];
+    }
+    if (section.insight) {
+      stored.insight = section.insight;
+    }
+    sectionsMap.set(key, stored);
+    order.push(key);
+  });
+}
+
+function mergeSectionItems(target: ReportSectionInsight[], incoming: ReportSectionInsight[]) {
+  if (!incoming.length) {
+    return target;
+  }
+  const seen = new Set(target.map((item) => item.tweetId));
+  incoming.forEach((item) => {
+    if (!item.tweetId || seen.has(item.tweetId)) {
+      return;
+    }
+    target.push(item);
+    seen.add(item.tweetId);
+  });
+  return target;
+}
+
+function mergeTweetRefs(target: string[], incoming: string[]) {
+  if (!incoming.length) {
+    return target;
+  }
+  const seen = new Set(target);
+  incoming.forEach((tweet) => {
+    if (!seen.has(tweet)) {
+      target.push(tweet);
+      seen.add(tweet);
+    }
+  });
+  return target;
+}
+
+function ensureOverviewList(overview: string | string[] | undefined, totalItems: number) {
+  const list = Array.isArray(overview) ? overview.filter(Boolean) : overview ? [overview] : [];
+  if (!list.length) {
+    list.push('市场依旧多主题并行，需聚焦本日报告列出的重点板块。');
+  }
+  const totalBullet = `本次共处理 ${totalItems} 条洞察，并全部放入 sections 或 overflow 中。`;
+  if (!list.some((entry) => entry.includes(`${totalItems}`))) {
+    list.push(totalBullet);
+  }
+  return list;
+}
+
 export async function generateReport(window = defaultWindow()) {
   const windowMeta = { start: window.start.toISOString(), end: window.end.toISOString() };
   logger.info('Report generation requested', windowMeta);
@@ -571,7 +869,6 @@ export async function generateReport(window = defaultWindow()) {
     return null;
   }
 
-  const openai = ensureClient();
   const aiRun = await prisma.aiRun.create({
     data: { kind: AiRunKind.REPORT_SUMMARY, status: AiRunStatus.RUNNING }
   });
@@ -610,31 +907,16 @@ export async function generateReport(window = defaultWindow()) {
       return null;
     }
 
-    const prompt = buildReportPrompt(condensedInsights, window);
-
-    const completion = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      temperature: 0.4,
-      messages: [
-        {
-          role: 'system',
-          content: '你是一名专业每日情报整理师，只能输出结构化 JSON，不写段落文章。'
-        },
-        { role: 'user', content: prompt }
-      ]
-    });
-
-    const content = completion.choices?.[0]?.message?.content ?? '{}';
-    const parsed = safeJsonParse<ReportPayload>(content);
-    const markdown = renderReportMarkdown(parsed, window);
+    const blueprint = await buildReportBlueprint(condensedInsights, window);
+    const markdown = renderReportMarkdown(blueprint, window);
 
     const report = await prisma.report.create({
       data: {
         periodStart: window.start,
         periodEnd: window.end,
-        headline: parsed.headline,
+        headline: blueprint.headline,
         content: markdown,
-        outline: parsed as unknown as Prisma.JsonObject,
+        outline: blueprint as unknown as Prisma.JsonObject,
         aiRunId: aiRun.id
       }
     });
@@ -673,7 +955,7 @@ function buildReportPrompt(items: CondensedInsight[], window: { start: Date; end
       totalItems: items.length
     },
     instructions:
-      '根据这些已精炼的推文洞察生成「每日价值信息 JSON」，保持结构化呈现并确保所有条目都被引用。',
+      '根据这些已精炼的推文洞察生成「每日价值信息 JSON」，保持结构化呈现并确保所有条目都被引用，输出必须严格为 json 格式。',
     schema:
       '{"headline":"总标题","overview":["精炼 bullet"],"sections":[{"title":"主题","insight":"一句话总结","tweets":["tweet url 或 id"],"items":[{"tweetId":"原始 tweet id","summary":"一句话洞察","importance":1-5,"tags":["airdrop"]}]}],"actionItems":[{"description":"需要执行的事项","tweetId":"可选引用"}],"overflow":[{"tweetId":"仍未聚合的推文","summary":"一句话说明"}]}',
     reminders: [
@@ -687,6 +969,60 @@ function buildReportPrompt(items: CondensedInsight[], window: { start: Date; end
     insights: items
   };
   return JSON.stringify(template, null, 2);
+}
+
+function buildChunkedReportPrompt(items: CondensedInsight[], chunkIndex: number, totalChunks: number) {
+  const template = {
+    chunk: {
+      index: chunkIndex,
+      total: totalChunks
+    },
+    instructions: [
+      '你负责本 chunk 的洞察整理，只处理传入的数据。',
+      '将内容按主题聚合为 sections，每条洞察必须进入 section.items 或 overflow。',
+      '每个 section 需要 insight、tweets（url 或 id）以及完整的 items 数组。',
+      '若存在具体执行步骤，写入 actionItems，并引用对应 tweetId。',
+      '不要生成 headline 或 overview，只返回 sections/actionItems/overflow，输出严格 JSON。'
+    ],
+    schema:
+      '{"sections":[{"title":"主题","insight":"一句话总结","tweets":["引用"],"items":[{"tweetId":"原始 tweet id","summary":"一句话洞察","importance":1-5,"tags":["airdrop"]}]}],"actionItems":[{"description":"需要执行的事项","tweetId":"引用"}],"overflow":[{"tweetId":"仍未聚合的推文","summary":"一句话说明"}]}',
+    insights: items
+  };
+  return JSON.stringify(template, null, 2);
+}
+
+function buildReportOverviewPrompt(sections: ReportSection[], totalItems: number, window: { start: Date; end: Date }) {
+  const template = {
+    window,
+    meta: { totalItems },
+    instructions: [
+      '基于这些 sections 信息生成最终 headline 与 overview（2-4 条 bullet）。',
+      'overview 需覆盖主要趋势、关键事件，以及一条说明 meta.totalItems 的 bullet。',
+      '不要改写 sections，本步骤只输出 headline/overview，保持 JSON。'
+    ],
+    schema: '{"headline":"今日标题","overview":["bullet"]}',
+    sections: (sections ?? []).map((section) => ({
+      title: section.title,
+      insight: section.insight ?? '',
+      itemCount: section.items?.length ?? 0,
+      sampleTags: collectSectionTags(section.items ?? [])
+    }))
+  };
+  return JSON.stringify(template, null, 2);
+}
+
+function collectSectionTags(items: ReportSectionInsight[]) {
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  items.forEach((item) => {
+    (item.tags ?? []).forEach((tag) => {
+      if (!seen.has(tag)) {
+        seen.add(tag);
+        tags.push(tag);
+      }
+    });
+  });
+  return tags.slice(0, 5);
 }
 
 function renderReportMarkdown(payload: ReportPayload, window: { start: Date; end: Date }) {
