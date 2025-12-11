@@ -18,6 +18,8 @@ function registerFetchJob() {
   }
 
   cron.schedule(schedule, () => {
+    const triggeredAt = new Date();
+    logger.info('Fetch cron triggered', { schedule, triggeredAt: triggeredAt.toISOString() });
     void enqueueFetchJob();
   });
 
@@ -32,6 +34,8 @@ function registerClassifyJob() {
   }
 
   cron.schedule(schedule, () => {
+    const triggeredAt = new Date();
+    logger.info('Classify cron triggered', { schedule, triggeredAt: triggeredAt.toISOString() });
     void requestClassificationRun('cron', { force: true });
   });
 
@@ -46,6 +50,8 @@ function registerReportJob() {
   }
 
   cron.schedule(schedule, () => {
+    const triggeredAt = new Date();
+    logger.info('Report cron triggered', { schedule, triggeredAt: triggeredAt.toISOString() });
     void enqueueReportJob();
   });
 
@@ -59,9 +65,17 @@ async function enqueueFetchJob() {
     { dedupe: true }
   );
   if (created) {
-    logger.info('Fetch job enqueued', { jobId: job.id });
+    logger.info('Fetch job enqueued', {
+      jobId: job.id,
+      scheduledAt: job.scheduledAt.toISOString(),
+      createdAt: job.createdAt.toISOString()
+    });
   } else {
-    logger.warn('Fetch job already active, skip enqueue', { jobId: job.id });
+    logger.warn('Fetch job already active, skip enqueue', {
+      jobId: job.id,
+      scheduledAt: job.scheduledAt.toISOString(),
+      status: job.status
+    });
   }
 }
 
@@ -72,8 +86,16 @@ async function enqueueReportJob() {
     { dedupe: true }
   );
   if (created) {
-    logger.info('Report job enqueued', { jobId: job.id });
+    logger.info('Report job enqueued', {
+      jobId: job.id,
+      scheduledAt: job.scheduledAt.toISOString(),
+      createdAt: job.createdAt.toISOString()
+    });
   } else {
-    logger.warn('Report job already active, skip enqueue', { jobId: job.id });
+    logger.warn('Report job already active, skip enqueue', {
+      jobId: job.id,
+      scheduledAt: job.scheduledAt.toISOString(),
+      status: job.status
+    });
   }
 }

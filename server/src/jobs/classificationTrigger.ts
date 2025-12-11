@@ -27,13 +27,21 @@ export async function requestClassificationRun(
     typeof options?.pendingCount === 'number' ? options.pendingCount : await countPendingTweets();
 
   if (pending === 0) {
-    logger.info('No pending tweets for classification', { trigger });
+    logger.info('No pending tweets for classification', {
+      trigger,
+      checkedAt: new Date().toISOString()
+    });
     return { skipped: true, reason: 'none-pending', pending };
   }
 
   const threshold = options?.minPending ?? config.CLASSIFY_MIN_TWEETS;
   if (!options?.force && pending < threshold) {
-    logger.info('Pending tweets below threshold, waiting', { trigger, pending, threshold });
+    logger.info('Pending tweets below threshold, waiting', {
+      trigger,
+      pending,
+      threshold,
+      checkedAt: new Date().toISOString()
+    });
     return { skipped: true, reason: 'below-threshold', pending, threshold };
   }
 
@@ -47,6 +55,24 @@ export async function requestClassificationRun(
     { dedupe: true }
   );
 
-  logger.info('Classification job enqueued', { trigger, pending, created });
+  if (created) {
+    logger.info('Classification job enqueued', {
+      trigger,
+      pending,
+      created,
+      jobId: job.id,
+      scheduledAt: job.scheduledAt.toISOString(),
+      createdAt: job.createdAt.toISOString()
+    });
+  } else {
+    logger.warn('Classification job already active', {
+      trigger,
+      pending,
+      created,
+      jobId: job.id,
+      status: job.status,
+      scheduledAt: job.scheduledAt.toISOString()
+    });
+  }
   return { job, created, skipped: false, pending };
 }

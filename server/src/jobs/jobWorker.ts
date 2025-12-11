@@ -20,17 +20,43 @@ export async function startJobWorker() {
       continue;
     }
 
+    const jobStartTime = Date.now();
+    const scheduledMs = job.scheduledAt ? job.scheduledAt.getTime() : null;
+    const createdMs = job.createdAt ? job.createdAt.getTime() : null;
+    const queueDelayMs = scheduledMs ? jobStartTime - scheduledMs : null;
+    const sinceCreationMs = createdMs ? jobStartTime - createdMs : null;
+
     logger.info('Processing background job', {
       jobId: job.id,
       type: job.type,
-      attempt: job.attempts
+      attempt: job.attempts,
+      scheduledAt: job.scheduledAt?.toISOString(),
+      createdAt: job.createdAt?.toISOString(),
+      lockedAt: job.lockedAt?.toISOString(),
+      startedAt: new Date(jobStartTime).toISOString(),
+      queueDelayMs,
+      sinceCreationMs
     });
 
     try {
       await handleJob(job);
       await markJobComplete(job.id);
-      logger.info('Background job completed', { jobId: job.id, type: job.type });
+      const completedAt = Date.now();
+      logger.info('Background job completed', {
+        jobId: job.id,
+        type: job.type,
+        completedAt: new Date(completedAt).toISOString(),
+        durationMs: completedAt - jobStartTime
+      });
     } catch (error) {
+      const failedAt = Date.now();
+      logger.error('Background job execution failed', {
+        jobId: job.id,
+        type: job.type,
+        failedAt: new Date(failedAt).toISOString(),
+        durationMs: failedAt - jobStartTime,
+        error
+      });
       await markJobFailed(job, error);
     }
   }
