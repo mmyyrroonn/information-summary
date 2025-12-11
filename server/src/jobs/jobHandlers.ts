@@ -1,9 +1,8 @@
 import { logger } from '../logger';
 import { config } from '../config';
 import { fetchAllSubscriptions } from '../services/ingestService';
-import { classifyTweets, countPendingTweets, generateReport, sendReportAndNotify } from '../services/aiService';
+import { classifyTweets, generateReport, sendReportAndNotify } from '../services/aiService';
 import { JobPayloadMap, QueuedJob } from './jobQueue';
-import { requestClassificationRun } from './classificationTrigger';
 
 export async function handleFetchSubscriptionsJob(payload: JobPayloadMap['fetch-subscriptions']) {
   const batchSize = Math.max(1, payload.limit ?? config.FETCH_BATCH_SIZE);
@@ -21,8 +20,6 @@ export async function handleFetchSubscriptionsJob(payload: JobPayloadMap['fetch-
     inserted,
     skipped: skipped.length
   });
-  const pending = await countPendingTweets();
-  await requestClassificationRun('fetch', { pendingCount: pending });
 }
 
 export async function handleClassifyTweetsJob(payload: JobPayloadMap['classify-tweets']) {

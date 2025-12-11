@@ -28,7 +28,9 @@ const CLASSIFY_ALLOWED_TAGS = [
 ];
 
 const CLASSIFY_BATCH_SIZE = 6;
-const CLASSIFY_CONCURRENCY = Math.max(1, config.CLASSIFY_CONCURRENCY ?? 2);
+const CLASSIFY_MAX_BATCHES = 100;
+const CLASSIFY_MAX_TWEETS = 600;
+const CLASSIFY_CONCURRENCY = Math.max(1, config.CLASSIFY_CONCURRENCY ?? 4);
 const CLASSIFY_MAX_RETRIES = 3;
 const CLASSIFY_RETRY_DELAY_MS = 1500;
 const REPORT_CHUNK_SIZE = 30;
@@ -164,13 +166,22 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
   });
 
   try {
-    const batches = chunk(tweets, CLASSIFY_BATCH_SIZE);
-    const tweetMap = new Map(tweets.map((tweet) => [tweet.tweetId, tweet]));
+    const limitedTweets = tweets.slice(0, CLASSIFY_MAX_TWEETS);
+    const chunkedTweets = chunk(limitedTweets, CLASSIFY_BATCH_SIZE);
+    const batches =
+      CLASSIFY_MAX_BATCHES > 0 ? chunkedTweets.slice(0, CLASSIFY_MAX_BATCHES) : chunkedTweets;
+    const targetTweets = batches.reduce<Tweet[]>((acc, batch) => {
+      acc.push(...batch);
+      return acc;
+    }, []);
+    const tweetMap = new Map(targetTweets.map((tweet) => [tweet.tweetId, tweet]));
     let totalInsights = 0;
     logger.info('Tweet classification run started', {
       aiRunId: aiRun.id,
       batches: batches.length,
+      processing: targetTweets.length,
       pending: tweets.length,
+      limited: tweets.length > targetTweets.length,
       ...context
     });
 
@@ -225,11 +236,11 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
     });
     logger.info('Tweet classification run completed', {
       aiRunId: aiRun.id,
-      processed: tweets.length,
+      processed: targetTweets.length,
       insights: totalInsights,
       ...context
     });
-    return { processed: tweets.length, insights: totalInsights };
+    return { processed: targetTweets.length, insights: totalInsights };
   } catch (error) {
     await prisma.aiRun.update({
       where: { id: aiRun.id },
