@@ -5,7 +5,7 @@ import { config } from '../config';
 import { logger } from '../logger';
 import { chunk } from '../utils/chunk';
 import { safeJsonParse } from '../utils/json';
-import { endOfDay, formatDisplayDate, startOfDay } from '../utils/time';
+import { formatDisplayDate, withTz } from '../utils/time';
 import { sendMarkdownToTelegram } from './notificationService';
 
 const client = config.DEEPSEEK_API_KEY
@@ -99,10 +99,10 @@ function ensureClient() {
 }
 
 function defaultWindow() {
-  const now = new Date();
+  const now = withTz(new Date(), config.REPORT_TIMEZONE);
   return {
-    start: startOfDay(now, config.REPORT_TIMEZONE).toDate(),
-    end: endOfDay(now, config.REPORT_TIMEZONE).toDate()
+    start: now.subtract(24, 'hour').toDate(),
+    end: now.toDate()
   };
 }
 
