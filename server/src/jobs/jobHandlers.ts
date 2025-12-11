@@ -65,32 +65,36 @@ export async function handleReportPipelineJob(job: QueuedJob<'report-pipeline'>)
     startedAt: new Date(startedAt).toISOString()
   });
   try {
-    await withAiProcessingLock(`job:${job.id}`, async () => {
-      const report = await generateReport();
-      if (!report) {
-        logger.info('No report generated for the current window', {
-          checkedAt: new Date().toISOString(),
-          durationMs: Date.now() - startedAt
-        });
-        return;
-      }
-      if (shouldNotify) {
-        await sendReportAndNotify(report);
-        const completedAt = Date.now();
-        logger.info('Report pipeline completed with notification', {
-          reportId: report.id,
-          completedAt: new Date(completedAt).toISOString(),
-          durationMs: completedAt - startedAt
-        });
-      } else {
-        const completedAt = Date.now();
-        logger.info('Report generated without notification', {
-          reportId: report.id,
-          completedAt: new Date(completedAt).toISOString(),
-          durationMs: completedAt - startedAt
-        });
-      }
-    });
+    await withAiProcessingLock(
+      `job:${job.id}`,
+      async () => {
+        const report = await generateReport();
+        if (!report) {
+          logger.info('No report generated for the current window', {
+            checkedAt: new Date().toISOString(),
+            durationMs: Date.now() - startedAt
+          });
+          return;
+        }
+        if (shouldNotify) {
+          await sendReportAndNotify(report);
+          const completedAt = Date.now();
+          logger.info('Report pipeline completed with notification', {
+            reportId: report.id,
+            completedAt: new Date(completedAt).toISOString(),
+            durationMs: completedAt - startedAt
+          });
+        } else {
+          const completedAt = Date.now();
+          logger.info('Report generated without notification', {
+            reportId: report.id,
+            completedAt: new Date(completedAt).toISOString(),
+            durationMs: completedAt - startedAt
+          });
+        }
+      },
+      { scope: 'report' }
+    );
   } catch (error) {
     logger.error('Report pipeline failed', error);
     throw error;
