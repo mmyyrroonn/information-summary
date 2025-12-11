@@ -53,6 +53,8 @@ export async function listTweets(options: ListTweetsOptions) {
         tweetedAt: true,
         createdAt: true,
         processedAt: true,
+        abandonedAt: true,
+        abandonReason: true,
         insights: {
           select: {
             verdict: true,

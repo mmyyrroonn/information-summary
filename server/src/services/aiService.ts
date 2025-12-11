@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import OpenAI from 'openai';
 import { AiRunKind, AiRunStatus, Prisma, Report, Tweet } from '@prisma/client';
 import { prisma } from '../db';
@@ -7,6 +8,8 @@ import { chunk } from '../utils/chunk';
 import { safeJsonParse } from '../utils/json';
 import { formatDisplayDate, withTz } from '../utils/time';
 import { sendMarkdownToTelegram } from './notificationService';
+import { withAiProcessingLock } from './lockService';
+import { TweetBatchFailedError, TweetBatchFailureMeta, TweetBatchFailureReason } from '../errors';
 
 const client = config.DEEPSEEK_API_KEY
   ? new OpenAI({ baseURL: 'https://api.deepseek.com', apiKey: config.DEEPSEEK_API_KEY })
@@ -111,6 +114,10 @@ interface ReportOverviewPayload {
   overview: string | string[];
 }
 
+interface ClassificationOptions {
+  lockHolderId?: string;
+}
+
 function ensureClient() {
   if (!client) {
     throw new Error('DEEPSEEK_API_KEY missing, cannot call AI');
@@ -129,53 +136,87 @@ function defaultWindow() {
 export async function countPendingTweets() {
   return prisma.tweet.count({
     where: {
-      insights: null
+      insights: null,
+      abandonedAt: null
     }
   });
 }
 
-export async function classifyTweets() {
-  const tweets = await prisma.tweet.findMany({
-    where: {
-      insights: null
-    },
-    orderBy: { tweetedAt: 'asc' }
+export async function classifyTweets(options?: ClassificationOptions) {
+  return withAiProcessingLock(options?.lockHolderId ?? `classify:${randomUUID()}`, async () => {
+    const tweets = await prisma.tweet.findMany({
+      where: {
+        insights: null,
+        abandonedAt: null
+      },
+      orderBy: { tweetedAt: 'asc' }
+    });
+
+    logger.info('Loaded pending tweets for classification', { pending: tweets.length });
+
+    if (!tweets.length) {
+      logger.info('No pending tweets found, skipping classification run');
+      return { processed: 0, insights: 0 };
+    }
+
+    return runTweetClassification(tweets, { mode: 'pending' });
   });
-
-  logger.info('Loaded pending tweets for classification', { pending: tweets.length });
-
-  if (!tweets.length) {
-    logger.info('No pending tweets found, skipping classification run');
-    return { processed: 0, insights: 0 };
-  }
-
-  return runTweetClassification(tweets, { mode: 'pending' });
 }
 
-export async function classifyTweetsByIds(tweetIds: string[]) {
+export async function classifyTweetsByIds(tweetIds: string[], options?: ClassificationOptions) {
   if (!tweetIds.length) {
     return { processed: 0, insights: 0 };
   }
 
-  const tweets = await prisma.tweet.findMany({
-    where: {
-      id: { in: tweetIds },
-      insights: null
-    },
-    orderBy: { tweetedAt: 'asc' }
-  });
+  return withAiProcessingLock(options?.lockHolderId ?? `manual:${randomUUID()}`, async () => {
+    const tweets = await prisma.tweet.findMany({
+      where: {
+        id: { in: tweetIds },
+        insights: null,
+        abandonedAt: null
+      },
+      orderBy: { tweetedAt: 'asc' }
+    });
 
-  logger.info('Loaded targeted tweets for classification', {
-    requested: tweetIds.length,
-    pending: tweets.length
-  });
+    logger.info('Loaded targeted tweets for classification', {
+      requested: tweetIds.length,
+      pending: tweets.length
+    });
 
+    if (!tweets.length) {
+      logger.info('No eligible tweets found for targeted classification');
+      return { processed: 0, insights: 0 };
+    }
+
+    return runTweetClassification(tweets, { mode: 'targeted' });
+  });
+}
+
+async function abandonTweetBatch(
+  tweets: Tweet[],
+  reason: TweetBatchFailureReason,
+  context?: Record<string, unknown>
+) {
   if (!tweets.length) {
-    logger.info('No eligible tweets found for targeted classification');
-    return { processed: 0, insights: 0 };
+    return;
   }
-
-  return runTweetClassification(tweets, { mode: 'targeted' });
+  const now = new Date();
+  await prisma.tweet.updateMany({
+    where: {
+      id: {
+        in: tweets.map((tweet) => tweet.id)
+      }
+    },
+    data: {
+      abandonedAt: now,
+      abandonReason: reason
+    }
+  });
+  logger.warn('Marked tweets as abandoned after AI failure', {
+    reason,
+    tweetIds: tweets.map((tweet) => tweet.tweetId),
+    ...(context ?? {})
+  });
 }
 
 async function runTweetClassification(tweets: Tweet[], context: Record<string, unknown> = {}) {
@@ -209,12 +250,31 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
         batchIndex: batchIndex + 1,
         batchSize: batch.length
       });
-      const batchInsights = await runTweetBatchWithRetry(batch, batchIndex);
-      logger.info('AI classification batch completed', {
-        aiRunId: aiRun.id,
-        batchIndex: batchIndex + 1,
-        insights: batchInsights.length
-      });
+      let batchInsights: TweetInsightPayload[] = [];
+      try {
+        batchInsights = await runTweetBatchWithRetry(batch, batchIndex);
+        logger.info('AI classification batch completed', {
+          aiRunId: aiRun.id,
+          batchIndex: batchIndex + 1,
+          insights: batchInsights.length
+        });
+      } catch (error) {
+        if (error instanceof TweetBatchFailedError) {
+          logger.error('AI classification batch abandoned', {
+            aiRunId: aiRun.id,
+            batchIndex: batchIndex + 1,
+            reason: error.reason,
+            attempts: error.attempts,
+            lastError: error.lastErrorMessage
+          });
+          await abandonTweetBatch(batch, error.reason, {
+            aiRunId: aiRun.id,
+            batchIndex: batchIndex + 1
+          });
+          return;
+        }
+        throw error;
+      }
       for (const insight of batchInsights) {
         const targetTweet = tweetMap.get(insight.tweetId);
         if (!targetTweet) continue;
@@ -298,34 +358,66 @@ async function runTweetBatch(batch: Tweet[]): Promise<TweetInsightPayload[]> {
 
 async function runTweetBatchWithRetry(batch: Tweet[], batchIndex: number) {
   let attempt = 0;
-  let lastError: unknown = null;
+  let lastFailure: { reason: TweetBatchFailureReason; message: string } | null = null;
   while (attempt < CLASSIFY_MAX_RETRIES) {
     attempt += 1;
     try {
       return await runTweetBatch(batch);
     } catch (error) {
-      lastError = error;
-      const message = error instanceof Error ? error.message : 'unknown error';
-      if (attempt >= CLASSIFY_MAX_RETRIES) {
-        logger.error('AI classification batch failed after retries', {
-          batchIndex: batchIndex + 1,
-          attempt,
-          error: message
-        });
-        break;
-      }
-      logger.warn('AI classification batch failed, retrying', {
+      const failure = classifyBatchError(error);
+      lastFailure = failure;
+      const payload = {
         batchIndex: batchIndex + 1,
         attempt,
-        error: message
-      });
+        reason: failure.reason,
+        error: failure.message
+      };
+      if (!failure.retryable || attempt >= CLASSIFY_MAX_RETRIES) {
+        logger.error('AI classification batch failed', payload);
+        break;
+      }
+      logger.warn('AI classification batch failed, retrying', payload);
       await delay(CLASSIFY_RETRY_DELAY_MS * attempt);
     }
   }
-  if (lastError) {
-    throw lastError;
+  const meta: TweetBatchFailureMeta = {
+    reason: lastFailure?.reason ?? 'max-retries',
+    tweetIds: batch.map((tweet) => tweet.tweetId),
+    attempts: attempt
+  };
+  if (lastFailure?.message !== undefined) {
+    meta.lastErrorMessage = lastFailure.message;
   }
-  return [];
+  throw new TweetBatchFailedError('AI classification batch failed', meta);
+}
+
+function classifyBatchError(error: unknown): {
+  reason: TweetBatchFailureReason;
+  message: string;
+  retryable: boolean;
+} {
+  const message = getErrorMessage(error);
+  if (isContentRiskMessage(message)) {
+    return { reason: 'content-risk', message, retryable: false };
+  }
+  return { reason: 'max-retries', message, retryable: true };
+}
+
+function getErrorMessage(error: unknown) {
+  if (!error) {
+    return 'unknown error';
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && 'message' in error && typeof (error as Record<string, unknown>).message === 'string') {
+    return String((error as Record<string, unknown>).message);
+  }
+  return String(error);
+}
+
+function isContentRiskMessage(message: string) {
+  return message.toLowerCase().includes('content exists risk');
 }
 
 function buildBatchPrompt(batch: Tweet[]) {

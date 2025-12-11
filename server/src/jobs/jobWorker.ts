@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
 import { logger } from '../logger';
+import { AiLockUnavailableError } from '../errors';
 import { handleJob } from './jobHandlers';
-import { markJobComplete, markJobFailed, reserveNextJob } from './jobQueue';
+import { markJobComplete, markJobFailed, reserveNextJob, requeueJob } from './jobQueue';
 
 const IDLE_SLEEP_MS = 2000;
 
@@ -49,6 +50,14 @@ export async function startJobWorker() {
         durationMs: completedAt - jobStartTime
       });
     } catch (error) {
+      if (error instanceof AiLockUnavailableError) {
+        logger.info('AI lock unavailable, requeueing job', {
+          jobId: job.id,
+          type: job.type
+        });
+        await requeueJob(job, { delayMs: IDLE_SLEEP_MS, revertAttempt: true });
+        continue;
+      }
       const failedAt = Date.now();
       logger.error('Background job execution failed', {
         jobId: job.id,

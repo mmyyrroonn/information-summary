@@ -181,3 +181,20 @@ export async function markJobFailed(job: QueuedJob, error: unknown, options?: { 
     error: errorMessage
   });
 }
+
+export async function requeueJob(job: QueuedJob, options?: { delayMs?: number; revertAttempt?: boolean }) {
+  const delayMs = options?.delayMs ?? 2000;
+  const data: Prisma.BackgroundJobUpdateInput = {
+    status: BackgroundJobStatus.PENDING,
+    scheduledAt: new Date(Date.now() + delayMs),
+    lockedAt: null,
+    lockedBy: null
+  };
+  if (options?.revertAttempt && job.attempts > 0) {
+    data.attempts = { decrement: 1 };
+  }
+  await prisma.backgroundJob.update({
+    where: { id: job.id },
+    data
+  });
+}

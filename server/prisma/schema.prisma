@@ -52,6 +52,8 @@ model Tweet {
   createdAt      DateTime @default(now())
   tweetUrl       String?
   processedAt    DateTime?
+  abandonedAt    DateTime?
+  abandonReason  String?
   insights       TweetInsight?
 }
 
@@ -122,4 +124,13 @@ model BackgroundJob {
 
   @@index([status, scheduledAt])
   @@index([type, status])
+}
+
+model SystemLock {
+  key       String   @id
+  lockedBy  String?
+  lockedAt  DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
