@@ -76,20 +76,37 @@ export async function handleReportPipelineJob(job: QueuedJob<'report-pipeline'>)
           });
           return;
         }
+        const notificationResult = { attempted: shouldNotify, delivered: false };
+
         if (shouldNotify) {
-          await sendReportAndNotify(report);
-          const completedAt = Date.now();
+          try {
+            await sendReportAndNotify(report);
+            notificationResult.delivered = true;
+          } catch (notifyError) {
+            logger.error('Report notification failed, skipping Telegram delivery', {
+              reportId: report.id,
+              error:
+                notifyError instanceof Error
+                  ? { message: notifyError.message, stack: notifyError.stack }
+                  : notifyError
+            });
+          }
+        }
+
+        const completedAt = Date.now();
+
+        if (notificationResult.delivered) {
           logger.info('Report pipeline completed with notification', {
             reportId: report.id,
             completedAt: new Date(completedAt).toISOString(),
             durationMs: completedAt - startedAt
           });
         } else {
-          const completedAt = Date.now();
           logger.info('Report generated without notification', {
             reportId: report.id,
             completedAt: new Date(completedAt).toISOString(),
-            durationMs: completedAt - startedAt
+            durationMs: completedAt - startedAt,
+            notificationAttempted: notificationResult.attempted
           });
         }
       },
