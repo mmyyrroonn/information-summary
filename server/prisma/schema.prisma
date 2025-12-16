@@ -66,6 +66,11 @@ model TweetInsight {
   importance  Int?
   tags        String[]
   suggestions String?
+  embedding           Float[] @default([])
+  embeddingModel     String?
+  embeddingDimensions Int?
+  embeddingTextHash  String?
+  embeddedAt         DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   aiRun       AiRun?   @relation(fields: [aiRunId], references: [id])

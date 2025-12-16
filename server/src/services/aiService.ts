@@ -10,6 +10,8 @@ import { formatDisplayDate, withTz } from '../utils/time';
 import { sendMarkdownToTelegram } from './notificationService';
 import { withAiProcessingLock } from './lockService';
 import { TweetBatchFailedError, TweetBatchFailureMeta, TweetBatchFailureReason } from '../errors';
+import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from './embeddingService';
+import { clusterByEmbedding, ClusterResult } from './clusterService';
 
 const client = config.DEEPSEEK_API_KEY
   ? new OpenAI({ baseURL: 'https://api.deepseek.com', apiKey: config.DEEPSEEK_API_KEY })
@@ -45,6 +47,8 @@ const CHAT_COMPLETION_MAX_RETRIES = 3;
 const CHAT_COMPLETION_RETRY_DELAY_MS = 2000;
 const CHAT_COMPLETION_PREVIEW_LIMIT = 2000;
 const TAG_FALLBACK_KEY = 'others';
+const EMBEDDING_BATCH_SIZE = 10;
+const EMBEDDING_TEXT_MAX_LENGTH = 320;
 const TAG_DISPLAY_NAMES: Record<string, string> = {
   airdrop: '空投 / 福利',
   token: '代币 / 市场',
@@ -104,6 +108,32 @@ interface ReportPayload {
 }
 
 type ReportSection = NonNullable<ReportPayload['sections']>[number];
+
+interface ClusterReportOutline {
+  mode: 'clustered';
+  totalInsights: number;
+  totalClusters: number;
+  shownClusters: number;
+  sections: Array<{
+    tag: string;
+    title: string;
+    clusters: Array<{
+      id: string;
+      size: number;
+      peakImportance: number;
+      tags: string[];
+      representative: {
+        tweetId: string;
+        tweetUrl: string;
+        summary: string;
+        importance: number;
+        verdict: string;
+        suggestions?: string | null;
+      };
+      memberTweetIds: string[];
+    }>;
+  }>;
+}
 
 interface ClassificationOptions {
   lockHolderId?: string;
@@ -888,6 +918,123 @@ function truncateText(text: string, maxLength = 160) {
   return `${compact.slice(0, maxLength - 1)}…`;
 }
 
+function buildEmbeddingText(insight: InsightWithTweet) {
+  const base = getInsightSummary(insight);
+  const cleaned = base.replace(/\s+/g, ' ').trim();
+  return truncateText(cleaned, EMBEDDING_TEXT_MAX_LENGTH);
+}
+
+async function ensureEmbeddingsForInsights(insights: InsightWithTweet[]) {
+  if (!insights.length) {
+    return { eligible: 0, embedded: 0, updated: 0 };
+  }
+  if (!embeddingsEnabled()) {
+    logger.warn('Embeddings disabled, missing DASHSCOPE_API_KEY');
+    return { eligible: insights.length, embedded: 0, updated: 0 };
+  }
+
+  const model = config.EMBEDDING_MODEL;
+  const dimensions = config.EMBEDDING_DIMENSIONS;
+  const now = new Date();
+  const work = insights
+    .map((insight) => {
+      const text = buildEmbeddingText(insight);
+      const textHash = hashEmbeddingText(text);
+      const hasVector = Array.isArray(insight.embedding) && insight.embedding.length === dimensions;
+      const fresh =
+        hasVector &&
+        insight.embeddingModel === model &&
+        insight.embeddingDimensions === dimensions &&
+        insight.embeddingTextHash === textHash;
+      return fresh
+        ? null
+        : {
+            tweetId: insight.tweetId,
+            text,
+            textHash
+          };
+    })
+    .filter((value): value is { tweetId: string; text: string; textHash: string } => Boolean(value));
+
+  if (!work.length) {
+    const embedded = insights.filter((insight) => Array.isArray(insight.embedding) && insight.embedding.length === dimensions)
+      .length;
+    return { eligible: insights.length, embedded, updated: 0 };
+  }
+
+  logger.info('Preparing embeddings for report insights', {
+    eligible: insights.length,
+    missingOrStale: work.length,
+    model,
+    dimensions
+  });
+
+  let updated = 0;
+  const batches = chunk(work, EMBEDDING_BATCH_SIZE);
+  for (const [batchIndex, batch] of batches.entries()) {
+    const vectors = await createEmbeddings(batch.map((item) => item.text));
+    if (vectors.length !== batch.length) {
+      throw new Error(`Embedding batch size mismatch: expected ${batch.length}, got ${vectors.length}`);
+    }
+    await prisma.$transaction(
+      batch.map((item, index) =>
+        prisma.tweetInsight.update({
+          where: { tweetId: item.tweetId },
+          data: {
+            embedding: vectors[index] ?? [],
+            embeddingModel: model,
+            embeddingDimensions: dimensions,
+            embeddingTextHash: item.textHash,
+            embeddedAt: now
+          }
+        })
+      )
+    );
+    updated += batch.length;
+    if ((batchIndex + 1) % 10 === 0 || batchIndex === batches.length - 1) {
+      logger.info('Embeddings batch stored', { batchIndex: batchIndex + 1, batches: batches.length, updated });
+    }
+  }
+
+  const embedded = insights.filter((insight) => Array.isArray(insight.embedding) && insight.embedding.length === dimensions)
+    .length;
+  return { eligible: insights.length, embedded, updated };
+}
+
+function renderClusterReportMarkdown(outline: ClusterReportOutline, window: { start: Date; end: Date }) {
+  const lines = [
+    `# ${formatDisplayDate(window.end, config.REPORT_TIMEZONE)} 主题聚类汇总`,
+    `> 时间范围：${formatDisplayDate(window.start, config.REPORT_TIMEZONE)} - ${formatDisplayDate(
+      window.end,
+      config.REPORT_TIMEZONE
+    )}`,
+    '',
+    '## 概览',
+    `- 本次共 ${outline.totalInsights} 条洞察（importance≥2），聚合为 ${outline.totalClusters} 个主题簇，展示 ${outline.shownClusters} 个。`,
+    '',
+    '## 分类'
+  ];
+
+  outline.sections.forEach((section) => {
+    lines.push(`\n### ${section.title}\n`);
+    section.clusters.forEach((cluster) => {
+      const tags = cluster.tags.length ? ` [${cluster.tags.slice(0, 5).join(', ')}]` : '';
+      const brief = cluster.representative.summary;
+      const link = cluster.representative.tweetUrl
+        ? `[推文](${cluster.representative.tweetUrl})`
+        : cluster.representative.tweetId;
+      const suggestion = cluster.representative.suggestions
+        ? ` 建议：${truncateText(cluster.representative.suggestions, 120)}`
+        : '';
+      lines.push(
+        `- ${brief}（${cluster.size}条 / 最高${cluster.peakImportance}⭐）${link ? ` ${link}` : ''}${suggestion}${tags}`
+      );
+    });
+  });
+
+  return lines.join('\n');
+}
+
 export async function generateReport(window = defaultWindow()) {
   const windowMeta = { start: window.start.toISOString(), end: window.end.toISOString() };
   logger.info('Report generation requested', windowMeta);
@@ -912,47 +1059,138 @@ export async function generateReport(window = defaultWindow()) {
   });
 
   try {
-    const highPriority = insights.filter((insight) => (insight.importance ?? 0) > HIGH_PRIORITY_IMPORTANCE);
-    const mediumCandidates = insights.filter((insight) => {
-      const importance = insight.importance ?? 0;
-      return importance >= MEDIUM_MIN_IMPORTANCE && importance <= MEDIUM_MAX_IMPORTANCE;
-    });
-
-    logger.info('Report insight pools prepared', {
-      total: insights.length,
-      highPriority: highPriority.length,
-      mediumCandidates: mediumCandidates.length
-    });
-
-    const selectedMedium = await selectMidPriorityInsights(mediumCandidates);
-    logger.info('Mid-priority triage completed', {
-      mediumCandidates: mediumCandidates.length,
-      selectedMedium: selectedMedium.length
-    });
-
-    const selectedSet = new Set(highPriority.map((insight) => insight.tweetId));
-    selectedMedium.forEach((insight) => selectedSet.add(insight.tweetId));
-    const selectedInsights = insights.filter((insight) => selectedSet.has(insight.tweetId));
-
-    if (!selectedInsights.length) {
-      logger.info('No insights qualified after triage', windowMeta);
+    const eligible = insights.filter((insight) => (insight.importance ?? 0) >= MEDIUM_MIN_IMPORTANCE);
+    if (!eligible.length) {
+      logger.info('No insights above importance threshold for report', windowMeta);
       return null;
     }
 
-    const blueprint = buildTagReportPayload(selectedInsights, window);
-    if (!blueprint.sections?.length) {
-      logger.info('Tag-based report builder produced no sections', windowMeta);
-      return null;
+    const embeddingStats = await ensureEmbeddingsForInsights(eligible);
+    logger.info('Embedding preparation completed', { ...windowMeta, ...embeddingStats });
+
+    const dimensions = config.EMBEDDING_DIMENSIONS;
+    const eligibleWithEmbeddings =
+      embeddingStats.updated > 0
+        ? await prisma.tweetInsight.findMany({
+            where: { tweetId: { in: eligible.map((insight) => insight.tweetId) } },
+            include: { tweet: true },
+            orderBy: { createdAt: 'asc' }
+          })
+        : eligible;
+
+    const candidates = eligibleWithEmbeddings
+      .filter((insight) => Array.isArray(insight.embedding) && insight.embedding.length === dimensions)
+      .map((insight) => {
+        const tweetUrl = resolveTweetUrl(insight.tweet);
+        const summary = getInsightSummary(insight);
+        return {
+          tweetId: insight.tweetId,
+          summary,
+          importance: insight.importance ?? 0,
+          verdict: insight.verdict,
+          tags: insight.tags ?? [],
+          tweetedAt: insight.tweet.tweetedAt.getTime(),
+          tweetUrl,
+          suggestions: insight.suggestions ?? null,
+          vector: insight.embedding ?? []
+        };
+      });
+
+    if (!candidates.length) {
+      logger.warn('No embeddings available for eligible insights, falling back to tag report', {
+        ...windowMeta,
+        eligible: eligible.length
+      });
+      const blueprint = buildTagReportPayload(eligible, window);
+      if (!blueprint.sections?.length) {
+        logger.info('Tag-based report builder produced no sections', windowMeta);
+        return null;
+      }
+      const markdown = renderReportMarkdown(blueprint, window);
+      const report = await prisma.report.create({
+        data: {
+          periodStart: window.start,
+          periodEnd: window.end,
+          headline: blueprint.headline,
+          content: markdown,
+          outline: blueprint as unknown as Prisma.JsonObject,
+          aiRunId: aiRun.id
+        }
+      });
+      await prisma.aiRun.update({
+        where: { id: aiRun.id },
+        data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
+      });
+      return report;
     }
-    const markdown = renderReportMarkdown(blueprint, window);
+
+    const clusters = clusterByEmbedding(candidates, {
+      threshold: config.REPORT_CLUSTER_THRESHOLD
+    });
+    const shown = Math.min(config.REPORT_CLUSTER_MAX, clusters.length);
+    const displayClusters = clusters.slice(0, shown);
+
+    const buckets = new Map<string, ClusterReportOutline['sections'][number]>();
+    displayClusters.forEach((cluster) => {
+      const primary = pickPrimaryTag(cluster.representative.tags);
+      const bucket = buckets.get(primary) ?? {
+        tag: primary,
+        title: TAG_DISPLAY_NAMES[primary] ?? primary,
+        clusters: []
+      };
+      bucket.clusters.push({
+        id: cluster.id,
+        size: cluster.size,
+        peakImportance: cluster.peakImportance,
+        tags: cluster.tags,
+        representative: {
+          tweetId: cluster.representative.tweetId,
+          tweetUrl: cluster.representative.tweetUrl,
+          summary: truncateText(cluster.representative.summary, 160),
+          importance: cluster.representative.importance,
+          verdict: cluster.representative.verdict,
+          suggestions: cluster.representative.suggestions ?? null
+        },
+        memberTweetIds: cluster.memberTweetIds
+      });
+      buckets.set(primary, bucket);
+    });
+
+    const sections = Array.from(buckets.values()).map((section) => {
+      section.clusters.sort((a, b) => {
+        const imp = b.peakImportance - a.peakImportance;
+        if (imp !== 0) return imp;
+        if (b.size !== a.size) return b.size - a.size;
+        return a.id.localeCompare(b.id);
+      });
+      return section;
+    });
+    sections.sort((a, b) => {
+      const peakA = a.clusters.reduce((max, cluster) => Math.max(max, cluster.peakImportance), 0);
+      const peakB = b.clusters.reduce((max, cluster) => Math.max(max, cluster.peakImportance), 0);
+      const imp = peakB - peakA;
+      if (imp !== 0) return imp;
+      if (b.clusters.length !== a.clusters.length) return b.clusters.length - a.clusters.length;
+      return a.title.localeCompare(b.title, 'zh-Hans');
+    });
+
+    const outline: ClusterReportOutline = {
+      mode: 'clustered',
+      totalInsights: eligible.length,
+      totalClusters: clusters.length,
+      shownClusters: shown,
+      sections
+    };
+
+    const markdown = renderClusterReportMarkdown(outline, window);
 
     const report = await prisma.report.create({
       data: {
         periodStart: window.start,
         periodEnd: window.end,
-        headline: blueprint.headline,
+        headline: `${formatDisplayDate(window.end, config.REPORT_TIMEZONE)} 主题聚类汇总`,
         content: markdown,
-        outline: blueprint as unknown as Prisma.JsonObject,
+        outline: outline as unknown as Prisma.JsonObject,
         aiRunId: aiRun.id
       }
     });
@@ -965,8 +1203,9 @@ export async function generateReport(window = defaultWindow()) {
       ...windowMeta,
       reportId: report.id,
       insights: insights.length,
-      selectedInsights: selectedInsights.length,
-      sections: blueprint.sections?.length ?? 0
+      eligible: eligible.length,
+      clusters: outline.totalClusters,
+      shownClusters: outline.shownClusters
     });
 
     return report;

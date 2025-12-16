@@ -30,6 +30,12 @@
 | `DATABASE_URL` | PostgreSQL 连接串 |
 | `RAPIDAPI_HOST` / `RAPIDAPI_KEY` | RapidAPI 推特接口配置 |
 | `DEEPSEEK_API_KEY` | DeepSeek API key（OpenAI 兼容） |
+| `DASHSCOPE_API_KEY` | 阿里云百炼 DashScope API key（用于 embedding 聚类） |
+| `DASHSCOPE_BASE_URL` | DashScope OpenAI 兼容 baseURL（默认北京地域） |
+| `EMBEDDING_MODEL` | embedding 模型名，默认 `text-embedding-v4` |
+| `EMBEDDING_DIMENSIONS` | embedding 维度，默认 `512` |
+| `REPORT_CLUSTER_THRESHOLD` | 聚类相似度阈值（越高越保守），默认 `0.9` |
+| `REPORT_CLUSTER_MAX` | 日报最多展示主题簇数，默认 `200` |
 | `TG_BOT_TOKEN` / `TG_CHAT_ID` | Telegram 推送默认配置，可在 UI 中覆盖 |
 | `REPORT_CRON_SCHEDULE` | 汇总/推送报告的 `node-cron` 表达式，默认每天 03:00 |
 | `FETCH_CRON_SCHEDULE` | 批量抓取订阅的 `node-cron` 表达式，默认每 30 分钟一次 |
