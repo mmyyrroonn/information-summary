@@ -29,6 +29,52 @@ interface TaskJobState {
 
 const POLL_INTERVAL_MS = 4000;
 
+type ClusteredReportOutline = {
+  mode: 'clustered';
+  totalInsights: number;
+  rawInsights?: number;
+  triage?: {
+    enabled: boolean;
+    highKept: number;
+    midCandidates: number;
+    midKept: number;
+  };
+  totalClusters: number;
+  shownClusters: number;
+  sections: Array<{
+    tag: string;
+    title: string;
+    clusters: Array<{
+      id: string;
+      size: number;
+      peakImportance: number;
+      tags: string[];
+      representative: {
+        tweetId: string;
+        tweetUrl: string;
+        summary: string;
+        importance: number;
+        verdict: string;
+        suggestions?: string | null;
+      };
+      memberTweetIds: string[];
+    }>;
+  }>;
+};
+
+function asClusteredOutline(value: unknown): ClusteredReportOutline | null {
+  if (!value || typeof value !== 'object') return null;
+  const mode = (value as Record<string, unknown>).mode;
+  if (mode !== 'clustered') return null;
+  const sections = (value as Record<string, unknown>).sections;
+  if (!Array.isArray(sections)) return null;
+  return value as ClusteredReportOutline;
+}
+
+function tweetLink(id: string) {
+  return `https://x.com/i/web/status/${id}`;
+}
+
 export function DashboardPage() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(null);
@@ -55,6 +101,8 @@ export function DashboardPage() {
     const rawHtml = typeof parsed === 'string' ? parsed : '';
     return DOMPurify.sanitize(rawHtml);
   }, [selectedReport?.content]);
+
+  const clusteredOutline = useMemo(() => asClusteredOutline(selectedReport?.outline), [selectedReport?.outline]);
 
   useEffect(() => {
     refreshReports();
@@ -383,6 +431,53 @@ export function DashboardPage() {
                 ) : (
                   <p className="empty">报告内容为空</p>
                 )}
+                {clusteredOutline ? (
+                  <details className="cluster-debug">
+                    <summary>
+                      聚类明细（展示 {clusteredOutline.shownClusters} / 总计 {clusteredOutline.totalClusters}，候选{' '}
+                      {clusteredOutline.totalInsights}
+                      {clusteredOutline.triage?.enabled &&
+                      typeof clusteredOutline.rawInsights === 'number' &&
+                      clusteredOutline.rawInsights !== clusteredOutline.totalInsights
+                        ? `；原始 ${clusteredOutline.rawInsights}，4-5⭐ ${clusteredOutline.triage.highKept}，2-3⭐ ${clusteredOutline.triage.midCandidates}→${clusteredOutline.triage.midKept}`
+                        : ''}
+                      ）
+                    </summary>
+                    <div className="cluster-debug-body">
+                      {clusteredOutline.sections.map((section) => (
+                        <details key={section.tag} className="cluster-tag">
+                          <summary>
+                            {section.title}（{section.clusters.length}）
+                          </summary>
+                          <div className="cluster-tag-body">
+                            {section.clusters.map((cluster) => (
+                              <details key={cluster.id} className="cluster-item">
+                                <summary>
+                                  #{cluster.id}（{cluster.size}条 / 最高{cluster.peakImportance}⭐）：{cluster.representative.summary}
+                                </summary>
+                                <div className="cluster-item-body">
+                                  <p className="muted">
+                                    代表推文：{' '}
+                                    <a href={cluster.representative.tweetUrl || tweetLink(cluster.representative.tweetId)} target="_blank" rel="noreferrer">
+                                      {cluster.representative.tweetId}
+                                    </a>
+                                  </p>
+                                  <div className="cluster-member-list">
+                                    {cluster.memberTweetIds.map((tweetId) => (
+                                      <a key={tweetId} href={tweetLink(tweetId)} target="_blank" rel="noreferrer" className="cluster-member">
+                                        {tweetId}
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              </details>
+                            ))}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </details>
+                ) : null}
               </>
             ) : (
               <p className="empty">选择左侧的日报查看详情</p>

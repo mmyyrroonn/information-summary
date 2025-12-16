@@ -46,6 +46,8 @@ const MEDIUM_MAX_IMPORTANCE = 3;
 const CHAT_COMPLETION_MAX_RETRIES = 3;
 const CHAT_COMPLETION_RETRY_DELAY_MS = 2000;
 const CHAT_COMPLETION_PREVIEW_LIMIT = 2000;
+const CHAT_COMPLETION_TIMEOUT_MS = 5 * 60_000;
+const CHAT_COMPLETION_SDK_MAX_RETRIES = 0;
 const TAG_FALLBACK_KEY = 'others';
 const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
@@ -112,6 +114,13 @@ type ReportSection = NonNullable<ReportPayload['sections']>[number];
 interface ClusterReportOutline {
   mode: 'clustered';
   totalInsights: number;
+  rawInsights?: number;
+  triage?: {
+    enabled: boolean;
+    highKept: number;
+    midCandidates: number;
+    midKept: number;
+  };
   totalClusters: number;
   shownClusters: number;
   sections: Array<{
@@ -440,6 +449,11 @@ function isContentRiskMessage(message: string) {
   return message.toLowerCase().includes('content exists risk');
 }
 
+function isServiceBusyMessage(message: string) {
+  const normalized = message.toLowerCase();
+  return normalized.includes('503') || normalized.includes('service is too busy') || normalized.includes('too busy');
+}
+
 function buildBatchPrompt(batch: Tweet[]) {
   const allowedTweetIds = batch.map((tweet) => tweet.tweetId);
   const template = {
@@ -620,6 +634,14 @@ function extractCompletionContent(response: ChatCompletionResponse) {
   return '';
 }
 
+function extractErrorStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') return undefined;
+  if ('status' in error && typeof (error as Record<string, unknown>).status === 'number') {
+    return (error as Record<string, number>).status;
+  }
+  return undefined;
+}
+
 async function runStructuredCompletion<T>(
   request: ChatCompletionRequest,
   context?: Record<string, unknown>
@@ -628,6 +650,7 @@ async function runStructuredCompletion<T>(
   let attempt = 0;
   let lastError: unknown = null;
   let forceJsonFormat = !request.response_format;
+  const stage = typeof context?.stage === 'string' ? String(context.stage) : undefined;
 
   while (attempt < CHAT_COMPLETION_MAX_RETRIES) {
     attempt += 1;
@@ -636,8 +659,19 @@ async function runStructuredCompletion<T>(
     if (forceJsonFormat) {
       payload = { ...payload, response_format: { type: 'json_object' } };
     }
+    if (stage === 'mid-triage') {
+      logger.info('Structured completion attempt started', {
+        attempt,
+        maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
+        timeoutMs: CHAT_COMPLETION_TIMEOUT_MS,
+        ...(context ?? {})
+      });
+    }
     try {
-      const completion = await openai.chat.completions.create(payload);
+      const completion = await openai.chat.completions.create(payload, {
+        timeout: CHAT_COMPLETION_TIMEOUT_MS,
+        maxRetries: CHAT_COMPLETION_SDK_MAX_RETRIES
+      });
       const content = extractCompletionContent(completion);
       responsePreview = content.slice(0, CHAT_COMPLETION_PREVIEW_LIMIT);
       return safeJsonParse<T>(content);
@@ -653,10 +687,13 @@ async function runStructuredCompletion<T>(
       }
       lastError = error;
       const message = error instanceof Error ? error.message : 'unknown error';
+      const status = extractErrorStatus(error);
+      const retryInMs = CHAT_COMPLETION_RETRY_DELAY_MS * attempt;
       const errorPayload: Record<string, unknown> = {
         attempt,
         maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
         ...(context ?? {}),
+        status,
         error: message,
         errorType: error instanceof SyntaxError ? 'json-parse' : 'api'
       };
@@ -667,8 +704,8 @@ async function runStructuredCompletion<T>(
         logger.error('Structured completion failed', errorPayload);
         break;
       }
-      logger.warn('Structured completion attempt failed', errorPayload);
-      await delay(CHAT_COMPLETION_RETRY_DELAY_MS * attempt);
+      logger.warn('Structured completion attempt failed, retrying', { ...errorPayload, retryInMs });
+      await delay(retryInMs);
     }
   }
 
@@ -712,27 +749,99 @@ async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
       batchSize: batch.length
     });
     const prompt = buildTriagePrompt(batch, TRIAGE_MAX_KEEP_PER_CHUNK);
-    const parsed = await runStructuredCompletion<{
-      decisions?: Array<{ tweetId: string; include: boolean }>;
-    }>(
-      {
-        model: 'deepseek-chat',
-        temperature: 0,
-        messages: [
-          {
-            role: 'system',
-            content: '你是资讯编辑，需要快速筛选重要推文，按指引只选择最值得保留的条目。'
-          },
-          { role: 'user', content: prompt }
-        ]
-      },
-      { stage: 'mid-triage', batchIndex: batchIndex + 1, batchSize: batch.length }
-    );
-    const includes = (parsed.decisions ?? []).filter((decision) => decision.include);
-    includes.slice(0, TRIAGE_MAX_KEEP_PER_CHUNK).forEach((decision) => keptIds.add(decision.tweetId));
+    try {
+      const parsed = await runStructuredCompletion<{
+        decisions?: Array<{ tweetId: string; include: boolean }>;
+      }>(
+        {
+          model: 'deepseek-chat',
+          temperature: 0,
+          messages: [
+            {
+              role: 'system',
+              content: '你是资讯编辑，需要快速筛选重要推文，按指引只选择最值得保留的条目。'
+            },
+            { role: 'user', content: prompt }
+          ]
+        },
+        { stage: 'mid-triage', batchIndex: batchIndex + 1, batchSize: batch.length }
+      );
+      const includes = (parsed.decisions ?? []).filter((decision) => decision.include);
+      includes.slice(0, TRIAGE_MAX_KEEP_PER_CHUNK).forEach((decision) => keptIds.add(decision.tweetId));
+    } catch (error) {
+      const message = getErrorMessage(error);
+      const reason = isContentRiskMessage(message) ? 'content-risk' : isServiceBusyMessage(message) ? 'service-busy' : 'failed';
+      logger.warn('Mid-priority triage batch skipped; keeping all items in batch', {
+        reason,
+        batchIndex: batchIndex + 1,
+        batchSize: batch.length,
+        error: message
+      });
+      batch.forEach((insight) => keptIds.add(insight.tweetId));
+    }
   }
 
   return insights.filter((insight) => keptIds.has(insight.tweetId));
+}
+
+async function triageInsightsForReport(insights: InsightWithTweet[]) {
+  const high = insights.filter((insight) => (insight.importance ?? 0) >= HIGH_PRIORITY_IMPORTANCE);
+  const mid = insights.filter((insight) => {
+    const importance = insight.importance ?? 0;
+    return importance >= MEDIUM_MIN_IMPORTANCE && importance <= MEDIUM_MAX_IMPORTANCE;
+  });
+
+  if (!client || mid.length === 0) {
+    return {
+      selected: insights,
+      stats: {
+        enabled: false,
+        highKept: high.length,
+        midCandidates: mid.length,
+        midKept: mid.length
+      }
+    };
+  }
+
+  const orderedMid = [...mid].sort((a, b) => {
+    const imp = (b.importance ?? 0) - (a.importance ?? 0);
+    if (imp !== 0) return imp;
+    return b.tweet.tweetedAt.getTime() - a.tweet.tweetedAt.getTime();
+  });
+
+  const keptMid = await selectMidPriorityInsights(orderedMid);
+  if (!keptMid.length && high.length === 0) {
+    logger.warn('Mid-priority triage returned empty selection; falling back to original insights', {
+      insights: insights.length,
+      mid: mid.length
+    });
+    return {
+      selected: insights,
+      stats: {
+        enabled: true,
+        highKept: high.length,
+        midCandidates: mid.length,
+        midKept: mid.length
+      }
+    };
+  }
+
+  const keptMidIds = new Set(keptMid.map((insight) => insight.tweetId));
+  const selected = [...high, ...orderedMid.filter((insight) => keptMidIds.has(insight.tweetId))].sort((a, b) => {
+    const imp = (b.importance ?? 0) - (a.importance ?? 0);
+    if (imp !== 0) return imp;
+    return b.tweet.tweetedAt.getTime() - a.tweet.tweetedAt.getTime();
+  });
+
+  return {
+    selected,
+    stats: {
+      enabled: true,
+      highKept: high.length,
+      midCandidates: mid.length,
+      midKept: keptMid.length
+    }
+  };
 }
 
 function buildTriagePrompt(batch: InsightWithTweet[], maxKeep: number) {
@@ -1002,6 +1111,20 @@ async function ensureEmbeddingsForInsights(insights: InsightWithTweet[]) {
 }
 
 function renderClusterReportMarkdown(outline: ClusterReportOutline, window: { start: Date; end: Date }) {
+  const triage = outline.triage;
+  const hasTriage = Boolean(
+    triage?.enabled &&
+      typeof outline.rawInsights === 'number' &&
+      outline.rawInsights > 0 &&
+      outline.rawInsights !== outline.totalInsights
+  );
+  const overviewLine = hasTriage
+    ? `- 本次共 ${outline.rawInsights} 条洞察（importance≥2），其中 ${triage?.highKept ?? 0} 条（4-5⭐）全保留；${
+        triage?.midCandidates ?? 0
+      } 条（2-3⭐）二次筛选后保留 ${triage?.midKept ?? 0} 条；用于聚类 ${outline.totalInsights} 条，聚合为 ${
+        outline.totalClusters
+      } 个主题簇，展示 ${outline.shownClusters} 个。`
+    : `- 本次共 ${outline.totalInsights} 条洞察（importance≥2），聚合为 ${outline.totalClusters} 个主题簇，展示 ${outline.shownClusters} 个。`;
   const lines = [
     `# ${formatDisplayDate(window.end, config.REPORT_TIMEZONE)} 主题聚类汇总`,
     `> 时间范围：${formatDisplayDate(window.start, config.REPORT_TIMEZONE)} - ${formatDisplayDate(
@@ -1010,7 +1133,7 @@ function renderClusterReportMarkdown(outline: ClusterReportOutline, window: { st
     )}`,
     '',
     '## 概览',
-    `- 本次共 ${outline.totalInsights} 条洞察（importance≥2），聚合为 ${outline.totalClusters} 个主题簇，展示 ${outline.shownClusters} 个。`,
+    overviewLine,
     '',
     '## 分类'
   ];
@@ -1020,14 +1143,9 @@ function renderClusterReportMarkdown(outline: ClusterReportOutline, window: { st
     section.clusters.forEach((cluster) => {
       const tags = cluster.tags.length ? ` [${cluster.tags.slice(0, 5).join(', ')}]` : '';
       const brief = cluster.representative.summary;
-      const link = cluster.representative.tweetUrl
-        ? `[推文](${cluster.representative.tweetUrl})`
-        : cluster.representative.tweetId;
-      const suggestion = cluster.representative.suggestions
-        ? ` 建议：${truncateText(cluster.representative.suggestions, 120)}`
-        : '';
+      const link = `[推文](${cluster.representative.tweetUrl})`;
       lines.push(
-        `- ${brief}（${cluster.size}条 / 最高${cluster.peakImportance}⭐）${link ? ` ${link}` : ''}${suggestion}${tags}`
+        `- ${brief}（${cluster.size}条 / 最高${cluster.peakImportance}⭐）${link ? ` ${link}` : ''}${tags}`
       );
     });
   });
@@ -1065,18 +1183,30 @@ export async function generateReport(window = defaultWindow()) {
       return null;
     }
 
-    const embeddingStats = await ensureEmbeddingsForInsights(eligible);
+    const { selected: reportInsights, stats: triageStats } = await triageInsightsForReport(eligible);
+    if (triageStats.enabled && reportInsights.length !== eligible.length) {
+      logger.info('Mid-priority triage completed for report', {
+        ...windowMeta,
+        eligible: eligible.length,
+        selected: reportInsights.length,
+        highKept: triageStats.highKept,
+        midCandidates: triageStats.midCandidates,
+        midKept: triageStats.midKept
+      });
+    }
+
+    const embeddingStats = await ensureEmbeddingsForInsights(reportInsights);
     logger.info('Embedding preparation completed', { ...windowMeta, ...embeddingStats });
 
     const dimensions = config.EMBEDDING_DIMENSIONS;
     const eligibleWithEmbeddings =
       embeddingStats.updated > 0
         ? await prisma.tweetInsight.findMany({
-            where: { tweetId: { in: eligible.map((insight) => insight.tweetId) } },
+            where: { tweetId: { in: reportInsights.map((insight) => insight.tweetId) } },
             include: { tweet: true },
             orderBy: { createdAt: 'asc' }
           })
-        : eligible;
+        : reportInsights;
 
     const candidates = eligibleWithEmbeddings
       .filter((insight) => Array.isArray(insight.embedding) && insight.embedding.length === dimensions)
@@ -1099,9 +1229,9 @@ export async function generateReport(window = defaultWindow()) {
     if (!candidates.length) {
       logger.warn('No embeddings available for eligible insights, falling back to tag report', {
         ...windowMeta,
-        eligible: eligible.length
+        eligible: reportInsights.length
       });
-      const blueprint = buildTagReportPayload(eligible, window);
+      const blueprint = buildTagReportPayload(reportInsights, window);
       if (!blueprint.sections?.length) {
         logger.info('Tag-based report builder produced no sections', windowMeta);
         return null;
@@ -1127,7 +1257,8 @@ export async function generateReport(window = defaultWindow()) {
     const clusters = clusterByEmbedding(candidates, {
       threshold: config.REPORT_CLUSTER_THRESHOLD
     });
-    const shown = Math.min(config.REPORT_CLUSTER_MAX, clusters.length);
+    const maxClusters = config.REPORT_CLUSTER_MAX;
+    const shown = maxClusters > 0 ? Math.min(maxClusters, clusters.length) : clusters.length;
     const displayClusters = clusters.slice(0, shown);
 
     const buckets = new Map<string, ClusterReportOutline['sections'][number]>();
@@ -1176,7 +1307,14 @@ export async function generateReport(window = defaultWindow()) {
 
     const outline: ClusterReportOutline = {
       mode: 'clustered',
-      totalInsights: eligible.length,
+      totalInsights: reportInsights.length,
+      rawInsights: eligible.length,
+      triage: {
+        enabled: triageStats.enabled,
+        highKept: triageStats.highKept,
+        midCandidates: triageStats.midCandidates,
+        midKept: triageStats.midKept
+      },
       totalClusters: clusters.length,
       shownClusters: shown,
       sections
@@ -1204,6 +1342,11 @@ export async function generateReport(window = defaultWindow()) {
       reportId: report.id,
       insights: insights.length,
       eligible: eligible.length,
+      clusterCandidates: outline.totalInsights,
+      triageEnabled: triageStats.enabled,
+      triageHighKept: triageStats.highKept,
+      triageMidCandidates: triageStats.midCandidates,
+      triageMidKept: triageStats.midKept,
       clusters: outline.totalClusters,
       shownClusters: outline.shownClusters
     });
