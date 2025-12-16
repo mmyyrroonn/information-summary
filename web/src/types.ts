@@ -65,6 +65,7 @@ export interface ReportSummary {
 
 export interface ReportDetail extends ReportSummary {
   content: string;
+  outline?: unknown | null;
 }
 
 export interface TweetInsight {

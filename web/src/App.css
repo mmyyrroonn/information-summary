@@ -423,6 +423,58 @@ button.ghost {
   text-decoration: underline;
 }
 
+.cluster-debug {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.cluster-debug summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.cluster-debug-body {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cluster-tag summary,
+.cluster-item summary {
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.cluster-tag-body {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cluster-item-body {
+  margin-top: 0.4rem;
+}
+
+.cluster-member-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+}
+
+.cluster-member {
+  font-size: 0.85rem;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.cluster-member:hover {
+  text-decoration: underline;
+}
+
 .empty {
   color: #94a3b8;
   margin: 0;

@@ -13,7 +13,7 @@ const envSchema = z.object({
   EMBEDDING_MODEL: z.string().default('text-embedding-v4'),
   EMBEDDING_DIMENSIONS: z.coerce.number().default(512),
   REPORT_CLUSTER_THRESHOLD: z.coerce.number().default(0.9),
-  REPORT_CLUSTER_MAX: z.coerce.number().default(200),
+  REPORT_CLUSTER_MAX: z.coerce.number().default(0),
   TG_BOT_TOKEN: z.string().optional(),
   TG_CHAT_ID: z.string().optional(),
   REPORT_CRON_SCHEDULE: z.string().default(process.env.CRON_SCHEDULE ?? '0 3 * * *'),
