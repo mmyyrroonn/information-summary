@@ -36,6 +36,13 @@
 | `EMBEDDING_DIMENSIONS` | embedding 维度，默认 `512` |
 | `REPORT_CLUSTER_THRESHOLD` | 聚类相似度阈值（越高越保守），默认 `0.9` |
 | `REPORT_CLUSTER_MAX` | 日报最多展示主题簇数，默认 `0`（不限制） |
+| `REPORT_MIN_IMPORTANCE` | 生成报告时纳入的最低重要度（importance≥x），默认 `2` |
+| `REPORT_FOCUS_TAGS` | 关注的 tag（逗号分隔，如 `market,defi,airdrop`），用于让打分/二次筛选更贴合偏好 |
+| `REPORT_DEEMPHASIZE_TAGS` | 降权的 tag（逗号分隔，如 `infrastructure,ecosystem`），用于让打分/二次筛选更保守 |
+| `REPORT_MID_TRIAGE_ENABLED` | 是否对 importance=2-3 的洞察做二次 AI 精筛，默认 `true` |
+| `REPORT_MID_TRIAGE_CONCURRENCY` | 二次精筛并发数，默认 `1` |
+| `REPORT_MID_TRIAGE_CHUNK_SIZE` | 二次精筛每次提交条数，默认 `30` |
+| `REPORT_MID_TRIAGE_MAX_KEEP_PER_CHUNK` | 二次精筛每个 chunk 最多保留条数，默认 `15` |
 | `TG_BOT_TOKEN` / `TG_CHAT_ID` | Telegram 推送默认配置，可在 UI 中覆盖 |
 | `REPORT_CRON_SCHEDULE` | 汇总/推送报告的 `node-cron` 表达式，默认每天 03:00 |
 | `FETCH_CRON_SCHEDULE` | 批量抓取订阅的 `node-cron` 表达式，默认每 30 分钟一次 |
