@@ -52,7 +52,9 @@ export function SubscriptionsPage() {
   const [followingImportForm, setFollowingImportForm] = useState({ screenName: '', userId: '', cursor: '' });
   const [followingImportLogs, setFollowingImportLogs] = useState<string[]>([]);
   const [statsById, setStatsById] = useState<Record<string, SubscriptionTweetStats>>({});
+  const [statsItems, setStatsItems] = useState<SubscriptionTweetStats[]>([]);
   const [highScoreMinImportance, setHighScoreMinImportance] = useState<number>(4);
+  const [includeUnsubscribedInStats, setIncludeUnsubscribedInStats] = useState(false);
 
   useEffect(() => {
     refreshSubscriptions();
@@ -72,8 +74,10 @@ export function SubscriptionsPage() {
         next[item.subscriptionId] = item;
       }
       setStatsById(next);
+      setStatsItems(statsResult.value.items);
     } else {
       setStatsById({});
+      setStatsItems([]);
     }
   }
 
@@ -165,6 +169,134 @@ export function SubscriptionsPage() {
       setBusy(null);
     }
   }
+
+  function normalizeRatio(value: number | null) {
+    if (typeof value !== 'number' || Number.isNaN(value)) return null;
+    if (value < 0) return 0;
+    if (value > 1) return 1;
+    return value;
+  }
+
+  function formatRatio(value: number | null) {
+    const normalized = normalizeRatio(value);
+    if (typeof normalized !== 'number') return '-';
+    return `${(normalized * 100).toFixed(1)}%`;
+  }
+
+  type Bucket = { label: string; count: number };
+
+  function renderBuckets(title: string, buckets: Bucket[]) {
+    const max = Math.max(1, ...buckets.map((bucket) => bucket.count));
+    return (
+      <div className="stats-chart">
+        <p className="stats-chart-title">{title}</p>
+        <div className="stats-chart-rows">
+          {buckets.map((bucket) => (
+            <div key={bucket.label} className="stats-chart-row">
+              <span className="stats-chart-label">{bucket.label}</span>
+              <div className="stats-chart-bar">
+                <div className="stats-chart-bar-fill" style={{ width: `${(bucket.count / max) * 100}%` }} />
+              </div>
+              <span className="stats-chart-value">{bucket.count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const statusById = new Map(subscriptions.map((sub) => [sub.id, sub.status] as const));
+  const screenNameById = new Map(subscriptions.map((sub) => [sub.id, sub.screenName] as const));
+  const visibleStatsItems = includeUnsubscribedInStats
+    ? statsItems
+    : statsItems.filter((item) => statusById.get(item.subscriptionId) !== 'UNSUBSCRIBED');
+
+  const scoredUsers = visibleStatsItems.filter((item) => item.scoredTweets > 0);
+  const usersWithHighScore = visibleStatsItems.filter((item) => item.highScoreTweets > 0);
+  const usersWithHighRatio = scoredUsers.filter((item) => normalizeRatio(item.highScoreRatio) !== null && (item.highScoreRatio ?? 0) >= 0.5);
+
+  const avgImportanceBuckets: Bucket[] = (() => {
+    const labels: Bucket[] = [
+      { label: '无评分', count: 0 },
+      { label: '1.0–1.9', count: 0 },
+      { label: '2.0–2.9', count: 0 },
+      { label: '3.0–3.9', count: 0 },
+      { label: '4.0–4.9', count: 0 },
+      { label: '5.0', count: 0 }
+    ];
+    for (const item of visibleStatsItems) {
+      const avg = item.avgImportance;
+      if (typeof avg !== 'number' || Number.isNaN(avg)) {
+        labels[0].count += 1;
+        continue;
+      }
+      if (avg >= 5) labels[5].count += 1;
+      else if (avg >= 4) labels[4].count += 1;
+      else if (avg >= 3) labels[3].count += 1;
+      else if (avg >= 2) labels[2].count += 1;
+      else labels[1].count += 1;
+    }
+    return labels;
+  })();
+
+  const highScoreCountBuckets: Bucket[] = (() => {
+    const labels: Bucket[] = [
+      { label: '0', count: 0 },
+      { label: '1–2', count: 0 },
+      { label: '3–5', count: 0 },
+      { label: '6–10', count: 0 },
+      { label: '11+', count: 0 }
+    ];
+    for (const item of visibleStatsItems) {
+      const count = item.highScoreTweets ?? 0;
+      if (count <= 0) labels[0].count += 1;
+      else if (count <= 2) labels[1].count += 1;
+      else if (count <= 5) labels[2].count += 1;
+      else if (count <= 10) labels[3].count += 1;
+      else labels[4].count += 1;
+    }
+    return labels;
+  })();
+
+  const highScoreRatioBuckets: Bucket[] = (() => {
+    const labels: Bucket[] = [
+      { label: '无评分', count: 0 },
+      { label: '0–10%', count: 0 },
+      { label: '10–25%', count: 0 },
+      { label: '25–50%', count: 0 },
+      { label: '50–75%', count: 0 },
+      { label: '75–100%', count: 0 }
+    ];
+    for (const item of visibleStatsItems) {
+      const ratio = normalizeRatio(item.highScoreRatio);
+      if (typeof ratio !== 'number') {
+        labels[0].count += 1;
+        continue;
+      }
+      if (ratio < 0.1) labels[1].count += 1;
+      else if (ratio < 0.25) labels[2].count += 1;
+      else if (ratio < 0.5) labels[3].count += 1;
+      else if (ratio < 0.75) labels[4].count += 1;
+      else labels[5].count += 1;
+    }
+    return labels;
+  })();
+
+  const topAvgImportance = [...scoredUsers]
+    .sort((a, b) => (b.avgImportance ?? 0) - (a.avgImportance ?? 0))
+    .slice(0, 10)
+    .map((item) => ({
+      ...item,
+      screenName: screenNameById.get(item.subscriptionId) ?? item.subscriptionId
+    }));
+
+  const topHighScoreTweets = [...usersWithHighScore]
+    .sort((a, b) => (b.highScoreTweets ?? 0) - (a.highScoreTweets ?? 0))
+    .slice(0, 10)
+    .map((item) => ({
+      ...item,
+      screenName: screenNameById.get(item.subscriptionId) ?? item.subscriptionId
+    }));
 
   function formatImportResult(source: string, identifier: string, result: SubscriptionImportResult) {
     const timestamp = new Date().toLocaleTimeString();
@@ -348,6 +480,52 @@ export function SubscriptionsPage() {
             </p>
           </div>
         </div>
+
+        <div className="stats-summary">
+          <div className="stats-summary-head">
+            <p className="stats-summary-title">统计图表</p>
+            <label className="stats-toggle">
+              <input
+                type="checkbox"
+                checked={includeUnsubscribedInStats}
+                onChange={(e) => setIncludeUnsubscribedInStats(e.target.checked)}
+              />
+              <span>包含不再订阅</span>
+            </label>
+          </div>
+          <p className="hint">
+            统计口径：均分=importance 平均；高分=importance≥{highScoreMinImportance}；高分占比=高分/有评分推文数。
+            当前样本：{visibleStatsItems.length} 人（其中有评分 {scoredUsers.length} 人，高分人数 {usersWithHighScore.length} 人，高分占比≥50% {usersWithHighRatio.length} 人）。
+          </p>
+          <div className="stats-grid">
+            {renderBuckets('博主均分分布', avgImportanceBuckets)}
+            {renderBuckets(`高分数量分布（importance≥${highScoreMinImportance}）`, highScoreCountBuckets)}
+            {renderBuckets('高分占比分布', highScoreRatioBuckets)}
+          </div>
+          <div className="stats-top">
+            <div className="stats-top-block">
+              <p className="stats-chart-title">Top 均分（有评分）</p>
+              <ol>
+                {topAvgImportance.map((item) => (
+                  <li key={item.subscriptionId}>
+                    @{item.screenName}：{typeof item.avgImportance === 'number' ? item.avgImportance.toFixed(2) : '-'}（n={item.scoredTweets}，高分占比 {formatRatio(item.highScoreRatio)}）
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="stats-top-block">
+              <p className="stats-chart-title">Top 高分数量</p>
+              <ol>
+                {topHighScoreTweets.map((item) => (
+                  <li key={item.subscriptionId}>
+                    @{item.screenName}：{item.highScoreTweets}（高分占比 {formatRatio(item.highScoreRatio)}，有评分 n={item.scoredTweets}）
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        </div>
+
         {subscriptions.length === 0 ? (
           <p className="empty list-empty">暂无订阅</p>
         ) : (

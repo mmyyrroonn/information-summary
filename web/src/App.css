@@ -676,3 +676,130 @@ button.ghost {
   cursor: default;
   text-decoration: none;
 }
+
+.stats-summary {
+  margin: 0.8rem 0 1rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.7);
+}
+
+.stats-summary-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stats-summary-title {
+  margin: 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stats-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #334155;
+  font-size: 0.95rem;
+  user-select: none;
+}
+
+.stats-grid {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+@media (max-width: 960px) {
+  .stats-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+.stats-chart {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #ffffff;
+}
+
+.stats-chart-title {
+  margin: 0 0 0.55rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.stats-chart-rows {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.stats-chart-row {
+  display: grid;
+  grid-template-columns: 86px 1fr 38px;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.stats-chart-label {
+  font-size: 0.9rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.stats-chart-value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: #0f172a;
+}
+
+.stats-chart-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.25);
+  overflow: hidden;
+}
+
+.stats-chart-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+
+.stats-top {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+@media (max-width: 960px) {
+  .stats-top {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+.stats-top-block {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #ffffff;
+}
+
+.stats-top-block ol {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #0f172a;
+}
+
+.stats-top-block li {
+  margin: 0.25rem 0;
+  color: #334155;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
