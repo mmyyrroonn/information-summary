@@ -25,6 +25,14 @@ function normalizeRatio(value) {
   return value;
 }
 
+function decideAction(currentStatus, keep) {
+  const desiredStatus = keep ? SubscriptionStatus.SUBSCRIBED : SubscriptionStatus.UNSUBSCRIBED;
+  if (currentStatus === desiredStatus) return { action: 'none', desiredStatus };
+  return desiredStatus === SubscriptionStatus.SUBSCRIBED
+    ? { action: 'resubscribe', desiredStatus }
+    : { action: 'unsubscribe', desiredStatus };
+}
+
 async function main() {
   const args = parseArgs(process.argv);
 
@@ -36,11 +44,12 @@ async function main() {
   };
 
   const apply = Boolean(args.get('apply'));
+  const freezeDays = Math.floor(parseNumberArg(args.get('freezeDays'), 14));
 
   const prisma = new PrismaClient();
   try {
     const [subscriptions, stats] = await Promise.all([
-      prisma.subscription.findMany({ select: { id: true, screenName: true, status: true } }),
+      prisma.subscription.findMany({ select: { id: true, screenName: true, status: true, createdAt: true } }),
       prisma.$queryRaw`
         SELECT
           s."id" as "subscriptionId",
@@ -60,6 +69,8 @@ async function main() {
     ]);
 
     const statsById = new Map(stats.map((item) => [item.subscriptionId, item]));
+    const now = Date.now();
+    const minCreatedAtMs = now - freezeDays * 24 * 60 * 60 * 1000;
 
     const decisions = [];
     for (const sub of subscriptions) {
@@ -69,35 +80,49 @@ async function main() {
       const highScoreTweets = stat?.highScoreTweets ?? 0;
       const highScoreRatio = stat?.highScoreRatio ?? null;
 
-      const matchedAvg = typeof avgImportance === 'number' && avgImportance >= thresholds.minAvgImportance;
-      const matchedHighCount = highScoreTweets >= thresholds.minHighScoreTweets;
-      const ratio = normalizeRatio(highScoreRatio);
-      const matchedHighRatio = typeof ratio === 'number' && ratio > thresholds.minHighScoreRatio;
+      const hasScoreData = scoredTweets > 0;
+      const isNewSubscription = sub.createdAt.getTime() >= minCreatedAtMs;
+      const shouldFreeze = !hasScoreData || isNewSubscription;
+
+      const matchedAvg = hasScoreData && typeof avgImportance === 'number' && avgImportance >= thresholds.minAvgImportance;
+      const matchedHighCount = hasScoreData && highScoreTweets >= thresholds.minHighScoreTweets;
+      const ratio = hasScoreData ? normalizeRatio(highScoreRatio) : null;
+      const matchedHighRatio = hasScoreData && typeof ratio === 'number' && ratio > thresholds.minHighScoreRatio;
       const keep = matchedAvg || matchedHighCount || matchedHighRatio;
+      const { action, desiredStatus } = decideAction(sub.status, keep);
+      const effectiveAction = shouldFreeze ? 'none' : action;
+      const effectiveDesiredStatus = shouldFreeze ? sub.status : desiredStatus;
 
       decisions.push({
         id: sub.id,
         screenName: sub.screenName,
         status: sub.status,
+        desiredStatus: effectiveDesiredStatus,
+        action: effectiveAction,
         avgImportance,
         scoredTweets,
         highScoreTweets,
         highScoreRatio,
-        keep
+        keep,
+        shouldFreeze
       });
     }
 
-    const candidates = decisions.filter((d) => d.status === SubscriptionStatus.SUBSCRIBED && !d.keep);
+    const toUnsubscribe = decisions.filter((d) => d.action === 'unsubscribe');
+    const toResubscribe = decisions.filter((d) => d.action === 'resubscribe');
+    const candidates = decisions.filter((d) => d.action !== 'none');
 
     console.log('Thresholds:', thresholds);
-    console.log(`Evaluated: ${decisions.filter((d) => d.status === SubscriptionStatus.SUBSCRIBED).length}`);
-    console.log(`Will unsubscribe: ${candidates.length}`);
+    console.log(`Freeze: skip if scoredTweets==0 OR createdAt within ${freezeDays} days`);
+    console.log(`Evaluated: ${decisions.length}`);
+    console.log(`Will unsubscribe: ${toUnsubscribe.length}`);
+    console.log(`Will resubscribe: ${toResubscribe.length}`);
 
     const preview = candidates
       .slice(0, 30)
       .map(
         (d) =>
-          `@${d.screenName} avg=${typeof d.avgImportance === 'number' ? d.avgImportance.toFixed(2) : '-'} scored=${d.scoredTweets} high=${d.highScoreTweets} ratio=${typeof d.highScoreRatio === 'number' ? (d.highScoreRatio * 100).toFixed(1) + '%' : '-'}`
+          `@${d.screenName} action=${d.action} avg=${typeof d.avgImportance === 'number' ? d.avgImportance.toFixed(2) : '-'} scored=${d.scoredTweets} high=${d.highScoreTweets} ratio=${typeof d.highScoreRatio === 'number' ? (d.highScoreRatio * 100).toFixed(1) + '%' : '-'}`
       )
       .join('\n');
     if (preview) {
@@ -115,11 +140,21 @@ async function main() {
     }
 
     const now = new Date();
-    const result = await prisma.subscription.updateMany({
-      where: { id: { in: candidates.map((c) => c.id) }, status: SubscriptionStatus.SUBSCRIBED },
-      data: { status: SubscriptionStatus.UNSUBSCRIBED, unsubscribedAt: now }
-    });
-    console.log(`\nUpdated: ${result.count}`);
+    const [unsubResult, resubResult] = await Promise.all([
+      toUnsubscribe.length
+        ? prisma.subscription.updateMany({
+            where: { id: { in: toUnsubscribe.map((c) => c.id) }, status: SubscriptionStatus.SUBSCRIBED },
+            data: { status: SubscriptionStatus.UNSUBSCRIBED, unsubscribedAt: now }
+          })
+        : Promise.resolve({ count: 0 }),
+      toResubscribe.length
+        ? prisma.subscription.updateMany({
+            where: { id: { in: toResubscribe.map((c) => c.id) }, status: SubscriptionStatus.UNSUBSCRIBED },
+            data: { status: SubscriptionStatus.SUBSCRIBED, unsubscribedAt: null }
+          })
+        : Promise.resolve({ count: 0 })
+    ]);
+    console.log(`\nUpdated: unsubscribed=${unsubResult.count} resubscribed=${resubResult.count}`);
   } finally {
     await prisma.$disconnect();
   }

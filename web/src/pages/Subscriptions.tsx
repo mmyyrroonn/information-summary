@@ -1,13 +1,6 @@
 import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from 'react';
 import { api } from '../api';
-import type {
-  AutoUnsubscribeCandidate,
-  AutoUnsubscribeResponse,
-  Subscription,
-  SubscriptionImportResult,
-  SubscriptionStatus,
-  SubscriptionTweetStats
-} from '../types';
+import type { AutoUnsubscribeResponse, Subscription, SubscriptionImportResult, SubscriptionStatus, SubscriptionTweetStats } from '../types';
 
 function normalizeHandle(value: string) {
   return value.replace(/^@/, '').trim().toLowerCase();
@@ -69,6 +62,8 @@ export function SubscriptionsPage() {
     highScoreMinImportance: 4
   });
   const [autoResult, setAutoResult] = useState<AutoUnsubscribeResponse | null>(null);
+  const [autoResultFilter, setAutoResultFilter] = useState<'changes' | 'unsubscribe' | 'resubscribe'>('changes');
+  const [autoResultQuery, setAutoResultQuery] = useState('');
 
   useEffect(() => {
     refreshSubscriptions();
@@ -188,7 +183,7 @@ export function SubscriptionsPage() {
   async function handleAutoUnsubscribe(dryRun: boolean) {
     if (!dryRun) {
       const ok = confirm(
-        `将按规则批量“取消订阅”不满足条件的账号：\n- 均分 ≥ ${autoRule.minAvgImportance}\n- 或 高分数量 ≥ ${autoRule.minHighScoreTweets}（importance≥${autoRule.highScoreMinImportance}）\n- 或 高分占比 > ${Math.round(
+        `将按规则同步订阅状态（会同时取消订阅 + 恢复订阅）：\n- 均分 ≥ ${autoRule.minAvgImportance}\n- 或 高分数量 ≥ ${autoRule.minHighScoreTweets}（importance≥${autoRule.highScoreMinImportance}）\n- 或 高分占比 > ${Math.round(
           autoRule.minHighScoreRatio * 100
         )}%\n\n确定执行吗？`
       );
@@ -205,10 +200,12 @@ export function SubscriptionsPage() {
         dryRun
       });
       setAutoResult(result);
+      setAutoResultFilter('changes');
+      setAutoResultQuery('');
       setStatusMessage(
         dryRun
-          ? `预览完成：将取消订阅 ${result.willUnsubscribe} 人`
-          : `执行完成：已取消订阅 ${result.updated} 人（候选 ${result.willUnsubscribe} 人）`
+          ? `预览完成：将取消订阅 ${result.willUnsubscribe} 人，恢复订阅 ${result.willResubscribe} 人`
+          : `执行完成：取消订阅 ${result.updatedUnsubscribed} 人，恢复订阅 ${result.updatedResubscribed} 人`
       );
       if (!dryRun) {
         await refreshSubscriptions();
@@ -353,7 +350,17 @@ export function SubscriptionsPage() {
       screenName: screenNameById.get(item.subscriptionId) ?? item.subscriptionId
     }));
 
-  const autoCandidatesPreview: AutoUnsubscribeCandidate[] = (autoResult?.candidates ?? []).slice(0, 30);
+  const autoResultItems = autoResult?.candidates ?? [];
+  const autoQuery = autoResultQuery.trim().toLowerCase();
+  const filteredAutoItems = autoResultItems.filter((item) => {
+    if (autoResultFilter === 'unsubscribe') {
+      if (item.action !== 'unsubscribe') return false;
+    } else if (autoResultFilter === 'resubscribe') {
+      if (item.action !== 'resubscribe') return false;
+    }
+    if (!autoQuery) return true;
+    return item.screenName.toLowerCase().includes(autoQuery);
+  });
 
   function formatImportResult(source: string, identifier: string, result: SubscriptionImportResult) {
     const timestamp = new Date().toLocaleTimeString();
@@ -554,85 +561,138 @@ export function SubscriptionsPage() {
             统计口径：均分=importance 平均；高分=importance≥{highScoreMinImportance}；高分占比=高分/有评分推文数。
             当前样本：{visibleStatsItems.length} 人（其中有评分 {scoredUsers.length} 人，高分人数 {usersWithHighScore.length} 人，高分占比≥50% {usersWithHighRatio.length} 人）。
           </p>
-          <div className="subscription-form" style={{ marginTop: '0.5rem' }}>
-            <input
-              type="number"
-              step="0.1"
-              value={autoRule.minAvgImportance}
-              onChange={(e) =>
-                setAutoRule((prev) => ({ ...prev, minAvgImportance: coerceNumber(e.target.value, prev.minAvgImportance) }))
-              }
-              placeholder="均分阈值"
-              title="均分阈值（importance 平均）"
-            />
-            <input
-              type="number"
-              step="1"
-              value={autoRule.minHighScoreTweets}
-              onChange={(e) =>
-                setAutoRule((prev) => ({
-                  ...prev,
-                  minHighScoreTweets: Math.max(0, Math.floor(coerceNumber(e.target.value, prev.minHighScoreTweets)))
-                }))
-              }
-              placeholder="高分数量阈值"
-              title="高分数量阈值"
-            />
-            <input
-              type="number"
-              step="0.01"
-              value={autoRule.minHighScoreRatio}
-              onChange={(e) =>
-                setAutoRule((prev) => ({
-                  ...prev,
-                  minHighScoreRatio: coerceNumber(e.target.value, prev.minHighScoreRatio)
-                }))
-              }
-              placeholder="高分占比阈值"
-              title="高分占比阈值（0-1）"
-            />
-            <input
-              type="number"
-              step="1"
-              value={autoRule.highScoreMinImportance}
-              onChange={(e) =>
-                setAutoRule((prev) => ({
-                  ...prev,
-                  highScoreMinImportance: Math.max(1, Math.floor(coerceNumber(e.target.value, prev.highScoreMinImportance)))
-                }))
-              }
-              placeholder="高分定义"
-              title="高分定义（importance≥?）"
-            />
-            <button onClick={() => handleAutoUnsubscribe(true)} disabled={busy === 'auto-preview' || busy === 'auto-apply'}>
-              {busy === 'auto-preview' ? '预览中...' : '预览取消订阅'}
-            </button>
-            <button
-              onClick={() => handleAutoUnsubscribe(false)}
-              disabled={busy === 'auto-preview' || busy === 'auto-apply'}
-              className="danger"
-            >
-              {busy === 'auto-apply' ? '执行中...' : '执行取消订阅'}
-            </button>
+          <p className="hint">
+            自动同步规则的保护：无评分数据（scoredTweets=0）或订阅创建时间两周内的账号，不参与本次变更。
+          </p>
+          <div className="auto-rule">
+            <div className="auto-rule-grid">
+              <label>
+                <span>均分阈值（保留）</span>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={autoRule.minAvgImportance}
+                  onChange={(e) =>
+                    setAutoRule((prev) => ({
+                      ...prev,
+                      minAvgImportance: coerceNumber(e.target.value, prev.minAvgImportance)
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span>高分数量阈值（保留）</span>
+                <input
+                  type="number"
+                  step="1"
+                  value={autoRule.minHighScoreTweets}
+                  onChange={(e) =>
+                    setAutoRule((prev) => ({
+                      ...prev,
+                      minHighScoreTweets: Math.max(0, Math.floor(coerceNumber(e.target.value, prev.minHighScoreTweets)))
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span>高分占比阈值（保留）</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={autoRule.minHighScoreRatio}
+                  onChange={(e) =>
+                    setAutoRule((prev) => ({
+                      ...prev,
+                      minHighScoreRatio: coerceNumber(e.target.value, prev.minHighScoreRatio)
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span>高分定义（importance≥）</span>
+                <input
+                  type="number"
+                  step="1"
+                  value={autoRule.highScoreMinImportance}
+                  onChange={(e) =>
+                    setAutoRule((prev) => ({
+                      ...prev,
+                      highScoreMinImportance: Math.max(1, Math.floor(coerceNumber(e.target.value, prev.highScoreMinImportance)))
+                    }))
+                  }
+                />
+              </label>
+            </div>
+            <div className="auto-rule-actions">
+              <button
+                onClick={() => handleAutoUnsubscribe(true)}
+                disabled={busy === 'auto-preview' || busy === 'auto-apply'}
+              >
+                {busy === 'auto-preview' ? '预览中...' : '预览取消订阅'}
+              </button>
+              <button
+                onClick={() => handleAutoUnsubscribe(false)}
+                disabled={busy === 'auto-preview' || busy === 'auto-apply'}
+                className="danger"
+              >
+                {busy === 'auto-apply' ? '执行中...' : '执行取消订阅'}
+              </button>
+            </div>
           </div>
           {autoResult && (
             <p className="hint" style={{ marginTop: '0.4rem' }}>
-              自动规则结果：评估 {autoResult.evaluated} 人，候选取消 {autoResult.willUnsubscribe} 人，{autoResult.dryRun ? '未写入数据库' : `已更新 ${autoResult.updated} 人`}。
+              自动规则结果：评估 {autoResult.evaluated} 人，将取消订阅 {autoResult.willUnsubscribe} 人，将恢复订阅 {autoResult.willResubscribe} 人，
+              {autoResult.dryRun
+                ? '未写入数据库'
+                : `已取消订阅 ${autoResult.updatedUnsubscribed} 人，已恢复订阅 ${autoResult.updatedResubscribed} 人`}。
             </p>
           )}
-          {autoCandidatesPreview.length > 0 && (
-            <pre className="bulk-result" style={{ marginTop: '0.5rem' }}>
-              {autoCandidatesPreview
-                .map((c, index) => {
-                  const avg = typeof c.avgImportance === 'number' ? c.avgImportance.toFixed(2) : '-';
-                  const ratio = typeof c.highScoreRatio === 'number' ? `${(c.highScoreRatio * 100).toFixed(1)}%` : '-';
-                  return `${index + 1}. @${c.screenName} avg=${avg} scored=${c.scoredTweets} high=${c.highScoreTweets} ratio=${ratio}`;
-                })
-                .join('\n')}
-              {autoResult && autoResult.candidates.length > autoCandidatesPreview.length
-                ? `\n... 还有 ${autoResult.candidates.length - autoCandidatesPreview.length} 人未展示`
-                : ''}
-            </pre>
+          {autoResult && (
+            <div className="auto-preview">
+              <div className="auto-preview-controls">
+                <label>
+                  <span>查看</span>
+                  <select
+                    value={autoResultFilter}
+                    onChange={(e) => setAutoResultFilter(e.target.value as typeof autoResultFilter)}
+                  >
+                    <option value="changes">将发生变更</option>
+                    <option value="unsubscribe">将取消订阅</option>
+                    <option value="resubscribe">将恢复订阅</option>
+                  </select>
+                </label>
+                <label>
+                  <span>搜索</span>
+                  <input
+                    value={autoResultQuery}
+                    onChange={(e) => setAutoResultQuery(e.target.value)}
+                    placeholder="@screenName"
+                  />
+                </label>
+                <p className="hint" style={{ margin: 0 }}>
+                  展示 {filteredAutoItems.length} / {autoResultItems.length}（仅变更）
+                </p>
+              </div>
+              <pre className="bulk-result auto-preview-list">
+                {filteredAutoItems
+                  .map((c, index) => {
+                    const avg = typeof c.avgImportance === 'number' ? c.avgImportance.toFixed(2) : '-';
+                    const ratio = typeof c.highScoreRatio === 'number' ? `${(c.highScoreRatio * 100).toFixed(1)}%` : '-';
+                    const status = c.status === 'UNSUBSCRIBED' ? 'unsubscribed' : 'subscribed';
+                    const action = c.action === 'resubscribe' ? 'RESUBSCRIBE' : 'UNSUBSCRIBE';
+                    const matched = [
+                      c.matchedAvg ? 'avg' : null,
+                      c.matchedHighCount ? 'highCount' : null,
+                      c.matchedHighRatio ? 'highRatio' : null
+                    ]
+                      .filter(Boolean)
+                      .join(',');
+                    const matchedText = matched ? ` matched=[${matched}]` : '';
+                    return `${index + 1}. @${c.screenName} ${action} (${status}) avg=${avg} scored=${c.scoredTweets} high=${c.highScoreTweets} ratio=${ratio}${matchedText}`;
+                  })
+                  .join('\n')}
+              </pre>
+            </div>
           )}
           <div className="stats-grid">
             {renderBuckets('博主均分分布', avgImportanceBuckets)}

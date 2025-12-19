@@ -122,15 +122,20 @@ router.post('/auto-unsubscribe', async (req, res, next) => {
 
     const dryRun = body.dryRun ?? true;
     const result = dryRun ? await evaluateAutoUnsubscribe(thresholds) : await applyAutoUnsubscribe(thresholds);
+    const willUnsubscribe = result.toUnsubscribe.length;
+    const willResubscribe = result.toResubscribe.length;
+    const updatedUnsubscribed = 'updatedUnsubscribed' in result ? result.updatedUnsubscribed : 0;
+    const updatedResubscribed = 'updatedResubscribed' in result ? result.updatedResubscribed : 0;
 
     res.json({
       dryRun,
       thresholds,
-      evaluated: result.evaluated,
-      willUnsubscribe: result.candidates.length,
-      updated: 'updated' in result ? result.updated : 0,
-      candidates: result.candidates,
-      items: result.items
+      evaluated: result.items.length,
+      willUnsubscribe,
+      willResubscribe,
+      updatedUnsubscribed,
+      updatedResubscribed,
+      candidates: result.candidates
     });
   } catch (error) {
     next(error);

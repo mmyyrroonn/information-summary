@@ -9,10 +9,14 @@ export interface AutoUnsubscribeThresholds {
   highScoreMinImportance: number;
 }
 
+export type AutoSubscriptionAction = 'none' | 'unsubscribe' | 'resubscribe';
+
 export interface AutoUnsubscribeDecisionItem {
   subscriptionId: string;
   screenName: string;
   status: SubscriptionStatus;
+  desiredStatus: SubscriptionStatus;
+  action: AutoSubscriptionAction;
   avgImportance: number | null;
   scoredTweets: number;
   highScoreTweets: number;
@@ -20,7 +24,7 @@ export interface AutoUnsubscribeDecisionItem {
   matchedAvg: boolean;
   matchedHighCount: boolean;
   matchedHighRatio: boolean;
-  decision: 'keep' | 'unsubscribe';
+  decision: 'keep' | 'drop';
 }
 
 function normalizeRatio(value: number | null) {
@@ -31,9 +35,12 @@ function normalizeRatio(value: number | null) {
 }
 
 export async function evaluateAutoUnsubscribe(thresholds: AutoUnsubscribeThresholds) {
+  const now = Date.now();
+  const minCreatedAtMs = now - 14 * 24 * 60 * 60 * 1000;
+
   const [subscriptions, stats] = await Promise.all([
     prisma.subscription.findMany({
-      select: { id: true, screenName: true, status: true }
+      select: { id: true, screenName: true, status: true, createdAt: true }
     }),
     getSubscriptionTweetStats({ highScoreMinImportance: thresholds.highScoreMinImportance })
   ]);
@@ -48,17 +55,33 @@ export async function evaluateAutoUnsubscribe(thresholds: AutoUnsubscribeThresho
     const highScoreTweets = stat?.highScoreTweets ?? 0;
     const highScoreRatio = stat?.highScoreRatio ?? null;
 
-    const matchedAvg = typeof avgImportance === 'number' && avgImportance >= thresholds.minAvgImportance;
-    const matchedHighCount = highScoreTweets >= thresholds.minHighScoreTweets;
-    const ratio = normalizeRatio(highScoreRatio);
-    const matchedHighRatio = typeof ratio === 'number' && ratio > thresholds.minHighScoreRatio;
+    const hasScoreData = scoredTweets > 0;
+    const isNewSubscription = sub.createdAt.getTime() >= minCreatedAtMs;
+
+    const matchedAvg = hasScoreData && typeof avgImportance === 'number' && avgImportance >= thresholds.minAvgImportance;
+    const matchedHighCount = hasScoreData && highScoreTweets >= thresholds.minHighScoreTweets;
+    const ratio = hasScoreData ? normalizeRatio(highScoreRatio) : null;
+    const matchedHighRatio = hasScoreData && typeof ratio === 'number' && ratio > thresholds.minHighScoreRatio;
 
     const keep = matchedAvg || matchedHighCount || matchedHighRatio;
+    const desiredStatus = keep ? SubscriptionStatus.SUBSCRIBED : SubscriptionStatus.UNSUBSCRIBED;
+
+    const shouldFreeze = !hasScoreData || isNewSubscription;
+    const action: AutoSubscriptionAction = shouldFreeze
+      ? 'none'
+      : sub.status === desiredStatus
+        ? 'none'
+        : desiredStatus === SubscriptionStatus.SUBSCRIBED
+          ? 'resubscribe'
+          : 'unsubscribe';
+    const effectiveDesiredStatus = shouldFreeze ? sub.status : desiredStatus;
 
     items.push({
       subscriptionId: sub.id,
       screenName: sub.screenName,
       status: sub.status,
+      desiredStatus: effectiveDesiredStatus,
+      action,
       avgImportance,
       scoredTweets,
       highScoreTweets,
@@ -66,30 +89,42 @@ export async function evaluateAutoUnsubscribe(thresholds: AutoUnsubscribeThresho
       matchedAvg,
       matchedHighCount,
       matchedHighRatio,
-      decision: keep ? 'keep' : 'unsubscribe'
+      decision: keep ? 'keep' : 'drop'
     });
   }
 
-  const evaluated = items.filter((item) => item.status === SubscriptionStatus.SUBSCRIBED).length;
-  const candidates = items.filter(
-    (item) => item.status === SubscriptionStatus.SUBSCRIBED && item.decision === 'unsubscribe'
-  );
+  const candidates = items.filter((item) => item.action !== 'none');
+  const toUnsubscribe = candidates.filter((item) => item.action === 'unsubscribe');
+  const toResubscribe = candidates.filter((item) => item.action === 'resubscribe');
 
-  return { evaluated, candidates, items };
+  return {
+    candidates,
+    toUnsubscribe,
+    toResubscribe,
+    items
+  };
 }
 
 export async function applyAutoUnsubscribe(thresholds: AutoUnsubscribeThresholds) {
   const evaluation = await evaluateAutoUnsubscribe(thresholds);
-  const ids = evaluation.candidates.map((item) => item.subscriptionId);
-  if (!ids.length) {
-    return { ...evaluation, updated: 0 };
-  }
-
+  const unsubIds = evaluation.toUnsubscribe.map((item) => item.subscriptionId);
+  const resubIds = evaluation.toResubscribe.map((item) => item.subscriptionId);
   const now = new Date();
-  const result = await prisma.subscription.updateMany({
-    where: { id: { in: ids }, status: SubscriptionStatus.SUBSCRIBED },
-    data: { status: SubscriptionStatus.UNSUBSCRIBED, unsubscribedAt: now }
-  });
 
-  return { ...evaluation, updated: result.count };
+  const [unsubResult, resubResult] = await Promise.all([
+    unsubIds.length
+      ? prisma.subscription.updateMany({
+          where: { id: { in: unsubIds }, status: SubscriptionStatus.SUBSCRIBED },
+          data: { status: SubscriptionStatus.UNSUBSCRIBED, unsubscribedAt: now }
+        })
+      : Promise.resolve({ count: 0 }),
+    resubIds.length
+      ? prisma.subscription.updateMany({
+          where: { id: { in: resubIds }, status: SubscriptionStatus.UNSUBSCRIBED },
+          data: { status: SubscriptionStatus.SUBSCRIBED, unsubscribedAt: null }
+        })
+      : Promise.resolve({ count: 0 })
+  ]);
+
+  return { ...evaluation, updatedUnsubscribed: unsubResult.count, updatedResubscribed: resubResult.count };
 }
