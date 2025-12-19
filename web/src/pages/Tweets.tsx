@@ -144,6 +144,7 @@ export function TweetsPage() {
               {subscriptions.map((sub) => (
                 <option key={sub.id} value={sub.id}>
                   {sub.displayName ? `${sub.displayName} (@${sub.screenName})` : `@${sub.screenName}`}
+                  {sub.status === 'UNSUBSCRIBED' ? '（不再订阅）' : ''}
                 </option>
               ))}
             </select>

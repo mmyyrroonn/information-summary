@@ -1,6 +1,6 @@
 import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from 'react';
 import { api } from '../api';
-import type { Subscription, SubscriptionImportResult } from '../types';
+import type { Subscription, SubscriptionImportResult, SubscriptionStatus, SubscriptionTweetStats } from '../types';
 
 function normalizeHandle(value: string) {
   return value.replace(/^@/, '').trim().toLowerCase();
@@ -51,17 +51,29 @@ export function SubscriptionsPage() {
   const [listImportLogs, setListImportLogs] = useState<string[]>([]);
   const [followingImportForm, setFollowingImportForm] = useState({ screenName: '', userId: '', cursor: '' });
   const [followingImportLogs, setFollowingImportLogs] = useState<string[]>([]);
+  const [statsById, setStatsById] = useState<Record<string, SubscriptionTweetStats>>({});
+  const [highScoreMinImportance, setHighScoreMinImportance] = useState<number>(4);
 
   useEffect(() => {
     refreshSubscriptions();
   }, []);
 
   async function refreshSubscriptions() {
-    try {
-      const subs = await api.listSubscriptions();
-      setSubscriptions(subs);
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '加载订阅失败');
+    const [subsResult, statsResult] = await Promise.allSettled([api.listSubscriptions(), api.getSubscriptionStats()]);
+    if (subsResult.status === 'fulfilled') {
+      setSubscriptions(subsResult.value);
+    } else {
+      setStatusMessage(subsResult.reason instanceof Error ? subsResult.reason.message : '加载订阅失败');
+    }
+    if (statsResult.status === 'fulfilled') {
+      setHighScoreMinImportance(statsResult.value.highScoreMinImportance);
+      const next: Record<string, SubscriptionTweetStats> = {};
+      for (const item of statsResult.value.items) {
+        next[item.subscriptionId] = item;
+      }
+      setStatsById(next);
+    } else {
+      setStatsById({});
     }
   }
 
@@ -120,13 +132,35 @@ export function SubscriptionsPage() {
     }
   }
 
-  async function handleFetchSubscription(id: string) {
-    setBusy(`fetch-${id}`);
+  async function handleFetchSubscription(sub: Subscription) {
+    setBusy(`fetch-${sub.id}`);
     try {
-      const result = await api.fetchSubscription(id);
+      const isUnsubscribed = sub.status === 'UNSUBSCRIBED';
+      const allowUnsubscribed = isUnsubscribed ? confirm('该账号已“不再订阅”，仍要抓取一次推文吗？') : false;
+      if (isUnsubscribed && !allowUnsubscribed) {
+        return;
+      }
+      const result = await api.fetchSubscription(sub.id, { allowUnsubscribed: isUnsubscribed ? true : undefined });
       setStatusMessage(`已抓取 ${result.inserted} 条推文`);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '抓取失败');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleSetStatus(sub: Subscription, status: SubscriptionStatus) {
+    const nextStatusText = status === 'UNSUBSCRIBED' ? '不再订阅' : '恢复订阅';
+    if (status === 'UNSUBSCRIBED' && !confirm(`确定要将 @${sub.screenName} 设置为“不再订阅”吗？`)) {
+      return;
+    }
+    setBusy(`status-${sub.id}`);
+    try {
+      await api.updateSubscriptionStatus(sub.id, status);
+      setStatusMessage(`${nextStatusText}成功`);
+      await refreshSubscriptions();
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : `${nextStatusText}失败`);
     } finally {
       setBusy(null);
     }
@@ -306,29 +340,70 @@ export function SubscriptionsPage() {
 
       <section>
         <div className="section-head">
-          <h2>订阅列表</h2>
+          <div>
+            <h2>订阅列表</h2>
+            <p className="hint">
+              总人数 {subscriptions.length}，已订阅 {subscriptions.filter((s) => s.status !== 'UNSUBSCRIBED').length}，不再订阅{' '}
+              {subscriptions.filter((s) => s.status === 'UNSUBSCRIBED').length}
+            </p>
+          </div>
         </div>
         {subscriptions.length === 0 ? (
           <p className="empty list-empty">暂无订阅</p>
         ) : (
           <div className="list">
-            {subscriptions.map((sub) => (
-              <div key={sub.id} className="list-item">
-                <div>
-                  <p className="title">@{sub.screenName}</p>
-                  {sub.displayName && <p className="subtitle">{sub.displayName}</p>}
-                  {sub.lastFetchedAt && <p className="meta">上次抓取：{new Date(sub.lastFetchedAt).toLocaleString()}</p>}
+            {subscriptions.map((sub) => {
+              const stats = statsById[sub.id];
+              return (
+                <div key={sub.id} className="list-item">
+                  <div>
+                    <p className="title">@{sub.screenName}</p>
+                    {sub.displayName && <p className="subtitle">{sub.displayName}</p>}
+                    {sub.status === 'UNSUBSCRIBED' && (
+                      <p className="meta">
+                        状态：不再订阅{sub.unsubscribedAt ? `（${new Date(sub.unsubscribedAt).toLocaleString()}）` : ''}
+                      </p>
+                    )}
+                    {sub.lastFetchedAt && <p className="meta">上次抓取：{new Date(sub.lastFetchedAt).toLocaleString()}</p>}
+                    {stats && (
+                      <p className="meta">
+                        统计：均分 {typeof stats.avgImportance === 'number' ? stats.avgImportance.toFixed(2) : '-'}（n={stats.scoredTweets}）｜平均推文/天{' '}
+                        {typeof stats.avgTweetsPerDay === 'number' ? stats.avgTweetsPerDay.toFixed(2) : '-'}｜高分占比（≥{highScoreMinImportance}）{' '}
+                        {typeof stats.highScoreRatio === 'number' ? `${(stats.highScoreRatio * 100).toFixed(1)}%` : '-'}
+                      </p>
+                    )}
+                  </div>
+                  <div className="item-actions">
+                    {sub.status === 'UNSUBSCRIBED' ? (
+                      <button
+                        onClick={() => handleSetStatus(sub, 'SUBSCRIBED')}
+                        disabled={busy === `status-${sub.id}`}
+                      >
+                        {busy === `status-${sub.id}` ? '处理中' : '恢复订阅'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSetStatus(sub, 'UNSUBSCRIBED')}
+                        disabled={busy === `status-${sub.id}`}
+                        className="danger"
+                      >
+                        {busy === `status-${sub.id}` ? '处理中' : '不再订阅'}
+                      </button>
+                    )}
+                    <button onClick={() => handleFetchSubscription(sub)} disabled={busy === `fetch-${sub.id}`}>
+                      {busy === `fetch-${sub.id}` ? '抓取中' : '抓取'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSubscription(sub.id)}
+                      disabled={busy === `delete-${sub.id}`}
+                      className="danger"
+                    >
+                      删除
+                    </button>
+                  </div>
                 </div>
-                <div className="item-actions">
-                  <button onClick={() => handleFetchSubscription(sub.id)} disabled={busy === `fetch-${sub.id}`}>
-                    {busy === `fetch-${sub.id}` ? '抓取中' : '抓取'}
-                  </button>
-                  <button onClick={() => handleDeleteSubscription(sub.id)} disabled={busy === `delete-${sub.id}`} className="danger">
-                    删除
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

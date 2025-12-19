@@ -31,12 +31,34 @@ export interface ClassificationJobResponse {
   threshold?: number;
 }
 
+export type SubscriptionStatus = 'SUBSCRIBED' | 'UNSUBSCRIBED';
+
 export interface Subscription {
   id: string;
   screenName: string;
   displayName?: string | null;
+  status?: SubscriptionStatus;
+  unsubscribedAt?: string | null;
   lastFetchedAt?: string | null;
   createdAt: string;
+}
+
+export interface SubscriptionTweetStats {
+  subscriptionId: string;
+  tweetsTotal: number;
+  scoredTweets: number;
+  avgImportance: number | null;
+  highScoreTweets: number;
+  highScoreRatio: number | null;
+  firstTweetedAt: string | null;
+  lastTweetedAt: string | null;
+  avgTweetsPerDay: number | null;
+}
+
+export interface SubscriptionStatsResponse {
+  totals: { total: number; subscribed: number; unsubscribed: number };
+  highScoreMinImportance: number;
+  items: SubscriptionTweetStats[];
 }
 
 export interface FetchResult {

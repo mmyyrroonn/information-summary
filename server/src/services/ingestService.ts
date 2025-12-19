@@ -1,4 +1,4 @@
-import { Prisma, Subscription } from '@prisma/client';
+import { Prisma, Subscription, SubscriptionStatus } from '@prisma/client';
 import { prisma } from '../db';
 import { fetchTimeline } from './twitterService';
 import { config } from '../config';
@@ -41,10 +41,16 @@ function buildCooldownReason(subscription: Pick<Subscription, 'lastFetchedAt'>) 
   return `冷却中，预计 ${formatDisplayDate(next, config.REPORT_TIMEZONE)} 可再次抓取`;
 }
 
-export async function fetchTweetsForSubscription(subscriptionId: string, options?: { force?: boolean }) {
+export async function fetchTweetsForSubscription(
+  subscriptionId: string,
+  options?: { force?: boolean; allowUnsubscribed?: boolean }
+) {
   const subscription = await prisma.subscription.findUnique({ where: { id: subscriptionId } });
   if (!subscription) {
     throw new Error('Subscription not found');
+  }
+  if (subscription.status === SubscriptionStatus.UNSUBSCRIBED && !options?.allowUnsubscribed) {
+    throw new Error(`@${subscription.screenName} 已设置为不再订阅（如需抓取可传 allowUnsubscribed=true）`);
   }
   if (!options?.force && isCoolingDown(subscription)) {
     const next = nextAllowedAt(subscription);
@@ -109,7 +115,10 @@ export async function fetchTweets(subscription: { id: string; screenName: string
 }
 
 export async function fetchAllSubscriptions(options: FetchAllOptions = {}) {
-  const subs = await prisma.subscription.findMany({ orderBy: { lastFetchedAt: 'asc' } });
+  const subs = await prisma.subscription.findMany({
+    where: { status: SubscriptionStatus.SUBSCRIBED },
+    orderBy: { lastFetchedAt: 'asc' }
+  });
   const now = Date.now();
   const respectCooldown = !options.force;
   const dueSubs = respectCooldown ? subs.filter((sub) => !isCoolingDown(sub, now)) : subs;

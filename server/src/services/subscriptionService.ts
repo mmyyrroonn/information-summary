@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, SubscriptionStatus } from '@prisma/client';
 import { prisma } from '../db';
 
 export function normalizeScreenName(screenName: string) {
@@ -56,4 +56,14 @@ export async function createSubscriptionIfNotExists(payload: {
 
 export async function deleteSubscription(id: string) {
   return prisma.subscription.delete({ where: { id } });
+}
+
+export async function setSubscriptionStatus(id: string, status: SubscriptionStatus) {
+  return prisma.subscription.update({
+    where: { id },
+    data: {
+      status,
+      unsubscribedAt: status === 'UNSUBSCRIBED' ? new Date() : null
+    }
+  });
 }

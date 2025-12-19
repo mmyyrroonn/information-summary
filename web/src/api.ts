@@ -1,11 +1,13 @@
 import type {
   Subscription,
+  SubscriptionStatus,
   NotificationConfig,
   ReportDetail,
   ReportSummary,
   FetchResult,
   TweetListResponse,
   SubscriptionImportResult,
+  SubscriptionStatsResponse,
   BackgroundJobSummary,
   BackgroundJobStatus,
   JobEnqueueResponse,
@@ -45,7 +47,9 @@ interface ApiClient {
   listSubscriptions: () => Promise<Subscription[]>;
   createSubscription: (payload: { screenName: string; displayName?: string }) => Promise<Subscription>;
   deleteSubscription: (id: string) => Promise<void>;
-  fetchSubscription: (id: string) => Promise<FetchResult>;
+  updateSubscriptionStatus: (id: string, status: SubscriptionStatus) => Promise<Subscription>;
+  fetchSubscription: (id: string, options?: { force?: boolean; allowUnsubscribed?: boolean }) => Promise<FetchResult>;
+  getSubscriptionStats: () => Promise<SubscriptionStatsResponse>;
   importListMembers: (payload: { listId: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   importFollowingUsers: (payload: { screenName?: string; userId?: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   runFetchTask: () => Promise<JobEnqueueResponse>;
@@ -74,7 +78,17 @@ export const api: ApiClient = {
   listSubscriptions: () => request<Subscription[]>('/subscriptions'),
   createSubscription: (payload) => request<Subscription>('/subscriptions', { method: 'POST', body: JSON.stringify(payload) }),
   deleteSubscription: (id) => request<null>(`/subscriptions/${id}`, { method: 'DELETE' }).then(() => undefined),
-  fetchSubscription: (id) => request<FetchResult>(`/subscriptions/${id}/fetch`, { method: 'POST' }),
+  updateSubscriptionStatus: (id, status) =>
+    request<Subscription>(`/subscriptions/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  fetchSubscription: (id, options = {}) =>
+    request<FetchResult>(`/subscriptions/${id}/fetch`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...(typeof options.force === 'boolean' ? { force: options.force } : {}),
+        ...(typeof options.allowUnsubscribed === 'boolean' ? { allowUnsubscribed: options.allowUnsubscribed } : {})
+      })
+    }),
+  getSubscriptionStats: () => request<SubscriptionStatsResponse>('/subscriptions/stats'),
   importListMembers: ({ listId, cursor }) =>
     request<SubscriptionImportResult>('/subscriptions/import/list', {
       method: 'POST',

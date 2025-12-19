@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createSubscription, deleteSubscription, listSubscriptions } from '../services/subscriptionService';
+import { SubscriptionStatus } from '@prisma/client';
+import { createSubscription, deleteSubscription, listSubscriptions, setSubscriptionStatus } from '../services/subscriptionService';
 import { fetchTweetsForSubscription } from '../services/ingestService';
 import { importFollowingUsers, importListMembers } from '../services/subscriptionImportService';
+import { getSubscriptionTweetStats } from '../services/subscriptionStatsService';
+import { prisma } from '../db';
 
 const router = Router();
 
@@ -79,6 +82,24 @@ router.post('/import/following', async (req, res, next) => {
   }
 });
 
+router.get('/stats', async (_req, res, next) => {
+  try {
+    const [stats, total, subscribed, unsubscribed] = await Promise.all([
+      getSubscriptionTweetStats(),
+      prisma.subscription.count(),
+      prisma.subscription.count({ where: { status: SubscriptionStatus.SUBSCRIBED } }),
+      prisma.subscription.count({ where: { status: SubscriptionStatus.UNSUBSCRIBED } })
+    ]);
+    res.json({
+      totals: { total, subscribed, unsubscribed },
+      highScoreMinImportance: stats.highScoreMinImportance,
+      items: stats.items
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.delete('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -89,13 +110,33 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
+router.patch('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const body = z
+      .object({
+        status: z.nativeEnum(SubscriptionStatus)
+      })
+      .parse(req.body ?? {});
+    const updated = await setSubscriptionStatus(id, body.status);
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/:id/fetch', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const body = z.object({ force: z.boolean().optional() }).parse(req.body ?? {});
-    const options: { force?: boolean } = {};
+    const body = z
+      .object({ force: z.boolean().optional(), allowUnsubscribed: z.boolean().optional() })
+      .parse(req.body ?? {});
+    const options: { force?: boolean; allowUnsubscribed?: boolean } = {};
     if (typeof body.force === 'boolean') {
       options.force = body.force;
+    }
+    if (typeof body.allowUnsubscribed === 'boolean') {
+      options.allowUnsubscribed = body.allowUnsubscribed;
     }
     const result = await fetchTweetsForSubscription(id, options);
     res.json(result);

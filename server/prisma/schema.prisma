@@ -26,16 +26,25 @@ enum BackgroundJobStatus {
   FAILED
 }
 
+enum SubscriptionStatus {
+  SUBSCRIBED
+  UNSUBSCRIBED
+}
+
 model Subscription {
   id            String   @id @default(uuid())
   screenName    String   @unique
   displayName   String?
   avatarUrl     String?
   note          String?
+  status        SubscriptionStatus @default(SUBSCRIBED)
+  unsubscribedAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   lastFetchedAt DateTime?
   tweets        Tweet[]
+
+  @@index([status, lastFetchedAt])
 }
 
 model Tweet {
