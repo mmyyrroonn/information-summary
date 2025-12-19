@@ -1,6 +1,13 @@
 import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from 'react';
 import { api } from '../api';
-import type { Subscription, SubscriptionImportResult, SubscriptionStatus, SubscriptionTweetStats } from '../types';
+import type {
+  AutoUnsubscribeCandidate,
+  AutoUnsubscribeResponse,
+  Subscription,
+  SubscriptionImportResult,
+  SubscriptionStatus,
+  SubscriptionTweetStats
+} from '../types';
 
 function normalizeHandle(value: string) {
   return value.replace(/^@/, '').trim().toLowerCase();
@@ -55,6 +62,13 @@ export function SubscriptionsPage() {
   const [statsItems, setStatsItems] = useState<SubscriptionTweetStats[]>([]);
   const [highScoreMinImportance, setHighScoreMinImportance] = useState<number>(4);
   const [includeUnsubscribedInStats, setIncludeUnsubscribedInStats] = useState(false);
+  const [autoRule, setAutoRule] = useState({
+    minAvgImportance: 3.0,
+    minHighScoreTweets: 6,
+    minHighScoreRatio: 0.25,
+    highScoreMinImportance: 4
+  });
+  const [autoResult, setAutoResult] = useState<AutoUnsubscribeResponse | null>(null);
 
   useEffect(() => {
     refreshSubscriptions();
@@ -69,6 +83,7 @@ export function SubscriptionsPage() {
     }
     if (statsResult.status === 'fulfilled') {
       setHighScoreMinImportance(statsResult.value.highScoreMinImportance);
+      setAutoRule((prev) => ({ ...prev, highScoreMinImportance: statsResult.value.highScoreMinImportance }));
       const next: Record<string, SubscriptionTweetStats> = {};
       for (const item of statsResult.value.items) {
         next[item.subscriptionId] = item;
@@ -168,6 +183,46 @@ export function SubscriptionsPage() {
     } finally {
       setBusy(null);
     }
+  }
+
+  async function handleAutoUnsubscribe(dryRun: boolean) {
+    if (!dryRun) {
+      const ok = confirm(
+        `将按规则批量“取消订阅”不满足条件的账号：\n- 均分 ≥ ${autoRule.minAvgImportance}\n- 或 高分数量 ≥ ${autoRule.minHighScoreTweets}（importance≥${autoRule.highScoreMinImportance}）\n- 或 高分占比 > ${Math.round(
+          autoRule.minHighScoreRatio * 100
+        )}%\n\n确定执行吗？`
+      );
+      if (!ok) return;
+    }
+
+    setBusy(dryRun ? 'auto-preview' : 'auto-apply');
+    try {
+      const result = await api.autoUnsubscribe({
+        minAvgImportance: autoRule.minAvgImportance,
+        minHighScoreTweets: autoRule.minHighScoreTweets,
+        minHighScoreRatio: autoRule.minHighScoreRatio,
+        highScoreMinImportance: autoRule.highScoreMinImportance,
+        dryRun
+      });
+      setAutoResult(result);
+      setStatusMessage(
+        dryRun
+          ? `预览完成：将取消订阅 ${result.willUnsubscribe} 人`
+          : `执行完成：已取消订阅 ${result.updated} 人（候选 ${result.willUnsubscribe} 人）`
+      );
+      if (!dryRun) {
+        await refreshSubscriptions();
+      }
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : '批量取消订阅失败');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function coerceNumber(value: string, fallback: number) {
+    const next = Number(value);
+    return Number.isFinite(next) ? next : fallback;
   }
 
   function normalizeRatio(value: number | null) {
@@ -297,6 +352,8 @@ export function SubscriptionsPage() {
       ...item,
       screenName: screenNameById.get(item.subscriptionId) ?? item.subscriptionId
     }));
+
+  const autoCandidatesPreview: AutoUnsubscribeCandidate[] = (autoResult?.candidates ?? []).slice(0, 30);
 
   function formatImportResult(source: string, identifier: string, result: SubscriptionImportResult) {
     const timestamp = new Date().toLocaleTimeString();
@@ -497,6 +554,86 @@ export function SubscriptionsPage() {
             统计口径：均分=importance 平均；高分=importance≥{highScoreMinImportance}；高分占比=高分/有评分推文数。
             当前样本：{visibleStatsItems.length} 人（其中有评分 {scoredUsers.length} 人，高分人数 {usersWithHighScore.length} 人，高分占比≥50% {usersWithHighRatio.length} 人）。
           </p>
+          <div className="subscription-form" style={{ marginTop: '0.5rem' }}>
+            <input
+              type="number"
+              step="0.1"
+              value={autoRule.minAvgImportance}
+              onChange={(e) =>
+                setAutoRule((prev) => ({ ...prev, minAvgImportance: coerceNumber(e.target.value, prev.minAvgImportance) }))
+              }
+              placeholder="均分阈值"
+              title="均分阈值（importance 平均）"
+            />
+            <input
+              type="number"
+              step="1"
+              value={autoRule.minHighScoreTweets}
+              onChange={(e) =>
+                setAutoRule((prev) => ({
+                  ...prev,
+                  minHighScoreTweets: Math.max(0, Math.floor(coerceNumber(e.target.value, prev.minHighScoreTweets)))
+                }))
+              }
+              placeholder="高分数量阈值"
+              title="高分数量阈值"
+            />
+            <input
+              type="number"
+              step="0.01"
+              value={autoRule.minHighScoreRatio}
+              onChange={(e) =>
+                setAutoRule((prev) => ({
+                  ...prev,
+                  minHighScoreRatio: coerceNumber(e.target.value, prev.minHighScoreRatio)
+                }))
+              }
+              placeholder="高分占比阈值"
+              title="高分占比阈值（0-1）"
+            />
+            <input
+              type="number"
+              step="1"
+              value={autoRule.highScoreMinImportance}
+              onChange={(e) =>
+                setAutoRule((prev) => ({
+                  ...prev,
+                  highScoreMinImportance: Math.max(1, Math.floor(coerceNumber(e.target.value, prev.highScoreMinImportance)))
+                }))
+              }
+              placeholder="高分定义"
+              title="高分定义（importance≥?）"
+            />
+            <button onClick={() => handleAutoUnsubscribe(true)} disabled={busy === 'auto-preview' || busy === 'auto-apply'}>
+              {busy === 'auto-preview' ? '预览中...' : '预览取消订阅'}
+            </button>
+            <button
+              onClick={() => handleAutoUnsubscribe(false)}
+              disabled={busy === 'auto-preview' || busy === 'auto-apply'}
+              className="danger"
+            >
+              {busy === 'auto-apply' ? '执行中...' : '执行取消订阅'}
+            </button>
+          </div>
+          {autoResult && (
+            <p className="hint" style={{ marginTop: '0.4rem' }}>
+              自动规则结果：评估 {autoResult.evaluated} 人，候选取消 {autoResult.willUnsubscribe} 人，{autoResult.dryRun ? '未写入数据库' : `已更新 ${autoResult.updated} 人`}。
+            </p>
+          )}
+          {autoCandidatesPreview.length > 0 && (
+            <pre className="bulk-result" style={{ marginTop: '0.5rem' }}>
+              {autoCandidatesPreview
+                .map((c, index) => {
+                  const avg = typeof c.avgImportance === 'number' ? c.avgImportance.toFixed(2) : '-';
+                  const ratio = typeof c.highScoreRatio === 'number' ? `${(c.highScoreRatio * 100).toFixed(1)}%` : '-';
+                  return `${index + 1}. @${c.screenName} avg=${avg} scored=${c.scoredTweets} high=${c.highScoreTweets} ratio=${ratio}`;
+                })
+                .join('\n')}
+              {autoResult && autoResult.candidates.length > autoCandidatesPreview.length
+                ? `\n... 还有 ${autoResult.candidates.length - autoCandidatesPreview.length} 人未展示`
+                : ''}
+            </pre>
+          )}
           <div className="stats-grid">
             {renderBuckets('博主均分分布', avgImportanceBuckets)}
             {renderBuckets(`高分数量分布（importance≥${highScoreMinImportance}）`, highScoreCountBuckets)}

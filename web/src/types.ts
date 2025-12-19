@@ -61,6 +61,34 @@ export interface SubscriptionStatsResponse {
   items: SubscriptionTweetStats[];
 }
 
+export interface AutoUnsubscribeCandidate {
+  subscriptionId: string;
+  screenName: string;
+  status: SubscriptionStatus;
+  avgImportance: number | null;
+  scoredTweets: number;
+  highScoreTweets: number;
+  highScoreRatio: number | null;
+  matchedAvg: boolean;
+  matchedHighCount: boolean;
+  matchedHighRatio: boolean;
+  decision: 'keep' | 'unsubscribe';
+}
+
+export interface AutoUnsubscribeResponse {
+  dryRun: boolean;
+  thresholds: {
+    minAvgImportance: number;
+    minHighScoreTweets: number;
+    minHighScoreRatio: number;
+    highScoreMinImportance: number;
+  };
+  evaluated: number;
+  willUnsubscribe: number;
+  updated: number;
+  candidates: AutoUnsubscribeCandidate[];
+}
+
 export interface FetchResult {
   subscriptionId: string;
   screenName: string;

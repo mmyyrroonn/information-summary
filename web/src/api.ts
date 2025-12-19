@@ -8,6 +8,7 @@ import type {
   TweetListResponse,
   SubscriptionImportResult,
   SubscriptionStatsResponse,
+  AutoUnsubscribeResponse,
   BackgroundJobSummary,
   BackgroundJobStatus,
   JobEnqueueResponse,
@@ -50,6 +51,13 @@ interface ApiClient {
   updateSubscriptionStatus: (id: string, status: SubscriptionStatus) => Promise<Subscription>;
   fetchSubscription: (id: string, options?: { force?: boolean; allowUnsubscribed?: boolean }) => Promise<FetchResult>;
   getSubscriptionStats: () => Promise<SubscriptionStatsResponse>;
+  autoUnsubscribe: (payload?: {
+    minAvgImportance?: number;
+    minHighScoreTweets?: number;
+    minHighScoreRatio?: number;
+    highScoreMinImportance?: number;
+    dryRun?: boolean;
+  }) => Promise<AutoUnsubscribeResponse>;
   importListMembers: (payload: { listId: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   importFollowingUsers: (payload: { screenName?: string; userId?: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   runFetchTask: () => Promise<JobEnqueueResponse>;
@@ -89,6 +97,11 @@ export const api: ApiClient = {
       })
     }),
   getSubscriptionStats: () => request<SubscriptionStatsResponse>('/subscriptions/stats'),
+  autoUnsubscribe: (payload = {}) =>
+    request<AutoUnsubscribeResponse>('/subscriptions/auto-unsubscribe', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
   importListMembers: ({ listId, cursor }) =>
     request<SubscriptionImportResult>('/subscriptions/import/list', {
       method: 'POST',

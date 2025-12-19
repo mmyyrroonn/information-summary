@@ -5,6 +5,7 @@ import { createSubscription, deleteSubscription, listSubscriptions, setSubscript
 import { fetchTweetsForSubscription } from '../services/ingestService';
 import { importFollowingUsers, importListMembers } from '../services/subscriptionImportService';
 import { getSubscriptionTweetStats } from '../services/subscriptionStatsService';
+import { applyAutoUnsubscribe, evaluateAutoUnsubscribe } from '../services/subscriptionAutoUnsubscribeService';
 import { prisma } from '../db';
 
 const router = Router();
@@ -94,6 +95,42 @@ router.get('/stats', async (_req, res, next) => {
       totals: { total, subscribed, unsubscribed },
       highScoreMinImportance: stats.highScoreMinImportance,
       items: stats.items
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/auto-unsubscribe', async (req, res, next) => {
+  try {
+    const body = z
+      .object({
+        minAvgImportance: z.number().optional(),
+        minHighScoreTweets: z.number().int().optional(),
+        minHighScoreRatio: z.number().optional(),
+        highScoreMinImportance: z.number().int().optional(),
+        dryRun: z.boolean().optional()
+      })
+      .parse(req.body ?? {});
+
+    const thresholds = {
+      minAvgImportance: body.minAvgImportance ?? 3.0,
+      minHighScoreTweets: body.minHighScoreTweets ?? 6,
+      minHighScoreRatio: body.minHighScoreRatio ?? 0.25,
+      highScoreMinImportance: body.highScoreMinImportance ?? 4
+    };
+
+    const dryRun = body.dryRun ?? true;
+    const result = dryRun ? await evaluateAutoUnsubscribe(thresholds) : await applyAutoUnsubscribe(thresholds);
+
+    res.json({
+      dryRun,
+      thresholds,
+      evaluated: result.evaluated,
+      willUnsubscribe: result.candidates.length,
+      updated: 'updated' in result ? result.updated : 0,
+      candidates: result.candidates,
+      items: result.items
     });
   } catch (error) {
     next(error);
