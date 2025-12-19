@@ -803,3 +803,70 @@ button.ghost {
   font-size: 0.95rem;
   overflow-wrap: anywhere;
 }
+
+.auto-rule {
+  margin-top: 0.6rem;
+}
+
+.auto-rule-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+@media (max-width: 960px) {
+  .auto-rule-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .auto-rule-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+.auto-rule-grid label {
+  display: grid;
+  gap: 0.25rem;
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+.auto-rule-grid label span {
+  color: #475569;
+}
+
+.auto-rule-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.auto-preview {
+  margin-top: 0.6rem;
+}
+
+.auto-preview-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.auto-preview-controls label {
+  display: grid;
+  gap: 0.25rem;
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+.auto-preview-controls label span {
+  color: #475569;
+}
+
+.auto-preview-list {
+  max-height: 380px;
+  overflow: auto;
+}

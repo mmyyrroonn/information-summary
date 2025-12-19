@@ -65,6 +65,8 @@ export interface AutoUnsubscribeCandidate {
   subscriptionId: string;
   screenName: string;
   status: SubscriptionStatus;
+  desiredStatus: SubscriptionStatus;
+  action: 'unsubscribe' | 'resubscribe';
   avgImportance: number | null;
   scoredTweets: number;
   highScoreTweets: number;
@@ -72,7 +74,7 @@ export interface AutoUnsubscribeCandidate {
   matchedAvg: boolean;
   matchedHighCount: boolean;
   matchedHighRatio: boolean;
-  decision: 'keep' | 'unsubscribe';
+  decision: 'keep' | 'drop';
 }
 
 export interface AutoUnsubscribeResponse {
@@ -85,7 +87,9 @@ export interface AutoUnsubscribeResponse {
   };
   evaluated: number;
   willUnsubscribe: number;
-  updated: number;
+  willResubscribe: number;
+  updatedUnsubscribed: number;
+  updatedResubscribed: number;
   candidates: AutoUnsubscribeCandidate[];
 }
 
