@@ -56,6 +56,7 @@ const CHAT_COMPLETION_SDK_MAX_RETRIES = 0;
 const TAG_FALLBACK_KEY = 'others';
 const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
+const REPORT_WINDOW_HOURS = 6;
 const TAG_DISPLAY_NAMES: Record<string, string> = {
   airdrop: '空投 / 福利',
   token: '代币 / 市场',
@@ -115,6 +116,7 @@ interface ReportPayload {
 }
 
 type ReportSection = NonNullable<ReportPayload['sections']>[number];
+type ReportWindow = { start: Date; end: Date };
 
 interface ClusterReportOutline {
   mode: 'clustered';
@@ -162,11 +164,27 @@ function ensureClient() {
   return client;
 }
 
-function defaultWindow() {
+async function defaultWindow(): Promise<ReportWindow | null> {
   const now = withTz(new Date(), config.REPORT_TIMEZONE);
+  const lastReport = await prisma.report.findFirst({ orderBy: { periodEnd: 'desc' } });
+  if (!lastReport) {
+    return {
+      start: now.subtract(REPORT_WINDOW_HOURS, 'hour').toDate(),
+      end: now.toDate()
+    };
+  }
+  const lastEnd = withTz(lastReport.periodEnd, config.REPORT_TIMEZONE);
+  const nextEnd = lastEnd.add(REPORT_WINDOW_HOURS, 'hour');
+  if (now.isBefore(nextEnd)) {
+    logger.info('Report generation skipped: previous window still active', {
+      lastPeriodEnd: lastReport.periodEnd.toISOString(),
+      nextAvailableAt: nextEnd.toDate().toISOString()
+    });
+    return null;
+  }
   return {
-    start: now.subtract(24, 'hour').toDate(),
-    end: now.toDate()
+    start: lastEnd.toDate(),
+    end: nextEnd.toDate()
   };
 }
 
@@ -1202,13 +1220,18 @@ function renderClusterReportMarkdown(outline: ClusterReportOutline, window: { st
   return lines.join('\n');
 }
 
-export async function generateReport(window = defaultWindow()) {
-  const windowMeta = { start: window.start.toISOString(), end: window.end.toISOString() };
+export async function generateReport(window?: ReportWindow | null) {
+  const resolvedWindow = window ?? (await defaultWindow());
+  if (!resolvedWindow) {
+    return null;
+  }
+  const reportWindow = resolvedWindow;
+  const windowMeta = { start: reportWindow.start.toISOString(), end: reportWindow.end.toISOString() };
   logger.info('Report generation requested', windowMeta);
   const insights = await prisma.tweetInsight.findMany({
     where: {
       tweet: {
-        tweetedAt: { gte: window.start, lte: window.end }
+        tweetedAt: { gte: reportWindow.start, lte: reportWindow.end }
       },
       verdict: { not: 'ignore' }
     },
@@ -1280,16 +1303,16 @@ export async function generateReport(window = defaultWindow()) {
         ...windowMeta,
         eligible: reportInsights.length
       });
-      const blueprint = buildTagReportPayload(reportInsights, window);
+      const blueprint = buildTagReportPayload(reportInsights, reportWindow);
       if (!blueprint.sections?.length) {
         logger.info('Tag-based report builder produced no sections', windowMeta);
         return null;
       }
-      const markdown = renderReportMarkdown(blueprint, window);
+      const markdown = renderReportMarkdown(blueprint, reportWindow);
       const report = await prisma.report.create({
         data: {
-          periodStart: window.start,
-          periodEnd: window.end,
+          periodStart: reportWindow.start,
+          periodEnd: reportWindow.end,
           headline: blueprint.headline,
           content: markdown,
           outline: blueprint as unknown as Prisma.JsonObject,
@@ -1369,13 +1392,13 @@ export async function generateReport(window = defaultWindow()) {
       sections
     };
 
-    const markdown = renderClusterReportMarkdown(outline, window);
+    const markdown = renderClusterReportMarkdown(outline, reportWindow);
 
     const report = await prisma.report.create({
       data: {
-        periodStart: window.start,
-        periodEnd: window.end,
-        headline: `${formatDisplayDate(window.end, config.REPORT_TIMEZONE)} 主题聚类汇总`,
+        periodStart: reportWindow.start,
+        periodEnd: reportWindow.end,
+        headline: `${formatDisplayDate(reportWindow.end, config.REPORT_TIMEZONE)} 主题聚类汇总`,
         content: markdown,
         outline: outline as unknown as Prisma.JsonObject,
         aiRunId: aiRun.id
