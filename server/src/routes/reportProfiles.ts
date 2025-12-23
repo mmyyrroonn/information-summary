@@ -7,6 +7,7 @@ import {
   createReportProfile,
   deleteReportProfile,
   getReportProfile,
+  getOrCreateDefaultReportProfile,
   listReportProfiles,
   updateReportProfile
 } from '../services/reportProfileService';
@@ -68,6 +69,15 @@ router.get('/', async (_req, res, next) => {
   try {
     const profiles = await listReportProfiles();
     res.json(profiles);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/default', async (_req, res, next) => {
+  try {
+    const profile = await getOrCreateDefaultReportProfile();
+    res.json(profile);
   } catch (error) {
     next(error);
   }

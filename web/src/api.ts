@@ -66,11 +66,12 @@ interface ApiClient {
   importFollowingUsers: (payload: { screenName?: string; userId?: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   runFetchTask: () => Promise<JobEnqueueResponse>;
   runAnalyzeTask: () => Promise<ClassificationJobResponse>;
-  runReportTask: (notify: boolean) => Promise<JobEnqueueResponse>;
+  runReportTask: (payload: { notify: boolean; profileId?: string; windowEnd?: string }) => Promise<JobEnqueueResponse>;
   getNotificationConfig: () => Promise<NotificationConfig>;
   updateNotificationConfig: (payload: NotificationConfig) => Promise<NotificationConfig>;
   sendTelegramTest: (payload?: { message?: string }) => Promise<TelegramTestResult>;
   listTagOptions: (params?: { limit?: number }) => Promise<TagOptionsResponse>;
+  getDefaultReportProfile: () => Promise<ReportProfile>;
   listReports: (params?: { profileId?: string; limit?: number }) => Promise<ReportSummary[]>;
   getReport: (id: string) => Promise<ReportDetail>;
   sendReport: (id: string) => Promise<unknown>;
@@ -154,10 +155,15 @@ export const api: ApiClient = {
       body: JSON.stringify({ dedupe: true })
     }),
   runAnalyzeTask: () => request<ClassificationJobResponse>('/tasks/analyze', { method: 'POST' }),
-  runReportTask: (notify: boolean) =>
+  runReportTask: (payload) =>
     request<JobEnqueueResponse>('/tasks/report', {
       method: 'POST',
-      body: JSON.stringify({ notify, dedupe: true })
+      body: JSON.stringify({
+        notify: payload.notify,
+        ...(payload.profileId ? { profileId: payload.profileId } : {}),
+        ...(payload.windowEnd ? { windowEnd: payload.windowEnd } : {}),
+        dedupe: true
+      })
     }),
   getNotificationConfig: () => request<NotificationConfig>('/config/notification'),
   updateNotificationConfig: (payload) =>
@@ -173,6 +179,7 @@ export const api: ApiClient = {
     const path = query ? `/tags?${query}` : '/tags';
     return request<TagOptionsResponse>(path);
   },
+  getDefaultReportProfile: () => request<ReportProfile>('/report-profiles/default'),
   listReports: (params = {}) => {
     const search = new URLSearchParams();
     if (params.profileId) {

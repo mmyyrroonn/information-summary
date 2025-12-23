@@ -229,6 +229,27 @@ button.ghost {
   margin: 0;
 }
 
+.report-runner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.report-runner label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.report-runner .notify-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
 .job-status {
   margin: 0;
   font-size: 0.85rem;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { api } from '../api';
-import type { BackgroundJobSummary, JobEnqueueResponse, ReportDetail, ReportSummary } from '../types';
+import type { BackgroundJobSummary, JobEnqueueResponse, ReportDetail, ReportProfile, ReportSummary } from '../types';
 
 marked.setOptions({
   gfm: true,
@@ -79,6 +79,8 @@ export function DashboardPage() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(null);
   const [notifyOnReport, setNotifyOnReport] = useState(true);
+  const [reportWindowEnd, setReportWindowEnd] = useState('');
+  const [defaultProfile, setDefaultProfile] = useState<ReportProfile | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [taskJobs, setTaskJobs] = useState<Record<TaskType, TaskJobState>>({
@@ -106,6 +108,7 @@ export function DashboardPage() {
 
   useEffect(() => {
     refreshReports();
+    refreshDefaultProfile();
     hydrateActiveJobs();
     return () => {
       aliveRef.current = false;
@@ -125,6 +128,15 @@ export function DashboardPage() {
       }
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '加载日报失败');
+    }
+  }
+
+  async function refreshDefaultProfile() {
+    try {
+      const profile = await api.getDefaultReportProfile();
+      setDefaultProfile(profile);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : '加载默认 profile 失败');
     }
   }
 
@@ -163,6 +175,7 @@ export function DashboardPage() {
       case 'classify-tweets':
         return 'analyze';
       case 'report-pipeline':
+      case 'report-profile':
         return 'report';
       default:
         return null;
@@ -319,7 +332,20 @@ export function DashboardPage() {
           );
         }
       } else {
-        const result = await api.runReportTask(notifyOnReport);
+        const windowEnd = reportWindowEnd.trim();
+        let windowEndIso: string | undefined;
+        if (windowEnd) {
+          const parsed = new Date(windowEnd);
+          if (Number.isNaN(parsed.getTime())) {
+            setStatusMessage('窗口结束时间格式不正确');
+            return;
+          }
+          windowEndIso = parsed.toISOString();
+        }
+        const result = await api.runReportTask({
+          notify: notifyOnReport,
+          ...(windowEndIso ? { windowEnd: windowEndIso } : {})
+        });
         handleJobEnqueue('report', result, notifyOnReport ? '推送日报任务' : '日报生成任务');
       }
     } catch (error) {
@@ -368,10 +394,24 @@ export function DashboardPage() {
           </div>
           <div className="task-card">
             <h3>3. 汇总 & 推送</h3>
-            <label className="notify-toggle">
-              <input type="checkbox" checked={notifyOnReport} onChange={(e) => setNotifyOnReport(e.target.checked)} />
-              生成后自动推送到 Telegram
-            </label>
+            <div className="report-runner">
+              <label className="notify-toggle">
+                <input type="checkbox" checked={notifyOnReport} onChange={(e) => setNotifyOnReport(e.target.checked)} />
+                生成后自动推送到 Telegram
+              </label>
+              <label>
+                窗口结束时间
+                <input
+                  type="datetime-local"
+                  value={reportWindowEnd}
+                  onChange={(e) => setReportWindowEnd(e.target.value)}
+                />
+                <span className="hint">留空则使用当前时间</span>
+              </label>
+              <p className="hint">
+                默认 Profile：{defaultProfile ? `${defaultProfile.name} · ${defaultProfile.windowHours}h · ${defaultProfile.timezone}` : '加载中...'}
+              </p>
+            </div>
             <button onClick={() => runTask('report')} disabled={busy === 'task-report'}>
               {busy === 'task-report' ? '执行中...' : '生成日报'}
             </button>

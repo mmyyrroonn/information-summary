@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { enqueueJob } from '../jobs/jobQueue';
 import { requestClassificationRun } from '../jobs/classificationTrigger';
 import { getJobById, listJobs, serializeJob } from '../services/jobService';
+import { getOrCreateDefaultReportProfile } from '../services/reportProfileService';
 
 const router = Router();
 const jobTypeSchema = z.enum(['fetch-subscriptions', 'classify-tweets', 'report-pipeline', 'report-profile'] as const);
@@ -82,16 +83,16 @@ router.post('/report', async (req, res, next) => {
       })
       .parse(req.body ?? {});
     const notify = body.notify ?? true;
-    if (body.profileId) {
-      let windowEnd: string | undefined;
-      if (body.windowEnd) {
-        const parsed = new Date(body.windowEnd);
-        if (Number.isNaN(parsed.getTime())) {
-          res.status(400).json({ message: 'Invalid windowEnd' });
-          return;
-        }
-        windowEnd = parsed.toISOString();
+    let windowEnd: string | undefined;
+    if (body.windowEnd) {
+      const parsed = new Date(body.windowEnd);
+      if (Number.isNaN(parsed.getTime())) {
+        res.status(400).json({ message: 'Invalid windowEnd' });
+        return;
       }
+      windowEnd = parsed.toISOString();
+    }
+    if (body.profileId) {
       const { job, created } = await enqueueJob(
         'report-profile',
         {
@@ -110,17 +111,23 @@ router.post('/report', async (req, res, next) => {
       return;
     }
 
-    const payload = {
-      notify,
-      trigger: 'manual'
-    };
-    const { job, created } = await enqueueJob('report-pipeline', payload, {
-      dedupe: body.dedupe ?? false
-    });
+    const defaultProfile = await getOrCreateDefaultReportProfile();
+    const { job, created } = await enqueueJob(
+      'report-profile',
+      {
+        profileId: defaultProfile.id,
+        notify,
+        trigger: 'manual',
+        windowEnd: windowEnd ?? new Date().toISOString()
+      },
+      {
+        dedupe: body.dedupe ?? false
+      }
+    );
     res.status(created ? 202 : 200).json({
       created,
       job: serializeJob(job),
-      notify: payload.notify
+      notify
     });
   } catch (error) {
     next(error);

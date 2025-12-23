@@ -1,8 +1,8 @@
 import { logger } from '../logger';
 import { config } from '../config';
 import { fetchAllSubscriptions } from '../services/ingestService';
-import { classifyTweets, generateReport, generateReportForProfile, sendReportAndNotify } from '../services/aiService';
-import { getReportProfile } from '../services/reportProfileService';
+import { classifyTweets, generateReportForProfile, sendReportAndNotify } from '../services/aiService';
+import { getOrCreateDefaultReportProfile, getReportProfile } from '../services/reportProfileService';
 import { withAiProcessingLock } from '../services/lockService';
 import { JobPayloadMap, QueuedJob } from './jobQueue';
 
@@ -60,19 +60,29 @@ export async function handleReportPipelineJob(job: QueuedJob<'report-pipeline'>)
   const payload = (job.payload ?? {}) as JobPayloadMap['report-pipeline'];
   const shouldNotify = payload.notify ?? true;
   const startedAt = Date.now();
+  const parsedWindowEnd = payload.windowEnd ? new Date(payload.windowEnd) : null;
+  const windowEnd =
+    parsedWindowEnd && Number.isNaN(parsedWindowEnd.getTime()) ? null : parsedWindowEnd;
   logger.info('Running queued report pipeline', {
     trigger: payload.trigger ?? 'queue',
     notify: shouldNotify,
+    windowEnd: windowEnd?.toISOString() ?? null,
     startedAt: new Date(startedAt).toISOString()
   });
   try {
+    const defaultProfile = await getOrCreateDefaultReportProfile();
+    if (!defaultProfile.enabled) {
+      logger.warn('Default report profile disabled, skipping job', { profileId: defaultProfile.id });
+      return;
+    }
     await withAiProcessingLock(
       `job:${job.id}`,
       async () => {
-        const report = await generateReport();
+        const report = await generateReportForProfile(defaultProfile, windowEnd ?? undefined);
         if (!report) {
           logger.info('No report generated for the current window', {
             checkedAt: new Date().toISOString(),
+            profileId: defaultProfile.id,
             durationMs: Date.now() - startedAt
           });
           return;
@@ -86,6 +96,7 @@ export async function handleReportPipelineJob(job: QueuedJob<'report-pipeline'>)
           } catch (notifyError) {
             logger.error('Report notification failed, skipping Telegram delivery', {
               reportId: report.id,
+              profileId: defaultProfile.id,
               error:
                 notifyError instanceof Error
                   ? { message: notifyError.message, stack: notifyError.stack }

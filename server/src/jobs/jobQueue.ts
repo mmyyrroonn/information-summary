@@ -18,6 +18,7 @@ export interface JobPayloadMap {
   'report-pipeline': {
     notify?: boolean;
     trigger?: string;
+    windowEnd?: string;
   };
   'report-profile': {
     profileId: string;

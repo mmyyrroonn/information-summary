@@ -104,7 +104,7 @@
 1. **订阅管理**：UI 可添加/删除查看订阅，也可单独对某个账号抓取当日推文。
 2. **抓取任务**：`/api/tasks/fetch` 会遍历订阅账号，通过 RapidAPI 拉取当日新推文并落库；同一账号默认 12 小时冷却，可根据 `limit` 参数或定时器设置分批执行。
 3. **AI 筛选**：`/api/tasks/analyze` 读取未分析推文，调用 DeepSeek 批量打分，结构化写入 `TweetInsight`。
-4. **报告生成**：`/api/tasks/report` 根据当日洞察生成 Markdown 周报，可选择是否立刻推送 Telegram。
+4. **报告生成**：`/api/tasks/report` 触发默认 Profile 日报，可选择是否推送并指定时间窗口；Profile 定时任务也可生成日报。
 5. **定时器**：抓取任务按 `FETCH_CRON_SCHEDULE` 分批运行（每批遵守 12 小时冷却，只处理少量订阅），积累到一定数量的未处理推文后自动触发 AI 筛选；`CLASSIFY_CRON_SCHEDULE` 兜底检查，报告由 `ReportProfile` 的 `scheduleCron` 驱动生成与推送。
 6. **前端面板**：
    - 手动触发「抓取/AI/报告」
@@ -114,7 +114,7 @@
 ## API 一览
 - `GET /health`：存活检测
 - `GET/POST/DELETE /api/subscriptions`：订阅 CRUD；`POST /api/subscriptions/:id/fetch` 手动抓取
-- `POST /api/tasks/fetch|analyze|report`：手动触发工作流（report 支持 `{ notify: boolean }`）
+- `POST /api/tasks/fetch|analyze|report`：手动触发工作流（report 支持 `{ notify, profileId, windowEnd }`）
 - `GET /api/reports`（支持 `profileId` 过滤）、`GET /api/reports/:id`、`POST /api/reports/:id/send`
 - `GET/POST/PUT/DELETE /api/report-profiles`、`POST /api/report-profiles/:id/run`
 - `GET/PUT /api/config/notification`：管理 Telegram 配置
