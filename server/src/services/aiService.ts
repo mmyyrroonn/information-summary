@@ -953,9 +953,10 @@ function buildTagReportPayload(
   insights: InsightWithTweet[],
   window: { start: Date; end: Date },
   timezone: string,
-  headline?: string
+  headline?: string,
+  preferredTags?: Set<string> | null
 ): ReportPayload {
-  const sections = buildTagSectionsFromInsights(insights);
+  const sections = buildTagSectionsFromInsights(insights, preferredTags);
   const title = headline ?? `${formatDisplayDate(window.end, timezone)} 分类资讯汇总`;
   const overview = ensureOverviewList(buildTagReportOverview(sections, insights.length), insights.length);
 
@@ -966,11 +967,11 @@ function buildTagReportPayload(
   };
 }
 
-function buildTagSectionsFromInsights(insights: InsightWithTweet[]): ReportSection[] {
+function buildTagSectionsFromInsights(insights: InsightWithTweet[], preferredTags?: Set<string> | null): ReportSection[] {
   const buckets = new Map<string, TagBucket>();
 
   insights.forEach((insight) => {
-    const tagKey = pickPrimaryTag(insight.tags);
+    const tagKey = pickPrimaryTag(insight.tags, preferredTags);
     const bucket = ensureBucket(buckets, tagKey);
     const sectionItem: ReportSectionInsight = {
       tweetId: insight.tweetId,
@@ -1028,14 +1029,15 @@ function describeBucket(bucket: BucketLike) {
   return `共 ${bucket.items.length} 条洞察，最高 ${rating}，已按重要度降序排列。`;
 }
 
-function pickPrimaryTag(tags?: string[] | null) {
+function pickPrimaryTag(tags?: string[] | null, preferredTags?: Set<string> | null) {
   if (!tags?.length) {
     return TAG_FALLBACK_KEY;
   }
-  const normalized = tags
-    .map((tag) => tag?.trim().toLowerCase())
-    .find((tag): tag is string => Boolean(tag)) ?? TAG_FALLBACK_KEY;
-  return TAG_DISPLAY_NAMES[normalized] ? normalized : TAG_FALLBACK_KEY;
+  const normalizedTags = normalizeFilterTags(tags);
+  const preferred =
+    preferredTags?.size ? normalizedTags.find((tag) => preferredTags.has(tag)) : undefined;
+  const fallback = preferred ?? normalizedTags[0] ?? TAG_FALLBACK_KEY;
+  return TAG_DISPLAY_NAMES[fallback] ? fallback : TAG_FALLBACK_KEY;
 }
 
 function ensureBucket(store: Map<string, TagBucket>, key: string) {
@@ -1282,6 +1284,11 @@ function normalizeFilterTags(tags?: string[] | null) {
   return normalized;
 }
 
+function buildPreferredTagSet(tags?: string[] | null) {
+  const normalized = normalizeFilterTags(tags);
+  return normalized.length ? new Set(normalized) : null;
+}
+
 function hasOverlap(values: string[], filter: Set<string>) {
   return values.some((value) => filter.has(value));
 }
@@ -1431,6 +1438,7 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
   }
 
   const { filtered: eligible, minImportance } = applyProfileFilters(insights, profile);
+  const preferredTagSet = buildPreferredTagSet(profile.includeTweetTags);
   if (!eligible.length) {
     logger.info('No insights left after profile filters', { ...windowMeta, total: insights.length });
     return null;
@@ -1481,7 +1489,7 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
     const headline = buildProfileHeadline(profile, reportWindow);
 
     if (groupBy === 'tag') {
-      const blueprint = buildTagReportPayload(reportInsights, reportWindow, timezone, headline);
+      const blueprint = buildTagReportPayload(reportInsights, reportWindow, timezone, headline, preferredTagSet);
       if (!blueprint.sections?.length) {
         logger.info('Profile tag report builder produced no sections', windowMeta);
         await completeAiRun();
@@ -1565,7 +1573,7 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
 
     if (!candidates.length) {
       logger.warn('No embeddings available for profile insights, falling back to tag report', windowMeta);
-      const blueprint = buildTagReportPayload(reportInsights, reportWindow, timezone, headline);
+      const blueprint = buildTagReportPayload(reportInsights, reportWindow, timezone, headline, preferredTagSet);
       if (!blueprint.sections?.length) {
         logger.info('Profile fallback tag report builder produced no sections', windowMeta);
         await completeAiRun();
@@ -1599,7 +1607,7 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
 
     const buckets = new Map<string, ClusterReportOutline['sections'][number]>();
     displayClusters.forEach((cluster) => {
-      const primary = pickPrimaryTag(cluster.representative.tags);
+      const primary = pickPrimaryTag(cluster.representative.tags, preferredTagSet);
       const bucket = buckets.get(primary) ?? {
         tag: primary,
         title: TAG_DISPLAY_NAMES[primary] ?? primary,
