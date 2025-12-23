@@ -117,6 +117,16 @@ export interface TelegramTestResult {
   chatId: string;
 }
 
+export interface TagOption {
+  tag: string;
+  count: number;
+}
+
+export interface TagOptionsResponse {
+  tweetTags: TagOption[];
+  authorTags: TagOption[];
+}
+
 export interface ReportSummary {
   id: string;
   headline: string;

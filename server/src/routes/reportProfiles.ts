@@ -185,14 +185,24 @@ router.post('/:id/run', async (req, res, next) => {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     const body = z
       .object({
-        notify: z.boolean().optional()
+        notify: z.boolean().optional(),
+        windowEnd: z.string().optional()
       })
       .parse(req.body ?? {});
+    let windowEnd: string | undefined;
+    if (body.windowEnd) {
+      const parsed = new Date(body.windowEnd);
+      if (Number.isNaN(parsed.getTime())) {
+        res.status(400).json({ message: 'Invalid windowEnd' });
+        return;
+      }
+      windowEnd = parsed.toISOString();
+    }
     const payload = {
       profileId: params.id,
       notify: body.notify ?? true,
       trigger: 'manual',
-      windowEnd: new Date().toISOString()
+      windowEnd: windowEnd ?? new Date().toISOString()
     };
     const { job, created } = await enqueueJob('report-profile', payload, { dedupe: false });
     res.status(created ? 202 : 200).json({

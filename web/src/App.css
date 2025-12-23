@@ -340,6 +340,53 @@ button.ghost {
   font-size: 0.85rem;
 }
 
+.profile-runner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.profile-runner label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.profile-runner .notify-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.tag-input .tag-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tag-chip {
+  border: 1px solid #cbd5f5;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.tag-chip:hover {
+  background: #e2e8f0;
+}
+
+.tag-empty {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
 .profile-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

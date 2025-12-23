@@ -77,14 +77,29 @@ router.post('/report', async (req, res, next) => {
       .object({
         notify: z.boolean().optional(),
         dedupe: z.boolean().optional(),
-        profileId: z.string().uuid().optional()
+        profileId: z.string().uuid().optional(),
+        windowEnd: z.string().optional()
       })
       .parse(req.body ?? {});
     const notify = body.notify ?? true;
     if (body.profileId) {
+      let windowEnd: string | undefined;
+      if (body.windowEnd) {
+        const parsed = new Date(body.windowEnd);
+        if (Number.isNaN(parsed.getTime())) {
+          res.status(400).json({ message: 'Invalid windowEnd' });
+          return;
+        }
+        windowEnd = parsed.toISOString();
+      }
       const { job, created } = await enqueueJob(
         'report-profile',
-        { profileId: body.profileId, notify, trigger: 'manual', windowEnd: new Date().toISOString() },
+        {
+          profileId: body.profileId,
+          notify,
+          trigger: 'manual',
+          windowEnd: windowEnd ?? new Date().toISOString()
+        },
         { dedupe: body.dedupe ?? false }
       );
       res.status(created ? 202 : 200).json({

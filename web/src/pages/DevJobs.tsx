@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import type { BackgroundJobSummary, BackgroundJobStatus, ReportProfile, ReportProfileGroupBy } from '../types';
+import type {
+  BackgroundJobSummary,
+  BackgroundJobStatus,
+  ReportProfile,
+  ReportProfileGroupBy,
+  TagOption,
+  TagOptionsResponse
+} from '../types';
 
 const typeOptions = [
   { value: '', label: '全部类型' },
@@ -33,6 +40,8 @@ const verdictOptions = [
   { value: 'actionable', label: '可行动' }
 ] as const;
 
+const TAG_SUGGESTION_LIMIT = 8;
+
 type ProfileDraft = {
   name: string;
   enabled: boolean;
@@ -49,6 +58,11 @@ type ProfileDraft = {
   aiFilterEnabled: boolean;
   aiFilterPrompt: string;
   aiFilterMaxKeepPerChunk: string;
+};
+
+type ProfileRunOptions = {
+  notify: boolean;
+  windowEnd: string;
 };
 
 function createEmptyDraft(): ProfileDraft {
@@ -80,6 +94,76 @@ function parseList(input: string) {
 
 function formatList(values?: string[] | null) {
   return values?.length ? values.join(', ') : '';
+}
+
+function applyTagSuggestion(value: string, suggestion: string) {
+  const parts = value.split(/[,，\n]/);
+  if (!parts.length) {
+    return suggestion;
+  }
+  parts[parts.length - 1] = suggestion;
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  parts
+    .map((entry) => entry.trim())
+    .filter((entry) => Boolean(entry))
+    .forEach((entry) => {
+      const normalized = entry.toLowerCase();
+      if (seen.has(normalized)) return;
+      seen.add(normalized);
+      unique.push(entry);
+    });
+  return unique.join(', ');
+}
+
+function getTagSuggestions(value: string, options: TagOption[]) {
+  const selected = new Set(parseList(value).map((entry) => entry.toLowerCase()));
+  const lastToken = value.split(/[,，\n]/).pop()?.trim().toLowerCase() ?? '';
+  return options
+    .filter((option) => !selected.has(option.tag))
+    .filter((option) => (lastToken ? option.tag.includes(lastToken) : true))
+    .slice(0, TAG_SUGGESTION_LIMIT);
+}
+
+function TagInput({
+  label,
+  value,
+  options,
+  placeholder,
+  onChange
+}: {
+  label: string;
+  value: string;
+  options: TagOption[];
+  placeholder?: string;
+  onChange: (value: string) => void;
+}) {
+  const suggestions = getTagSuggestions(value, options);
+  return (
+    <label className="tag-input">
+      {label}
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      {options.length ? (
+        <div className="tag-suggestions">
+          {suggestions.length ? (
+            suggestions.map((option) => (
+              <button
+                key={option.tag}
+                type="button"
+                className="tag-chip"
+                title={`${option.tag} · ${option.count}`}
+                onClick={() => onChange(applyTagSuggestion(value, option.tag))}
+              >
+                {option.tag}
+              </button>
+            ))
+          ) : (
+            <span className="tag-empty">无匹配</span>
+          )}
+        </div>
+      ) : null}
+    </label>
+  );
 }
 
 function buildProfilePayload(draft: ProfileDraft) {
@@ -143,12 +227,15 @@ export function DevJobsPage() {
   const [profiles, setProfiles] = useState<ReportProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [tagOptions, setTagOptions] = useState<TagOptionsResponse>({ tweetTags: [], authorTags: [] });
+  const [tagOptionsLoading, setTagOptionsLoading] = useState(false);
   const [createDraft, setCreateDraft] = useState<ProfileDraft>(() => createEmptyDraft());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<ProfileDraft>(() => createEmptyDraft());
   const [savingProfileId, setSavingProfileId] = useState<string | null>(null);
   const [runningProfileId, setRunningProfileId] = useState<string | null>(null);
   const [deletingProfileId, setDeletingProfileId] = useState<string | null>(null);
+  const [runOptions, setRunOptions] = useState<Record<string, ProfileRunOptions>>({});
 
   useEffect(() => {
     void refreshJobs();
@@ -157,6 +244,10 @@ export function DevJobsPage() {
 
   useEffect(() => {
     void refreshProfiles();
+  }, []);
+
+  useEffect(() => {
+    void refreshTagOptions();
   }, []);
 
   async function refreshJobs() {
@@ -185,6 +276,18 @@ export function DevJobsPage() {
       setProfileMessage(error instanceof Error ? error.message : '加载 profile 失败');
     } finally {
       setProfilesLoading(false);
+    }
+  }
+
+  async function refreshTagOptions() {
+    try {
+      setTagOptionsLoading(true);
+      const response = await api.listTagOptions({ limit: 100 });
+      setTagOptions(response);
+    } catch (error) {
+      setProfileMessage(error instanceof Error ? error.message : '加载标签失败');
+    } finally {
+      setTagOptionsLoading(false);
     }
   }
 
@@ -250,15 +353,36 @@ export function DevJobsPage() {
 
   async function handleRunProfile(profile: ReportProfile) {
     try {
+      const options = runOptions[profile.id] ?? { notify: true, windowEnd: '' };
+      const windowEnd = options.windowEnd.trim();
+      let windowEndIso: string | undefined;
+      if (windowEnd) {
+        const parsed = new Date(windowEnd);
+        if (Number.isNaN(parsed.getTime())) {
+          setProfileMessage('窗口结束时间格式不正确');
+          return;
+        }
+        windowEndIso = parsed.toISOString();
+      }
       setProfileMessage(null);
       setRunningProfileId(profile.id);
-      const result = await api.runReportProfile(profile.id, true);
+      const result = await api.runReportProfile(profile.id, {
+        notify: options.notify,
+        ...(windowEndIso ? { windowEnd: windowEndIso } : {})
+      });
       setProfileMessage(`Profile 已触发任务 ${result.job.id.slice(0, 8)}`);
     } catch (error) {
       setProfileMessage(error instanceof Error ? error.message : '触发 profile 失败');
     } finally {
       setRunningProfileId(null);
     }
+  }
+
+  function updateRunOptions(profileId: string, next: Partial<ProfileRunOptions>) {
+    setRunOptions((prev) => {
+      const current = prev[profileId] ?? { notify: true, windowEnd: '' };
+      return { ...prev, [profileId]: { ...current, ...next } };
+    });
   }
 
   async function handleDeleteProfile(profile: ReportProfile) {
@@ -386,38 +510,34 @@ export function DevJobsPage() {
                 onChange={(e) => setCreateDraft((prev) => ({ ...prev, minImportance: e.target.value }))}
               />
             </label>
-            <label>
-              推文标签（包含）
-              <input
-                value={createDraft.includeTweetTags}
-                onChange={(e) => setCreateDraft((prev) => ({ ...prev, includeTweetTags: e.target.value }))}
-                placeholder="market, policy"
-              />
-            </label>
-            <label>
-              推文标签（排除）
-              <input
-                value={createDraft.excludeTweetTags}
-                onChange={(e) => setCreateDraft((prev) => ({ ...prev, excludeTweetTags: e.target.value }))}
-                placeholder="airdrop, ecosystem"
-              />
-            </label>
-            <label>
-              作者标签（包含）
-              <input
-                value={createDraft.includeAuthorTags}
-                onChange={(e) => setCreateDraft((prev) => ({ ...prev, includeAuthorTags: e.target.value }))}
-                placeholder="alpha-blogger"
-              />
-            </label>
-            <label>
-              作者标签（排除）
-              <input
-                value={createDraft.excludeAuthorTags}
-                onChange={(e) => setCreateDraft((prev) => ({ ...prev, excludeAuthorTags: e.target.value }))}
-                placeholder="noise"
-              />
-            </label>
+            <TagInput
+              label="推文标签（包含）"
+              value={createDraft.includeTweetTags}
+              options={tagOptions.tweetTags}
+              placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+              onChange={(value) => setCreateDraft((prev) => ({ ...prev, includeTweetTags: value }))}
+            />
+            <TagInput
+              label="推文标签（排除）"
+              value={createDraft.excludeTweetTags}
+              options={tagOptions.tweetTags}
+              placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+              onChange={(value) => setCreateDraft((prev) => ({ ...prev, excludeTweetTags: value }))}
+            />
+            <TagInput
+              label="作者标签（包含）"
+              value={createDraft.includeAuthorTags}
+              options={tagOptions.authorTags}
+              placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+              onChange={(value) => setCreateDraft((prev) => ({ ...prev, includeAuthorTags: value }))}
+            />
+            <TagInput
+              label="作者标签（排除）"
+              value={createDraft.excludeAuthorTags}
+              options={tagOptions.authorTags}
+              placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+              onChange={(value) => setCreateDraft((prev) => ({ ...prev, excludeAuthorTags: value }))}
+            />
             <label>
               Verdict 过滤
               <div className="profile-checklist">
@@ -489,14 +609,6 @@ export function DevJobsPage() {
                   <div className="profile-actions">
                     <button
                       type="button"
-                      className="ghost"
-                      onClick={() => handleRunProfile(profile)}
-                      disabled={runningProfileId === profile.id}
-                    >
-                      {runningProfileId === profile.id ? '触发中...' : '立即执行'}
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => handleToggleEnabled(profile)}
                       disabled={savingProfileId === profile.id}
                     >
@@ -525,6 +637,33 @@ export function DevJobsPage() {
                   <span>推文标签：{formatList(profile.includeTweetTags) || '不限'}</span>
                   <span>作者标签：{formatList(profile.includeAuthorTags) || '不限'}</span>
                   <span>AI 二次筛选：{profile.aiFilterEnabled ? '启用' : '关闭'}</span>
+                </div>
+                <div className="profile-runner">
+                  <label className="notify-toggle">
+                    <input
+                      type="checkbox"
+                      checked={(runOptions[profile.id] ?? { notify: true, windowEnd: '' }).notify}
+                      onChange={(e) => updateRunOptions(profile.id, { notify: e.target.checked })}
+                    />
+                    执行后推送
+                  </label>
+                  <label>
+                    窗口结束时间
+                    <input
+                      type="datetime-local"
+                      value={(runOptions[profile.id] ?? { notify: true, windowEnd: '' }).windowEnd}
+                      onChange={(e) => updateRunOptions(profile.id, { windowEnd: e.target.value })}
+                    />
+                    <span className="hint">留空则使用当前时间</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => handleRunProfile(profile)}
+                    disabled={runningProfileId === profile.id}
+                  >
+                    {runningProfileId === profile.id ? '触发中...' : '立即执行'}
+                  </button>
                 </div>
 
                 {isEditing && (
@@ -582,34 +721,34 @@ export function DevJobsPage() {
                           onChange={(e) => setEditDraft((prev) => ({ ...prev, minImportance: e.target.value }))}
                         />
                       </label>
-                      <label>
-                        推文标签（包含）
-                        <input
-                          value={editDraft.includeTweetTags}
-                          onChange={(e) => setEditDraft((prev) => ({ ...prev, includeTweetTags: e.target.value }))}
-                        />
-                      </label>
-                      <label>
-                        推文标签（排除）
-                        <input
-                          value={editDraft.excludeTweetTags}
-                          onChange={(e) => setEditDraft((prev) => ({ ...prev, excludeTweetTags: e.target.value }))}
-                        />
-                      </label>
-                      <label>
-                        作者标签（包含）
-                        <input
-                          value={editDraft.includeAuthorTags}
-                          onChange={(e) => setEditDraft((prev) => ({ ...prev, includeAuthorTags: e.target.value }))}
-                        />
-                      </label>
-                      <label>
-                        作者标签（排除）
-                        <input
-                          value={editDraft.excludeAuthorTags}
-                          onChange={(e) => setEditDraft((prev) => ({ ...prev, excludeAuthorTags: e.target.value }))}
-                        />
-                      </label>
+                      <TagInput
+                        label="推文标签（包含）"
+                        value={editDraft.includeTweetTags}
+                        options={tagOptions.tweetTags}
+                        placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+                        onChange={(value) => setEditDraft((prev) => ({ ...prev, includeTweetTags: value }))}
+                      />
+                      <TagInput
+                        label="推文标签（排除）"
+                        value={editDraft.excludeTweetTags}
+                        options={tagOptions.tweetTags}
+                        placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+                        onChange={(value) => setEditDraft((prev) => ({ ...prev, excludeTweetTags: value }))}
+                      />
+                      <TagInput
+                        label="作者标签（包含）"
+                        value={editDraft.includeAuthorTags}
+                        options={tagOptions.authorTags}
+                        placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+                        onChange={(value) => setEditDraft((prev) => ({ ...prev, includeAuthorTags: value }))}
+                      />
+                      <TagInput
+                        label="作者标签（排除）"
+                        value={editDraft.excludeAuthorTags}
+                        options={tagOptions.authorTags}
+                        placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+                        onChange={(value) => setEditDraft((prev) => ({ ...prev, excludeAuthorTags: value }))}
+                      />
                       <label>
                         Verdict 过滤
                         <div className="profile-checklist">

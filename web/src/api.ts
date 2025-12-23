@@ -15,7 +15,8 @@ import type {
   BackgroundJobSummary,
   BackgroundJobStatus,
   JobEnqueueResponse,
-  ClassificationJobResponse
+  ClassificationJobResponse,
+  TagOptionsResponse
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
@@ -69,6 +70,7 @@ interface ApiClient {
   getNotificationConfig: () => Promise<NotificationConfig>;
   updateNotificationConfig: (payload: NotificationConfig) => Promise<NotificationConfig>;
   sendTelegramTest: (payload?: { message?: string }) => Promise<TelegramTestResult>;
+  listTagOptions: (params?: { limit?: number }) => Promise<TagOptionsResponse>;
   listReports: (params?: { profileId?: string; limit?: number }) => Promise<ReportSummary[]>;
   getReport: (id: string) => Promise<ReportDetail>;
   sendReport: (id: string) => Promise<unknown>;
@@ -76,7 +78,7 @@ interface ApiClient {
   createReportProfile: (payload: ReportProfileCreatePayload) => Promise<ReportProfile>;
   updateReportProfile: (id: string, payload: ReportProfileUpdatePayload) => Promise<ReportProfile>;
   deleteReportProfile: (id: string) => Promise<void>;
-  runReportProfile: (id: string, notify?: boolean) => Promise<JobEnqueueResponse>;
+  runReportProfile: (id: string, payload?: { notify?: boolean; windowEnd?: string }) => Promise<JobEnqueueResponse>;
   listTweets: (params?: {
     page?: number;
     pageSize?: number;
@@ -162,6 +164,15 @@ export const api: ApiClient = {
     request<NotificationConfig>('/config/notification', { method: 'PUT', body: JSON.stringify(payload) }),
   sendTelegramTest: (payload = {}) =>
     request<TelegramTestResult>('/dev/notifications/test', { method: 'POST', body: JSON.stringify(payload) }),
+  listTagOptions: (params = {}) => {
+    const search = new URLSearchParams();
+    if (typeof params.limit === 'number') {
+      search.set('limit', String(params.limit));
+    }
+    const query = search.toString();
+    const path = query ? `/tags?${query}` : '/tags';
+    return request<TagOptionsResponse>(path);
+  },
   listReports: (params = {}) => {
     const search = new URLSearchParams();
     if (params.profileId) {
@@ -182,10 +193,10 @@ export const api: ApiClient = {
   updateReportProfile: (id, payload) =>
     request<ReportProfile>(`/report-profiles/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   deleteReportProfile: (id) => request<null>(`/report-profiles/${id}`, { method: 'DELETE' }).then(() => undefined),
-  runReportProfile: (id, notify) =>
+  runReportProfile: (id, payload = {}) =>
     request<JobEnqueueResponse>(`/report-profiles/${id}/run`, {
       method: 'POST',
-      body: JSON.stringify(typeof notify === 'boolean' ? { notify } : {})
+      body: JSON.stringify(payload)
     }),
   listTweets: (params = {}) => {
     const search = new URLSearchParams();
