@@ -18,12 +18,14 @@ router.put('/notification', async (req, res, next) => {
     const body = z
       .object({
         tgBotToken: z.string().optional().nullable(),
-        tgChatId: z.string().optional().nullable()
+        tgChatId: z.string().optional().nullable(),
+        tgMessageThreadId: z.string().optional().nullable()
       })
       .parse(req.body ?? {});
     const updated = await updateNotificationConfig({
       tgBotToken: body.tgBotToken ?? null,
-      tgChatId: body.tgChatId ?? null
+      tgChatId: body.tgChatId ?? null,
+      tgMessageThreadId: body.tgMessageThreadId ?? null
     });
     res.json(updated);
   } catch (error) {

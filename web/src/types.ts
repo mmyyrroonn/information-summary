@@ -106,6 +106,14 @@ export interface FetchResult {
 export interface NotificationConfig {
   tgBotToken: string | null;
   tgChatId: string | null;
+  tgMessageThreadId: string | null;
+}
+
+export interface TelegramTestResult {
+  delivered: boolean;
+  text: string;
+  messageThreadId: number | null;
+  chatId: string;
 }
 
 export interface ReportSummary {

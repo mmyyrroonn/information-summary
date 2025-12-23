@@ -12,6 +12,18 @@ type ReportEntry = {
   text: string;
 };
 
+function parseMessageThreadId(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function normalizeItemText(text: string) {
   let output = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1: $2');
   output = output.replace(/\s*\[([^\]]+)\]\s*$/, ' Tags: $1');
@@ -115,15 +127,29 @@ export async function getNotificationConfig() {
   const dbConfig = await prisma.notificationConfig.findUnique({ where: { id: 1 } });
   return {
     tgBotToken: dbConfig?.tgBotToken ?? config.TG_BOT_TOKEN ?? null,
-    tgChatId: dbConfig?.tgChatId ?? config.TG_CHAT_ID ?? null
+    tgChatId: dbConfig?.tgChatId ?? config.TG_CHAT_ID ?? null,
+    tgMessageThreadId: dbConfig?.tgMessageThreadId ?? config.TG_MESSAGE_THREAD_ID ?? null
   };
 }
 
-export async function updateNotificationConfig(payload: { tgBotToken: string | null; tgChatId: string | null }) {
+export async function updateNotificationConfig(payload: {
+  tgBotToken: string | null;
+  tgChatId: string | null;
+  tgMessageThreadId: string | null;
+}) {
   await prisma.notificationConfig.upsert({
     where: { id: 1 },
-    create: { id: 1, tgBotToken: payload.tgBotToken, tgChatId: payload.tgChatId },
-    update: { tgBotToken: payload.tgBotToken, tgChatId: payload.tgChatId }
+    create: {
+      id: 1,
+      tgBotToken: payload.tgBotToken,
+      tgChatId: payload.tgChatId,
+      tgMessageThreadId: payload.tgMessageThreadId
+    },
+    update: {
+      tgBotToken: payload.tgBotToken,
+      tgChatId: payload.tgChatId,
+      tgMessageThreadId: payload.tgMessageThreadId
+    }
   });
   return getNotificationConfig();
 }
@@ -135,13 +161,36 @@ export async function sendMarkdownToTelegram(markdown: string) {
     return null;
   }
 
+  const messageThreadId = parseMessageThreadId(cfg.tgMessageThreadId);
   const messages = buildTelegramMessages(markdown, TELEGRAM_ITEMS_PER_MESSAGE).filter((message) => message.trim());
   for (const message of messages) {
+    const threadPayload = messageThreadId === null ? {} : { message_thread_id: messageThreadId };
     await axios.post(`https://api.telegram.org/bot${cfg.tgBotToken}/sendMessage`, {
       chat_id: cfg.tgChatId,
-      text: message
+      text: message,
+      ...threadPayload
     });
   }
 
   return { delivered: true, parts: messages.length };
+}
+
+export async function sendTestTelegramMessage(message?: string) {
+  const cfg = await getNotificationConfig();
+  if (!cfg.tgBotToken || !cfg.tgChatId) {
+    throw new Error('Telegram config missing');
+  }
+
+  const messageThreadId = parseMessageThreadId(cfg.tgMessageThreadId);
+  const text = message?.trim() || `Telegram test message ${new Date().toISOString()}`;
+  const payload: Record<string, unknown> = {
+    chat_id: cfg.tgChatId,
+    text
+  };
+  if (messageThreadId !== null) {
+    payload.message_thread_id = messageThreadId;
+  }
+  await axios.post(`https://api.telegram.org/bot${cfg.tgBotToken}/sendMessage`, payload);
+
+  return { delivered: true, text, messageThreadId, chatId: cfg.tgChatId };
 }

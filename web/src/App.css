@@ -271,6 +271,17 @@ button.ghost {
   min-width: 220px;
 }
 
+.dev-notify {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px dashed rgba(15, 23, 42, 0.2);
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
 .jobs-table-wrapper {
   overflow-x: auto;
 }

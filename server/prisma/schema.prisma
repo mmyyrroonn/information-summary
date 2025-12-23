@@ -115,10 +115,11 @@ model Report {
 }
 
 model NotificationConfig {
-  id         Int      @id @default(1)
-  tgBotToken String?
-  tgChatId   String?
-  updatedAt  DateTime @updatedAt
+  id                Int      @id @default(1)
+  tgBotToken        String?
+  tgChatId          String?
+  tgMessageThreadId String?
+  updatedAt         DateTime @updatedAt
 }
 
 model BackgroundJob {

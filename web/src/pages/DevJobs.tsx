@@ -17,6 +17,8 @@ const statusOptions: { value: '' | BackgroundJobStatus; label: string }[] = [
   { value: 'FAILED', label: '失败' }
 ];
 
+const JOB_LIST_LIMIT = 20;
+
 export function DevJobsPage() {
   const [jobs, setJobs] = useState<BackgroundJobSummary[]>([]);
   const [filters, setFilters] = useState<{ type: string; status: '' | BackgroundJobStatus }>({
@@ -25,6 +27,8 @@ export function DevJobsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [testMessage, setTestMessage] = useState('');
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     void refreshJobs();
@@ -37,7 +41,7 @@ export function DevJobsPage() {
       const response = await api.listJobs({
         ...(filters.type ? { type: filters.type } : {}),
         ...(filters.status ? { status: filters.status } : {}),
-        limit: 50
+        limit: JOB_LIST_LIMIT
       });
       setJobs(response);
     } catch (error) {
@@ -57,6 +61,20 @@ export function DevJobsPage() {
       setMessage(`任务 ${job.id.slice(0, 8)} 已删除`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '删除失败');
+    }
+  }
+
+  async function handleTestPush() {
+    try {
+      setTesting(true);
+      const trimmed = testMessage.trim();
+      const result = await api.sendTelegramTest(trimmed ? { message: trimmed } : {});
+      const threadHint = result.messageThreadId ? `，topic ${result.messageThreadId}` : '';
+      setMessage(`测试推送成功${threadHint}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '测试推送失败');
+    } finally {
+      setTesting(false);
     }
   }
 
@@ -98,6 +116,24 @@ export function DevJobsPage() {
             ))}
           </select>
         </label>
+      </div>
+      <div className="dev-notify">
+        <h3>Telegram 测试推送</h3>
+        <p className="hint">使用当前配置的 TG_CHAT_ID / TG_MESSAGE_THREAD_ID</p>
+        <div className="config-grid">
+          <label>
+            内容
+            <input
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+              placeholder="可留空，默认生成测试文案"
+            />
+          </label>
+          <button type="button" onClick={handleTestPush} disabled={testing}>
+            {testing ? '推送中...' : '发送测试消息'}
+          </button>
+        </div>
+        <p className="hint">任务列表仅展示最近 {JOB_LIST_LIMIT} 条。</p>
       </div>
 
       <div className="jobs-table-wrapper">

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { BackgroundJobStatus } from '@prisma/client';
 import { z } from 'zod';
 import { deleteJob, getJobById, listJobs } from '../services/jobService';
+import { sendTestTelegramMessage } from '../services/notificationService';
 
 const router = Router();
 
@@ -38,6 +39,25 @@ router.delete('/jobs/:id', async (req, res, next) => {
     await deleteJob(params.id);
     res.status(204).end();
   } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/notifications/test', async (req, res, next) => {
+  try {
+    const body = z
+      .object({
+        message: z.string().optional()
+      })
+      .parse(req.body ?? {});
+    const message = body.message?.trim() || undefined;
+    const result = await sendTestTelegramMessage(message);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Telegram config missing') {
+      res.status(400).json({ message: 'Telegram config missing' });
+      return;
+    }
     next(error);
   }
 });

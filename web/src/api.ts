@@ -2,6 +2,7 @@ import type {
   Subscription,
   SubscriptionStatus,
   NotificationConfig,
+  TelegramTestResult,
   ReportDetail,
   ReportSummary,
   FetchResult,
@@ -65,6 +66,7 @@ interface ApiClient {
   runReportTask: (notify: boolean) => Promise<JobEnqueueResponse>;
   getNotificationConfig: () => Promise<NotificationConfig>;
   updateNotificationConfig: (payload: NotificationConfig) => Promise<NotificationConfig>;
+  sendTelegramTest: (payload?: { message?: string }) => Promise<TelegramTestResult>;
   listReports: () => Promise<ReportSummary[]>;
   getReport: (id: string) => Promise<ReportDetail>;
   sendReport: (id: string) => Promise<unknown>;
@@ -130,6 +132,8 @@ export const api: ApiClient = {
   getNotificationConfig: () => request<NotificationConfig>('/config/notification'),
   updateNotificationConfig: (payload) =>
     request<NotificationConfig>('/config/notification', { method: 'PUT', body: JSON.stringify(payload) }),
+  sendTelegramTest: (payload = {}) =>
+    request<TelegramTestResult>('/dev/notifications/test', { method: 'POST', body: JSON.stringify(payload) }),
   listReports: () => request<ReportSummary[]>('/reports'),
   getReport: (id) => request<ReportDetail>(`/reports/${id}`),
   sendReport: (id) => request(`/reports/${id}/send`, { method: 'POST' }),

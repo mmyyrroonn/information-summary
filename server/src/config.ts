@@ -23,6 +23,7 @@ const envSchema = z.object({
   REPORT_MID_TRIAGE_MAX_KEEP_PER_CHUNK: z.coerce.number().default(15),
   TG_BOT_TOKEN: z.string().optional(),
   TG_CHAT_ID: z.string().optional(),
+  TG_MESSAGE_THREAD_ID: z.string().optional(),
   REPORT_CRON_SCHEDULE: z.string().default(process.env.CRON_SCHEDULE ?? '0 3 * * *'),
   FETCH_CRON_SCHEDULE: z.string().default('*/1 * * * *'),
   CLASSIFY_CRON_SCHEDULE: z.string().default('*/5 * * * *'),
