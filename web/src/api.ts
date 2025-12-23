@@ -5,6 +5,8 @@ import type {
   TelegramTestResult,
   ReportDetail,
   ReportSummary,
+  ReportProfile,
+  ReportProfileGroupBy,
   FetchResult,
   TweetListResponse,
   SubscriptionImportResult,
@@ -67,9 +69,14 @@ interface ApiClient {
   getNotificationConfig: () => Promise<NotificationConfig>;
   updateNotificationConfig: (payload: NotificationConfig) => Promise<NotificationConfig>;
   sendTelegramTest: (payload?: { message?: string }) => Promise<TelegramTestResult>;
-  listReports: () => Promise<ReportSummary[]>;
+  listReports: (params?: { profileId?: string; limit?: number }) => Promise<ReportSummary[]>;
   getReport: (id: string) => Promise<ReportDetail>;
   sendReport: (id: string) => Promise<unknown>;
+  listReportProfiles: () => Promise<ReportProfile[]>;
+  createReportProfile: (payload: ReportProfileCreatePayload) => Promise<ReportProfile>;
+  updateReportProfile: (id: string, payload: ReportProfileUpdatePayload) => Promise<ReportProfile>;
+  deleteReportProfile: (id: string) => Promise<void>;
+  runReportProfile: (id: string, notify?: boolean) => Promise<JobEnqueueResponse>;
   listTweets: (params?: {
     page?: number;
     pageSize?: number;
@@ -83,6 +90,27 @@ interface ApiClient {
   getJob: (id: string) => Promise<BackgroundJobSummary>;
   deleteJob: (id: string) => Promise<void>;
 }
+
+type ReportProfileBasePayload = {
+  name: string;
+  enabled?: boolean;
+  scheduleCron: string;
+  windowHours: number;
+  timezone?: string;
+  includeTweetTags?: string[];
+  excludeTweetTags?: string[];
+  includeAuthorTags?: string[];
+  excludeAuthorTags?: string[];
+  minImportance?: number;
+  verdicts?: string[];
+  groupBy?: ReportProfileGroupBy;
+  aiFilterEnabled?: boolean;
+  aiFilterPrompt?: string | null;
+  aiFilterMaxKeepPerChunk?: number | null;
+};
+
+type ReportProfileCreatePayload = ReportProfileBasePayload;
+type ReportProfileUpdatePayload = Partial<ReportProfileBasePayload>;
 
 export const api: ApiClient = {
   listSubscriptions: () => request<Subscription[]>('/subscriptions'),
@@ -134,9 +162,31 @@ export const api: ApiClient = {
     request<NotificationConfig>('/config/notification', { method: 'PUT', body: JSON.stringify(payload) }),
   sendTelegramTest: (payload = {}) =>
     request<TelegramTestResult>('/dev/notifications/test', { method: 'POST', body: JSON.stringify(payload) }),
-  listReports: () => request<ReportSummary[]>('/reports'),
+  listReports: (params = {}) => {
+    const search = new URLSearchParams();
+    if (params.profileId) {
+      search.set('profileId', params.profileId);
+    }
+    if (typeof params.limit === 'number') {
+      search.set('limit', String(params.limit));
+    }
+    const query = search.toString();
+    const path = query ? `/reports?${query}` : '/reports';
+    return request<ReportSummary[]>(path);
+  },
   getReport: (id) => request<ReportDetail>(`/reports/${id}`),
   sendReport: (id) => request(`/reports/${id}/send`, { method: 'POST' }),
+  listReportProfiles: () => request<ReportProfile[]>('/report-profiles'),
+  createReportProfile: (payload) =>
+    request<ReportProfile>('/report-profiles', { method: 'POST', body: JSON.stringify(payload) }),
+  updateReportProfile: (id, payload) =>
+    request<ReportProfile>(`/report-profiles/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteReportProfile: (id) => request<null>(`/report-profiles/${id}`, { method: 'DELETE' }).then(() => undefined),
+  runReportProfile: (id, notify) =>
+    request<JobEnqueueResponse>(`/report-profiles/${id}/run`, {
+      method: 'POST',
+      body: JSON.stringify(typeof notify === 'boolean' ? { notify } : {})
+    }),
   listTweets: (params = {}) => {
     const search = new URLSearchParams();
     if (typeof params.page === 'number') {

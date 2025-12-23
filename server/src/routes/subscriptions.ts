@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { SubscriptionStatus } from '@prisma/client';
-import { createSubscription, deleteSubscription, listSubscriptions, setSubscriptionStatus } from '../services/subscriptionService';
+import {
+  createSubscription,
+  deleteSubscription,
+  listSubscriptions,
+  setSubscriptionStatus,
+  updateSubscription
+} from '../services/subscriptionService';
 import { fetchTweetsForSubscription } from '../services/ingestService';
 import { importFollowingUsers, importListMembers } from '../services/subscriptionImportService';
 import { getSubscriptionTweetStats } from '../services/subscriptionStatsService';
@@ -21,11 +27,18 @@ router.get('/', async (_req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const bodySchema = z.object({ screenName: z.string(), displayName: z.string().optional() });
+    const bodySchema = z.object({
+      screenName: z.string(),
+      displayName: z.string().optional(),
+      tags: z.array(z.string()).optional()
+    });
     const body = bodySchema.parse(req.body);
-    const payload: { screenName: string; displayName?: string } = { screenName: body.screenName };
+    const payload: { screenName: string; displayName?: string; tags?: string[] } = { screenName: body.screenName };
     if (body.displayName) {
       payload.displayName = body.displayName;
+    }
+    if (body.tags) {
+      payload.tags = body.tags;
     }
     const subscription = await createSubscription(payload);
     res.status(201).json(subscription);
@@ -157,10 +170,23 @@ router.patch('/:id', async (req, res, next) => {
     const { id } = req.params;
     const body = z
       .object({
-        status: z.nativeEnum(SubscriptionStatus)
+        status: z.nativeEnum(SubscriptionStatus).optional(),
+        tags: z.array(z.string()).optional()
+      })
+      .refine((data) => Boolean(data.status || data.tags), {
+        message: 'status or tags is required'
       })
       .parse(req.body ?? {});
-    const updated = await setSubscriptionStatus(id, body.status);
+    if (body.tags) {
+      const payload: { status?: SubscriptionStatus; tags?: string[] } = { tags: body.tags };
+      if (body.status) {
+        payload.status = body.status;
+      }
+      const updated = await updateSubscription(id, payload);
+      res.json(updated);
+      return;
+    }
+    const updated = await setSubscriptionStatus(id, body.status ?? SubscriptionStatus.SUBSCRIBED);
     res.json(updated);
   } catch (error) {
     next(error);

@@ -6,7 +6,7 @@ import { requestClassificationRun } from '../jobs/classificationTrigger';
 import { getJobById, listJobs, serializeJob } from '../services/jobService';
 
 const router = Router();
-const jobTypeSchema = z.enum(['fetch-subscriptions', 'classify-tweets', 'report-pipeline'] as const);
+const jobTypeSchema = z.enum(['fetch-subscriptions', 'classify-tweets', 'report-pipeline', 'report-profile'] as const);
 
 router.post('/fetch', async (req, res, next) => {
   try {
@@ -76,11 +76,27 @@ router.post('/report', async (req, res, next) => {
     const body = z
       .object({
         notify: z.boolean().optional(),
-        dedupe: z.boolean().optional()
+        dedupe: z.boolean().optional(),
+        profileId: z.string().uuid().optional()
       })
       .parse(req.body ?? {});
+    const notify = body.notify ?? true;
+    if (body.profileId) {
+      const { job, created } = await enqueueJob(
+        'report-profile',
+        { profileId: body.profileId, notify, trigger: 'manual', windowEnd: new Date().toISOString() },
+        { dedupe: body.dedupe ?? false }
+      );
+      res.status(created ? 202 : 200).json({
+        created,
+        job: serializeJob(job),
+        notify
+      });
+      return;
+    }
+
     const payload = {
-      notify: body.notify ?? true,
+      notify,
       trigger: 'manual'
     };
     const { job, created } = await enqueueJob('report-pipeline', payload, {

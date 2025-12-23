@@ -37,6 +37,7 @@ model Subscription {
   displayName   String?
   avatarUrl     String?
   note          String?
+  tags          String[] @default([])
   status        SubscriptionStatus @default(SUBSCRIBED)
   unsubscribedAt DateTime?
   createdAt     DateTime @default(now())
@@ -110,8 +111,34 @@ model Report {
   publishedAt    DateTime?
   aiRun          AiRun?   @relation(fields: [aiRunId], references: [id])
   aiRunId        String?  @unique
+  profile        ReportProfile? @relation(fields: [profileId], references: [id])
+  profileId      String?
   deliveredAt    DateTime?
   deliveryTarget String?
+}
+
+model ReportProfile {
+  id                     String   @id @default(uuid())
+  name                   String
+  enabled                Boolean  @default(true)
+  scheduleCron           String
+  windowHours            Int
+  timezone               String
+  includeTweetTags       String[] @default([])
+  excludeTweetTags       String[] @default([])
+  includeAuthorTags      String[] @default([])
+  excludeAuthorTags      String[] @default([])
+  minImportance          Int      @default(2)
+  verdicts               String[] @default([])
+  groupBy                String   @default("cluster")
+  aiFilterEnabled        Boolean  @default(true)
+  aiFilterPrompt         String?
+  aiFilterMaxKeepPerChunk Int?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  reports                Report[]
+
+  @@index([enabled, scheduleCron])
 }
 
 model NotificationConfig {

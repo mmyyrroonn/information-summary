@@ -282,6 +282,128 @@ button.ghost {
   gap: 0.6rem;
 }
 
+.dev-profiles {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: start;
+}
+
+.profile-card,
+.profile-row {
+  border-radius: 0.9rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.profile-card {
+  background: #f8fafc;
+}
+
+.profile-row {
+  background: #fff;
+}
+
+.profile-row h3,
+.profile-card h3 {
+  margin: 0 0 0.35rem;
+}
+
+.profile-row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.profile-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.profile-form .notify-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.profile-form textarea {
+  min-height: 110px;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5f5;
+  padding: 0.65rem 0.75rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.profile-form-full {
+  grid-column: 1 / -1;
+}
+
+.profile-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.profile-checklist label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.profile-edit {
+  border-top: 1px dashed rgba(15, 23, 42, 0.16);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dev-divider {
+  height: 1px;
+  border: none;
+  background: rgba(15, 23, 42, 0.08);
+  margin: 1.5rem 0;
+}
+
 .jobs-table-wrapper {
   overflow-x: auto;
 }
@@ -493,6 +615,10 @@ button.ghost {
 
 @media (max-width: 900px) {
   .reports-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .dev-profiles {
     grid-template-columns: 1fr;
   }
 }

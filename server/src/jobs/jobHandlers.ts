@@ -1,7 +1,8 @@
 import { logger } from '../logger';
 import { config } from '../config';
 import { fetchAllSubscriptions } from '../services/ingestService';
-import { classifyTweets, generateReport, sendReportAndNotify } from '../services/aiService';
+import { classifyTweets, generateReport, generateReportForProfile, sendReportAndNotify } from '../services/aiService';
+import { getReportProfile } from '../services/reportProfileService';
 import { withAiProcessingLock } from '../services/lockService';
 import { JobPayloadMap, QueuedJob } from './jobQueue';
 
@@ -118,6 +119,80 @@ export async function handleReportPipelineJob(job: QueuedJob<'report-pipeline'>)
   }
 }
 
+export async function handleReportProfileJob(job: QueuedJob<'report-profile'>) {
+  const payload = (job.payload ?? {}) as JobPayloadMap['report-profile'];
+  const startedAt = Date.now();
+  const shouldNotify = payload.notify ?? true;
+  const profileId = payload.profileId;
+  const parsedWindowEnd = payload.windowEnd ? new Date(payload.windowEnd) : null;
+  const windowEnd =
+    parsedWindowEnd && Number.isNaN(parsedWindowEnd.getTime()) ? null : parsedWindowEnd;
+  logger.info('Running queued report profile pipeline', {
+    profileId,
+    trigger: payload.trigger ?? 'queue',
+    notify: shouldNotify,
+    windowEnd: windowEnd?.toISOString() ?? null,
+    startedAt: new Date(startedAt).toISOString()
+  });
+
+  const profile = await getReportProfile(profileId);
+  if (!profile || !profile.enabled) {
+    logger.warn('Report profile unavailable, skipping job', { profileId, enabled: profile?.enabled ?? null });
+    return;
+  }
+
+  await withAiProcessingLock(
+    `job:${job.id}`,
+    async () => {
+      const report = await generateReportForProfile(profile, windowEnd ?? undefined);
+      if (!report) {
+        logger.info('No report generated for profile window', {
+          profileId,
+          checkedAt: new Date().toISOString(),
+          durationMs: Date.now() - startedAt
+        });
+        return;
+      }
+
+      const notificationResult = { attempted: shouldNotify, delivered: false };
+      if (shouldNotify) {
+        try {
+          await sendReportAndNotify(report);
+          notificationResult.delivered = true;
+        } catch (notifyError) {
+          logger.error('Report profile notification failed, skipping Telegram delivery', {
+            reportId: report.id,
+            profileId,
+            error:
+              notifyError instanceof Error
+                ? { message: notifyError.message, stack: notifyError.stack }
+                : notifyError
+          });
+        }
+      }
+
+      const completedAt = Date.now();
+      if (notificationResult.delivered) {
+        logger.info('Report profile pipeline completed with notification', {
+          reportId: report.id,
+          profileId,
+          completedAt: new Date(completedAt).toISOString(),
+          durationMs: completedAt - startedAt
+        });
+      } else {
+        logger.info('Report profile generated without notification', {
+          reportId: report.id,
+          profileId,
+          completedAt: new Date(completedAt).toISOString(),
+          durationMs: completedAt - startedAt,
+          notificationAttempted: notificationResult.attempted
+        });
+      }
+    },
+    { scope: 'report' }
+  );
+}
+
 export async function handleJob(job: QueuedJob) {
   switch (job.type) {
     case 'fetch-subscriptions':
@@ -128,6 +203,9 @@ export async function handleJob(job: QueuedJob) {
       break;
     case 'report-pipeline':
       await handleReportPipelineJob(job as QueuedJob<'report-pipeline'>);
+      break;
+    case 'report-profile':
+      await handleReportProfileJob(job as QueuedJob<'report-profile'>);
       break;
     default:
       logger.warn('Unknown job type encountered', { jobId: job.id, type: job.type });

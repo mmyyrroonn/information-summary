@@ -2,7 +2,7 @@ import { BackgroundJob, BackgroundJobStatus, Prisma } from '@prisma/client';
 import { prisma } from '../db';
 import { logger } from '../logger';
 
-export type BackgroundJobType = 'fetch-subscriptions' | 'classify-tweets' | 'report-pipeline';
+export type BackgroundJobType = 'fetch-subscriptions' | 'classify-tweets' | 'report-pipeline' | 'report-profile';
 
 export interface JobPayloadMap {
   'fetch-subscriptions': {
@@ -18,6 +18,12 @@ export interface JobPayloadMap {
   'report-pipeline': {
     notify?: boolean;
     trigger?: string;
+  };
+  'report-profile': {
+    profileId: string;
+    notify?: boolean;
+    trigger?: string;
+    windowEnd?: string;
   };
 }
 

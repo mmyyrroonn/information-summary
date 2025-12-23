@@ -1,17 +1,32 @@
 import { prisma } from '../db';
 
-export async function listReports(limit = 20) {
+interface ReportListOptions {
+  limit?: number;
+  profileId?: string;
+}
+
+export async function listReports(options: ReportListOptions = {}) {
+  const query: {
+    where?: { profileId: string };
+    take: number;
+  } = {
+    take: options.limit ?? 20
+  };
+  if (options.profileId) {
+    query.where = { profileId: options.profileId };
+  }
   return prisma.report.findMany({
+    ...query,
     select: {
       id: true,
       headline: true,
       periodStart: true,
       periodEnd: true,
       createdAt: true,
-      deliveredAt: true
+      deliveredAt: true,
+      profileId: true
     },
     orderBy: { createdAt: 'desc' },
-    take: limit
   });
 }
 

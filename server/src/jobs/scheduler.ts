@@ -3,11 +3,12 @@ import { config } from '../config';
 import { logger } from '../logger';
 import { enqueueJob } from './jobQueue';
 import { requestClassificationRun } from './classificationTrigger';
+import { listEnabledReportProfiles } from '../services/reportProfileService';
 
 export function startScheduler() {
   registerFetchJob();
   registerClassifyJob();
-  registerReportJob();
+  void registerReportProfileJobs();
 }
 
 function registerFetchJob() {
@@ -42,20 +43,52 @@ function registerClassifyJob() {
   logger.info(`Classify job registered with expression ${schedule}`);
 }
 
-function registerReportJob() {
-  const schedule = config.REPORT_CRON_SCHEDULE?.trim();
-  if (!schedule) {
-    logger.warn('REPORT_CRON_SCHEDULE not configured, skipping report job');
-    return;
+async function registerReportProfileJobs() {
+  try {
+    const profiles = await listEnabledReportProfiles();
+    if (!profiles.length) {
+      logger.warn('No enabled report profiles configured, skipping report scheduling');
+      return;
+    }
+
+    profiles.forEach((profile) => {
+      const schedule = profile.scheduleCron?.trim();
+      if (!schedule) {
+        logger.warn('Report profile schedule missing, skipping profile', { profileId: profile.id, name: profile.name });
+        return;
+      }
+      if (!cron.validate(schedule)) {
+        logger.warn('Invalid report profile cron expression, skipping profile', {
+          profileId: profile.id,
+          name: profile.name,
+          schedule
+        });
+        return;
+      }
+      cron.schedule(
+        schedule,
+        () => {
+          const triggeredAt = new Date();
+          logger.info('Report profile cron triggered', {
+            profileId: profile.id,
+            name: profile.name,
+            schedule,
+            triggeredAt: triggeredAt.toISOString()
+          });
+          void enqueueReportProfileJob(profile.id, triggeredAt);
+        },
+        { timezone: profile.timezone }
+      );
+      logger.info('Report profile job registered', {
+        profileId: profile.id,
+        name: profile.name,
+        schedule,
+        timezone: profile.timezone
+      });
+    });
+  } catch (error) {
+    logger.error('Failed to register report profiles', error);
   }
-
-  cron.schedule(schedule, () => {
-    const triggeredAt = new Date();
-    logger.info('Report cron triggered', { schedule, triggeredAt: triggeredAt.toISOString() });
-    void enqueueReportJob();
-  });
-
-  logger.info(`Report job registered with expression ${schedule}`);
 }
 
 async function enqueueFetchJob() {
@@ -79,23 +112,16 @@ async function enqueueFetchJob() {
   }
 }
 
-async function enqueueReportJob() {
-  const { job, created } = await enqueueJob(
-    'report-pipeline',
-    { notify: true, trigger: 'cron' },
-    { dedupe: true }
+async function enqueueReportProfileJob(profileId: string, triggeredAt: Date) {
+  const { job } = await enqueueJob(
+    'report-profile',
+    { profileId, notify: true, trigger: 'cron', windowEnd: triggeredAt.toISOString() },
+    { dedupe: false }
   );
-  if (created) {
-    logger.info('Report job enqueued', {
-      jobId: job.id,
-      scheduledAt: job.scheduledAt.toISOString(),
-      createdAt: job.createdAt.toISOString()
-    });
-  } else {
-    logger.warn('Report job already active, skip enqueue', {
-      jobId: job.id,
-      scheduledAt: job.scheduledAt.toISOString(),
-      status: job.status
-    });
-  }
+  logger.info('Report profile job enqueued', {
+    jobId: job.id,
+    profileId,
+    scheduledAt: job.scheduledAt.toISOString(),
+    createdAt: job.createdAt.toISOString()
+  });
 }

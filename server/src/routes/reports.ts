@@ -1,12 +1,26 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { listReports, getReport } from '../services/reportService';
 import { sendReportAndNotify } from '../services/aiService';
 
 const router = Router();
 
-router.get('/', async (_req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const reports = await listReports();
+    const query = z
+      .object({
+        profileId: z.string().uuid().optional(),
+        limit: z.coerce.number().int().min(1).max(200).optional()
+      })
+      .parse(req.query);
+    const options: { profileId?: string; limit?: number } = {};
+    if (query.profileId) {
+      options.profileId = query.profileId;
+    }
+    if (typeof query.limit === 'number') {
+      options.limit = query.limit;
+    }
+    const reports = await listReports(options);
     res.json(reports);
   } catch (error) {
     next(error);

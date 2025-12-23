@@ -37,6 +37,7 @@ export interface Subscription {
   id: string;
   screenName: string;
   displayName?: string | null;
+  tags?: string[];
   status?: SubscriptionStatus;
   unsubscribedAt?: string | null;
   lastFetchedAt?: string | null;
@@ -123,11 +124,35 @@ export interface ReportSummary {
   periodEnd: string;
   createdAt: string;
   deliveredAt?: string | null;
+  profileId?: string | null;
 }
 
 export interface ReportDetail extends ReportSummary {
   content: string;
   outline?: unknown | null;
+}
+
+export type ReportProfileGroupBy = 'cluster' | 'tag' | 'author';
+
+export interface ReportProfile {
+  id: string;
+  name: string;
+  enabled: boolean;
+  scheduleCron: string;
+  windowHours: number;
+  timezone: string;
+  includeTweetTags: string[];
+  excludeTweetTags: string[];
+  includeAuthorTags: string[];
+  excludeAuthorTags: string[];
+  minImportance: number;
+  verdicts: string[];
+  groupBy: ReportProfileGroupBy;
+  aiFilterEnabled: boolean;
+  aiFilterPrompt?: string | null;
+  aiFilterMaxKeepPerChunk?: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TweetInsight {

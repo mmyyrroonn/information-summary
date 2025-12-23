@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import OpenAI from 'openai';
-import { AiRunKind, AiRunStatus, Prisma, Report, Tweet } from '@prisma/client';
+import { AiRunKind, AiRunStatus, Prisma, Report, ReportProfile, Tweet } from '@prisma/client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { logger } from '../logger';
@@ -11,7 +11,7 @@ import { sendMarkdownToTelegram } from './notificationService';
 import { withAiProcessingLock } from './lockService';
 import { TweetBatchFailedError, TweetBatchFailureMeta, TweetBatchFailureReason } from '../errors';
 import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from './embeddingService';
-import { clusterByEmbedding, ClusterResult } from './clusterService';
+import { clusterByEmbedding } from './clusterService';
 
 const client = config.DEEPSEEK_API_KEY
   ? new OpenAI({ baseURL: 'https://api.deepseek.com', apiKey: config.DEEPSEEK_API_KEY })
@@ -56,7 +56,7 @@ const CHAT_COMPLETION_SDK_MAX_RETRIES = 0;
 const TAG_FALLBACK_KEY = 'others';
 const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
-const REPORT_WINDOW_HOURS = 6;
+const DEFAULT_REPORT_WINDOW_HOURS = 6;
 const TAG_DISPLAY_NAMES: Record<string, string> = {
   airdrop: '空投 / 福利',
   token: '代币 / 市场',
@@ -73,7 +73,7 @@ const TAG_DISPLAY_NAMES: Record<string, string> = {
   [TAG_FALLBACK_KEY]: '其他'
 };
 
-type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: true } }>;
+type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: { include: { subscription: true } } } }>;
 
 interface TweetInsightPayload {
   tweetId: string;
@@ -117,11 +117,13 @@ interface ReportPayload {
 
 type ReportSection = NonNullable<ReportPayload['sections']>[number];
 type ReportWindow = { start: Date; end: Date };
+type ReportGroupBy = 'cluster' | 'tag' | 'author';
 
 interface ClusterReportOutline {
   mode: 'clustered';
   totalInsights: number;
   rawInsights?: number;
+  minImportance: number;
   triage?: {
     enabled: boolean;
     highKept: number;
@@ -169,12 +171,12 @@ async function defaultWindow(): Promise<ReportWindow | null> {
   const lastReport = await prisma.report.findFirst({ orderBy: { periodEnd: 'desc' } });
   if (!lastReport) {
     return {
-      start: now.subtract(REPORT_WINDOW_HOURS, 'hour').toDate(),
+      start: now.subtract(DEFAULT_REPORT_WINDOW_HOURS, 'hour').toDate(),
       end: now.toDate()
     };
   }
   const lastEnd = withTz(lastReport.periodEnd, config.REPORT_TIMEZONE);
-  const nextEnd = lastEnd.add(REPORT_WINDOW_HOURS, 'hour');
+  const nextEnd = lastEnd.add(DEFAULT_REPORT_WINDOW_HOURS, 'hour');
   if (now.isBefore(nextEnd)) {
     logger.info('Report generation skipped: previous window still active', {
       lastPeriodEnd: lastReport.periodEnd.toISOString(),
@@ -479,17 +481,8 @@ function isServiceBusyMessage(message: string) {
 
 function buildBatchPrompt(batch: Tweet[]) {
   const allowedTweetIds = batch.map((tweet) => tweet.tweetId);
-  const focusTags = parsePreferenceTags(config.REPORT_FOCUS_TAGS);
-  const deemphasizeTags = parsePreferenceTags(config.REPORT_DEEMPHASIZE_TAGS);
-  const importanceHint = [
-    '重要度请保守：4-5 只用于“可立即行动/重大资金/安全/政策/宏观行情信号”的极少数；不确定就降一档。',
-    focusTags.length ? `关注重点 tags：${focusTags.join(', ')}（同等条件下可给更高 importance）。` : '',
-    deemphasizeTags.length
-      ? `低优先级 tags：${deemphasizeTags.join(', ')}（除非影响到关注重点/资金/安全/政策/行情，否则 importance 偏向 1-2）。`
-      : ''
-  ]
-    .filter((entry) => Boolean(entry?.trim()))
-    .join(' ');
+  const importanceHint =
+    '重要度请保守：4-5 只用于“可立即行动/重大资金/安全/政策/宏观行情信号”的极少数；不确定就降一档。';
   const template = {
     goal: '逐条评估推文情报价值并输出结构化洞察（中文），用于后续日报汇总。',
     constraints: [
@@ -529,27 +522,6 @@ function buildBatchPrompt(batch: Tweet[]) {
     }))
   };
   return JSON.stringify(template);
-}
-
-function parsePreferenceTags(raw: string | undefined) {
-  if (!raw?.trim()) {
-    return [];
-  }
-  const allowlist = new Set([...CLASSIFY_ALLOWED_TAGS, TAG_FALLBACK_KEY]);
-  const seen = new Set<string>();
-  const tags: string[] = [];
-  raw
-    .split(',')
-    .map((entry) => entry.trim().toLowerCase())
-    .filter((entry) => Boolean(entry))
-    .forEach((entry) => {
-      const normalized = allowlist.has(entry) ? entry : '';
-      if (!normalized) return;
-      if (seen.has(normalized)) return;
-      seen.add(normalized);
-      tags.push(normalized);
-    });
-  return tags;
 }
 
 function normalizeBatchInsights(items: TweetInsightPayload[], batch: Tweet[]) {
@@ -794,10 +766,17 @@ async function runWithConcurrency<T>(items: T[], limit: number, worker: (item: T
   await Promise.all(Array.from({ length: poolSize }, () => runNext()));
 }
 
-async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
+async function selectMidPriorityInsights(
+  insights: InsightWithTweet[],
+  options?: { prompt?: string | null; maxKeepPerChunk?: number }
+) {
   if (!insights.length) {
     return [];
   }
+  const maxKeep = Math.max(
+    1,
+    Math.min(TRIAGE_CHUNK_SIZE, Math.floor(options?.maxKeepPerChunk ?? TRIAGE_MAX_KEEP_PER_CHUNK))
+  );
   const batches = chunk(insights, TRIAGE_CHUNK_SIZE);
   const keptIds = new Set<string>();
 
@@ -806,7 +785,7 @@ async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
       batchIndex: batchIndex + 1,
       batchSize: batch.length
     });
-    const prompt = buildTriagePrompt(batch, TRIAGE_MAX_KEEP_PER_CHUNK);
+    const prompt = buildTriagePrompt(batch, maxKeep, options?.prompt);
     try {
       const parsed = await runStructuredCompletion<{
         decisions?: Array<{ tweetId: string; include: boolean }>;
@@ -825,7 +804,7 @@ async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
         { stage: 'mid-triage', batchIndex: batchIndex + 1, batchSize: batch.length }
       );
       const includes = (parsed.decisions ?? []).filter((decision) => decision.include);
-      includes.slice(0, TRIAGE_MAX_KEEP_PER_CHUNK).forEach((decision) => keptIds.add(decision.tweetId));
+      includes.slice(0, maxKeep).forEach((decision) => keptIds.add(decision.tweetId));
     } catch (error) {
       const message = getErrorMessage(error);
       const reason = isContentRiskMessage(message) ? 'content-risk' : isServiceBusyMessage(message) ? 'service-busy' : 'failed';
@@ -842,14 +821,18 @@ async function selectMidPriorityInsights(insights: InsightWithTweet[]) {
   return insights.filter((insight) => keptIds.has(insight.tweetId));
 }
 
-async function triageInsightsForReport(insights: InsightWithTweet[]) {
+async function triageInsightsForReport(
+  insights: InsightWithTweet[],
+  options?: { enabled?: boolean; prompt?: string | null; maxKeepPerChunk?: number }
+) {
   const high = insights.filter((insight) => (insight.importance ?? 0) >= HIGH_PRIORITY_IMPORTANCE);
   const mid = insights.filter((insight) => {
     const importance = insight.importance ?? 0;
     return importance >= MEDIUM_MIN_IMPORTANCE && importance <= MEDIUM_MAX_IMPORTANCE;
   });
+  const triageEnabled = options?.enabled ?? config.REPORT_MID_TRIAGE_ENABLED;
 
-  if (!client || mid.length === 0 || !config.REPORT_MID_TRIAGE_ENABLED) {
+  if (!client || mid.length === 0 || !triageEnabled) {
     return {
       selected: insights,
       stats: {
@@ -867,7 +850,14 @@ async function triageInsightsForReport(insights: InsightWithTweet[]) {
     return b.tweet.tweetedAt.getTime() - a.tweet.tweetedAt.getTime();
   });
 
-  const keptMid = await selectMidPriorityInsights(orderedMid);
+  const triageOptions: { prompt?: string | null; maxKeepPerChunk?: number } = {};
+  if (options?.prompt !== undefined) {
+    triageOptions.prompt = options.prompt ?? null;
+  }
+  if (typeof options?.maxKeepPerChunk === 'number') {
+    triageOptions.maxKeepPerChunk = options.maxKeepPerChunk;
+  }
+  const keptMid = await selectMidPriorityInsights(orderedMid, triageOptions);
   if (!keptMid.length && high.length === 0) {
     logger.warn('Mid-priority triage returned empty selection; falling back to original insights', {
       insights: insights.length,
@@ -902,18 +892,14 @@ async function triageInsightsForReport(insights: InsightWithTweet[]) {
   };
 }
 
-function buildTriagePrompt(batch: InsightWithTweet[], maxKeep: number) {
-  const focusTags = parsePreferenceTags(config.REPORT_FOCUS_TAGS);
-  const deemphasizeTags = parsePreferenceTags(config.REPORT_DEEMPHASIZE_TAGS);
+function buildTriagePrompt(batch: InsightWithTweet[], maxKeep: number, extraPrompt?: string | null) {
+  const extra = extraPrompt?.trim();
   const template = {
     goal: '审阅 importance 在 2-3 的推文洞察，只保留最有价值的少量条目，其余标记为 false。',
     rules: [
       `每个 chunk 最多保留 ${maxKeep} 条，优先 actionable、具有明确行动价值或重大信号的内容。`,
       '如果内容重复、缺乏上下文或影响较小，应标记 include=false。',
-      focusTags.length ? `优先保留 tags 命中关注重点：${focusTags.join(', ')}。` : '',
-      deemphasizeTags.length
-        ? `对低优先级 tags（${deemphasizeTags.join(', ')}）更严格：若不涉及资金/安全/政策/宏观行情信号，倾向 include=false。`
-        : '',
+      extra ? `额外要求：${extra}` : '',
       '只能使用已有的 summary / tags 做判断，不要臆测新信息。',
       '务必以 json 对象输出，禁止添加额外文字说明。'
     ],
@@ -955,13 +941,26 @@ interface TagBucket {
   items: TagBucketItem[];
 }
 
-function buildTagReportPayload(insights: InsightWithTweet[], window: { start: Date; end: Date }): ReportPayload {
+interface AuthorBucket {
+  key: string;
+  title: string;
+  items: TagBucketItem[];
+}
+
+type BucketLike = { items: TagBucketItem[] };
+
+function buildTagReportPayload(
+  insights: InsightWithTweet[],
+  window: { start: Date; end: Date },
+  timezone: string,
+  headline?: string
+): ReportPayload {
   const sections = buildTagSectionsFromInsights(insights);
-  const headline = `${formatDisplayDate(window.end, config.REPORT_TIMEZONE)} 分类资讯汇总`;
+  const title = headline ?? `${formatDisplayDate(window.end, timezone)} 分类资讯汇总`;
   const overview = ensureOverviewList(buildTagReportOverview(sections, insights.length), insights.length);
 
   return {
-    headline,
+    headline: title,
     overview,
     sections
   };
@@ -1008,7 +1007,7 @@ function buildTagSectionsFromInsights(insights: InsightWithTweet[]): ReportSecti
   }));
 }
 
-function sortBucketItems(bucket: TagBucket) {
+function sortBucketItems<T extends BucketLike>(bucket: T) {
   bucket.items.sort((a, b) => {
     const importanceDelta = (b.importance ?? 0) - (a.importance ?? 0);
     if (importanceDelta !== 0) {
@@ -1019,11 +1018,11 @@ function sortBucketItems(bucket: TagBucket) {
   return bucket;
 }
 
-function bucketPeakImportance(bucket: TagBucket) {
+function bucketPeakImportance(bucket: BucketLike) {
   return bucket.items.reduce((max, entry) => Math.max(max, entry.importance ?? 0), 0);
 }
 
-function describeBucket(bucket: TagBucket) {
+function describeBucket(bucket: BucketLike) {
   const peak = bucketPeakImportance(bucket);
   const rating = peak > 0 ? `${peak}⭐` : '暂无评分';
   return `共 ${bucket.items.length} 条洞察，最高 ${rating}，已按重要度降序排列。`;
@@ -1067,6 +1066,97 @@ function buildTagReportOverview(sections: ReportSection[], totalItems: number) {
   }
   overview.push(`本次共保留 ${totalItems} 条洞察，均按标签与重要度排序，便于直接引用。`);
   return overview;
+}
+
+function buildAuthorReportPayload(
+  insights: InsightWithTweet[],
+  window: { start: Date; end: Date },
+  timezone: string,
+  headline?: string
+): ReportPayload {
+  const sections = buildAuthorSectionsFromInsights(insights);
+  const title = headline ?? `${formatDisplayDate(window.end, timezone)} 作者热度汇总`;
+  const overview = ensureOverviewList(buildAuthorReportOverview(sections, insights.length), insights.length);
+  return {
+    headline: title,
+    overview,
+    sections
+  };
+}
+
+function buildAuthorSectionsFromInsights(insights: InsightWithTweet[]): ReportSection[] {
+  const buckets = new Map<string, AuthorBucket>();
+
+  insights.forEach((insight) => {
+    const title = formatAuthorTitle(insight.tweet);
+    const handle = insight.tweet.authorScreen?.replace(/^@/, '').trim().toLowerCase();
+    const name = insight.tweet.authorName?.trim().toLowerCase();
+    const key = handle || name || insight.tweet.tweetId;
+    const bucket = buckets.get(key) ?? { key, title, items: [] };
+    const sectionItem: ReportSectionInsight = {
+      tweetId: insight.tweetId,
+      summary: getInsightSummary(insight),
+      tags: insight.tags ?? [],
+      tweetUrl: resolveTweetUrl(insight.tweet)
+    };
+    if (typeof insight.importance === 'number') {
+      sectionItem.importance = insight.importance;
+    }
+    bucket.items.push({
+      data: sectionItem,
+      tweetedAt: insight.tweet.tweetedAt.getTime(),
+      importance: insight.importance ?? 0
+    });
+    buckets.set(key, bucket);
+  });
+
+  const orderedBuckets = Array.from(buckets.values()).map((bucket) => sortBucketItems(bucket));
+  orderedBuckets.sort((a, b) => {
+    const diff = bucketPeakImportance(b) - bucketPeakImportance(a);
+    if (diff !== 0) {
+      return diff;
+    }
+    if (b.items.length !== a.items.length) {
+      return b.items.length - a.items.length;
+    }
+    return a.title.localeCompare(b.title, 'zh-Hans');
+  });
+
+  return orderedBuckets.map((bucket) => ({
+    title: bucket.title,
+    insight: describeBucket(bucket),
+    items: bucket.items.map((entry) => entry.data)
+  }));
+}
+
+function buildAuthorReportOverview(sections: ReportSection[], totalItems: number) {
+  const overview: string[] = [];
+  if (sections.length) {
+    const highlights = sections
+      .slice(0, 3)
+      .map((section) => `${section.title}（${section.items?.length ?? 0}）`)
+      .join('、');
+    if (highlights) {
+      overview.push(`热点作者：${highlights}`);
+    }
+  }
+  overview.push(`本次共保留 ${totalItems} 条洞察，按作者与重要度排序。`);
+  return overview;
+}
+
+function formatAuthorTitle(tweet: Tweet) {
+  const handle = tweet.authorScreen?.replace(/^@/, '').trim();
+  const name = tweet.authorName?.trim();
+  if (handle && name) {
+    if (name.toLowerCase().includes(handle.toLowerCase())) {
+      return name;
+    }
+    return `${name} (@${handle})`;
+  }
+  if (handle) {
+    return `@${handle}`;
+  }
+  return name || 'Unknown';
 }
 
 function resolveTweetUrl(tweet: Tweet) {
@@ -1175,7 +1265,89 @@ async function ensureEmbeddingsForInsights(insights: InsightWithTweet[]) {
   return { eligible: insights.length, embedded, updated };
 }
 
-function renderClusterReportMarkdown(outline: ClusterReportOutline, window: { start: Date; end: Date }) {
+function normalizeFilterTags(tags?: string[] | null) {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  tags
+    .map((tag) => tag.trim().toLowerCase())
+    .filter((tag) => Boolean(tag))
+    .forEach((tag) => {
+      if (seen.has(tag)) return;
+      seen.add(tag);
+      normalized.push(tag);
+    });
+  return normalized;
+}
+
+function hasOverlap(values: string[], filter: Set<string>) {
+  return values.some((value) => filter.has(value));
+}
+
+function normalizeGroupBy(value?: string | null): ReportGroupBy {
+  if (value === 'tag' || value === 'author' || value === 'cluster') {
+    return value;
+  }
+  return 'cluster';
+}
+
+function resolveProfileWindow(profile: ReportProfile, end?: Date): ReportWindow {
+  const timezone = profile.timezone?.trim() || config.REPORT_TIMEZONE;
+  const endTime = withTz(end ?? new Date(), timezone).second(0).millisecond(0);
+  const startTime = endTime.subtract(profile.windowHours, 'hour');
+  return { start: startTime.toDate(), end: endTime.toDate() };
+}
+
+function buildProfileHeadline(profile: ReportProfile, window: ReportWindow) {
+  const timezone = profile.timezone?.trim() || config.REPORT_TIMEZONE;
+  return `${formatDisplayDate(window.end, timezone)} ${profile.name}`;
+}
+
+function applyProfileFilters(insights: InsightWithTweet[], profile: ReportProfile) {
+  const minImportance = Math.max(1, Math.min(5, Math.floor(profile.minImportance ?? REPORT_MIN_IMPORTANCE)));
+  const includeTweetTags = new Set(normalizeFilterTags(profile.includeTweetTags));
+  const excludeTweetTags = new Set(normalizeFilterTags(profile.excludeTweetTags));
+  const includeAuthorTags = new Set(normalizeFilterTags(profile.includeAuthorTags));
+  const excludeAuthorTags = new Set(normalizeFilterTags(profile.excludeAuthorTags));
+  const verdicts = normalizeFilterTags(profile.verdicts);
+  const allowedVerdicts = verdicts.length ? new Set(verdicts) : null;
+
+  const filtered = insights.filter((insight) => {
+    if ((insight.importance ?? 0) < minImportance) {
+      return false;
+    }
+    const verdict = insight.verdict?.toLowerCase();
+    if (allowedVerdicts && (!verdict || !allowedVerdicts.has(verdict))) {
+      return false;
+    }
+    const tweetTags = normalizeFilterTags(insight.tags ?? []);
+    if (includeTweetTags.size && !hasOverlap(tweetTags, includeTweetTags)) {
+      return false;
+    }
+    if (excludeTweetTags.size && hasOverlap(tweetTags, excludeTweetTags)) {
+      return false;
+    }
+    const authorTags = normalizeFilterTags(insight.tweet.subscription?.tags ?? []);
+    if (includeAuthorTags.size && !hasOverlap(authorTags, includeAuthorTags)) {
+      return false;
+    }
+    if (excludeAuthorTags.size && hasOverlap(authorTags, excludeAuthorTags)) {
+      return false;
+    }
+    return true;
+  });
+
+  return { filtered, minImportance };
+}
+
+function renderClusterReportMarkdown(
+  outline: ClusterReportOutline,
+  window: { start: Date; end: Date },
+  timezone: string,
+  headline: string
+) {
   const triage = outline.triage;
   const hasTriage = Boolean(
     triage?.enabled &&
@@ -1184,19 +1356,19 @@ function renderClusterReportMarkdown(outline: ClusterReportOutline, window: { st
       outline.rawInsights !== outline.totalInsights
   );
   const overviewLine = hasTriage
-    ? `- 本次共 ${outline.rawInsights} 条洞察（importance≥${REPORT_MIN_IMPORTANCE}），其中 ${
+    ? `- 本次共 ${outline.rawInsights} 条洞察（importance≥${outline.minImportance}），其中 ${
         triage?.highKept ?? 0
       } 条（4-5⭐）全保留；${
         triage?.midCandidates ?? 0
       } 条（2-3⭐）二次筛选后保留 ${triage?.midKept ?? 0} 条；用于聚类 ${outline.totalInsights} 条，聚合为 ${
         outline.totalClusters
       } 个主题簇，展示 ${outline.shownClusters} 个。`
-    : `- 本次共 ${outline.totalInsights} 条洞察（importance≥${REPORT_MIN_IMPORTANCE}），聚合为 ${outline.totalClusters} 个主题簇，展示 ${outline.shownClusters} 个。`;
+    : `- 本次共 ${outline.totalInsights} 条洞察（importance≥${outline.minImportance}），聚合为 ${outline.totalClusters} 个主题簇，展示 ${outline.shownClusters} 个。`;
   const lines = [
-    `# ${formatDisplayDate(window.end, config.REPORT_TIMEZONE)} 主题聚类汇总`,
-    `> 时间范围：${formatDisplayDate(window.start, config.REPORT_TIMEZONE)} - ${formatDisplayDate(
+    `# ${headline}`,
+    `> 时间范围：${formatDisplayDate(window.start, timezone)} - ${formatDisplayDate(
       window.end,
-      config.REPORT_TIMEZONE
+      timezone
     )}`,
     '',
     '## 概览',
@@ -1220,6 +1392,319 @@ function renderClusterReportMarkdown(outline: ClusterReportOutline, window: { st
   return lines.join('\n');
 }
 
+export async function generateReportForProfile(profile: ReportProfile, windowEnd?: Date) {
+  const reportWindow = resolveProfileWindow(profile, windowEnd);
+  const timezone = profile.timezone?.trim() || config.REPORT_TIMEZONE;
+  const windowMeta = {
+    start: reportWindow.start.toISOString(),
+    end: reportWindow.end.toISOString(),
+    profileId: profile.id
+  };
+  logger.info('Report profile generation requested', {
+    ...windowMeta,
+    profileName: profile.name,
+    groupBy: profile.groupBy
+  });
+
+  const existing = await prisma.report.findFirst({
+    where: { profileId: profile.id, periodEnd: reportWindow.end }
+  });
+  if (existing) {
+    logger.info('Report profile window already generated, skipping', windowMeta);
+    return null;
+  }
+
+  const insights = await prisma.tweetInsight.findMany({
+    where: {
+      tweet: {
+        tweetedAt: { gte: reportWindow.start, lte: reportWindow.end }
+      },
+      verdict: { not: 'ignore' }
+    },
+    include: { tweet: { include: { subscription: true } } },
+    orderBy: { createdAt: 'asc' }
+  });
+
+  if (!insights.length) {
+    logger.info('No insights available for report profile', windowMeta);
+    return null;
+  }
+
+  const { filtered: eligible, minImportance } = applyProfileFilters(insights, profile);
+  if (!eligible.length) {
+    logger.info('No insights left after profile filters', { ...windowMeta, total: insights.length });
+    return null;
+  }
+
+  const aiRun = await prisma.aiRun.create({
+    data: { kind: AiRunKind.REPORT_SUMMARY, status: AiRunStatus.RUNNING }
+  });
+
+  try {
+    const completeAiRun = async () => {
+      await prisma.aiRun.update({
+        where: { id: aiRun.id },
+        data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
+      });
+    };
+
+    const triageOptions: { enabled?: boolean; prompt?: string | null; maxKeepPerChunk?: number } = {};
+    if (typeof profile.aiFilterEnabled === 'boolean') {
+      triageOptions.enabled = profile.aiFilterEnabled;
+    }
+    if (profile.aiFilterPrompt !== undefined) {
+      triageOptions.prompt = profile.aiFilterPrompt ?? null;
+    }
+    if (typeof profile.aiFilterMaxKeepPerChunk === 'number') {
+      triageOptions.maxKeepPerChunk = profile.aiFilterMaxKeepPerChunk;
+    }
+    const { selected: reportInsights, stats: triageStats } = await triageInsightsForReport(eligible, triageOptions);
+
+    if (!reportInsights.length) {
+      logger.info('No insights kept after profile triage', windowMeta);
+      await completeAiRun();
+      return null;
+    }
+
+    if (triageStats.enabled && reportInsights.length !== eligible.length) {
+      logger.info('Profile triage completed', {
+        ...windowMeta,
+        eligible: eligible.length,
+        selected: reportInsights.length,
+        highKept: triageStats.highKept,
+        midCandidates: triageStats.midCandidates,
+        midKept: triageStats.midKept
+      });
+    }
+
+    const groupBy = normalizeGroupBy(profile.groupBy);
+    const headline = buildProfileHeadline(profile, reportWindow);
+
+    if (groupBy === 'tag') {
+      const blueprint = buildTagReportPayload(reportInsights, reportWindow, timezone, headline);
+      if (!blueprint.sections?.length) {
+        logger.info('Profile tag report builder produced no sections', windowMeta);
+        await completeAiRun();
+        return null;
+      }
+      const markdown = renderReportMarkdown(blueprint, reportWindow, timezone);
+      const report = await prisma.report.create({
+        data: {
+          periodStart: reportWindow.start,
+          periodEnd: reportWindow.end,
+          headline: blueprint.headline,
+          content: markdown,
+          outline: blueprint as unknown as Prisma.JsonObject,
+          aiRunId: aiRun.id,
+          profileId: profile.id
+        }
+      });
+      await prisma.aiRun.update({
+        where: { id: aiRun.id },
+        data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
+      });
+      return report;
+    }
+
+    if (groupBy === 'author') {
+      const blueprint = buildAuthorReportPayload(reportInsights, reportWindow, timezone, headline);
+      if (!blueprint.sections?.length) {
+        logger.info('Profile author report builder produced no sections', windowMeta);
+        await completeAiRun();
+        return null;
+      }
+      const markdown = renderReportMarkdown(blueprint, reportWindow, timezone);
+      const report = await prisma.report.create({
+        data: {
+          periodStart: reportWindow.start,
+          periodEnd: reportWindow.end,
+          headline: blueprint.headline,
+          content: markdown,
+          outline: blueprint as unknown as Prisma.JsonObject,
+          aiRunId: aiRun.id,
+          profileId: profile.id
+        }
+      });
+      await prisma.aiRun.update({
+        where: { id: aiRun.id },
+        data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
+      });
+      return report;
+    }
+
+    const embeddingStats = await ensureEmbeddingsForInsights(reportInsights);
+    logger.info('Profile embedding preparation completed', { ...windowMeta, ...embeddingStats });
+
+    const dimensions = config.EMBEDDING_DIMENSIONS;
+    const eligibleWithEmbeddings =
+      embeddingStats.updated > 0
+        ? await prisma.tweetInsight.findMany({
+            where: { tweetId: { in: reportInsights.map((insight) => insight.tweetId) } },
+            include: { tweet: { include: { subscription: true } } },
+            orderBy: { createdAt: 'asc' }
+          })
+        : reportInsights;
+
+    const candidates = eligibleWithEmbeddings
+      .filter((insight) => Array.isArray(insight.embedding) && insight.embedding.length === dimensions)
+      .map((insight) => {
+        const tweetUrl = resolveTweetUrl(insight.tweet);
+        const summary = getInsightSummary(insight);
+        return {
+          tweetId: insight.tweetId,
+          summary,
+          importance: insight.importance ?? 0,
+          verdict: insight.verdict,
+          tags: insight.tags ?? [],
+          tweetedAt: insight.tweet.tweetedAt.getTime(),
+          tweetUrl,
+          suggestions: insight.suggestions ?? null,
+          vector: insight.embedding ?? []
+        };
+      });
+
+    if (!candidates.length) {
+      logger.warn('No embeddings available for profile insights, falling back to tag report', windowMeta);
+      const blueprint = buildTagReportPayload(reportInsights, reportWindow, timezone, headline);
+      if (!blueprint.sections?.length) {
+        logger.info('Profile fallback tag report builder produced no sections', windowMeta);
+        await completeAiRun();
+        return null;
+      }
+      const markdown = renderReportMarkdown(blueprint, reportWindow, timezone);
+      const report = await prisma.report.create({
+        data: {
+          periodStart: reportWindow.start,
+          periodEnd: reportWindow.end,
+          headline: blueprint.headline,
+          content: markdown,
+          outline: blueprint as unknown as Prisma.JsonObject,
+          aiRunId: aiRun.id,
+          profileId: profile.id
+        }
+      });
+      await prisma.aiRun.update({
+        where: { id: aiRun.id },
+        data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
+      });
+      return report;
+    }
+
+    const clusters = clusterByEmbedding(candidates, {
+      threshold: config.REPORT_CLUSTER_THRESHOLD
+    });
+    const maxClusters = config.REPORT_CLUSTER_MAX;
+    const shown = maxClusters > 0 ? Math.min(maxClusters, clusters.length) : clusters.length;
+    const displayClusters = clusters.slice(0, shown);
+
+    const buckets = new Map<string, ClusterReportOutline['sections'][number]>();
+    displayClusters.forEach((cluster) => {
+      const primary = pickPrimaryTag(cluster.representative.tags);
+      const bucket = buckets.get(primary) ?? {
+        tag: primary,
+        title: TAG_DISPLAY_NAMES[primary] ?? primary,
+        clusters: []
+      };
+      bucket.clusters.push({
+        id: cluster.id,
+        size: cluster.size,
+        peakImportance: cluster.peakImportance,
+        tags: cluster.tags,
+        representative: {
+          tweetId: cluster.representative.tweetId,
+          tweetUrl: cluster.representative.tweetUrl,
+          summary: truncateText(cluster.representative.summary, 160),
+          importance: cluster.representative.importance,
+          verdict: cluster.representative.verdict,
+          suggestions: cluster.representative.suggestions ?? null
+        },
+        memberTweetIds: cluster.memberTweetIds
+      });
+      buckets.set(primary, bucket);
+    });
+
+    const sections = Array.from(buckets.values()).map((section) => {
+      section.clusters.sort((a, b) => {
+        const imp = b.peakImportance - a.peakImportance;
+        if (imp !== 0) return imp;
+        if (b.size !== a.size) return b.size - a.size;
+        return a.id.localeCompare(b.id);
+      });
+      return section;
+    });
+    sections.sort((a, b) => {
+      const peakA = a.clusters.reduce((max, cluster) => Math.max(max, cluster.peakImportance), 0);
+      const peakB = b.clusters.reduce((max, cluster) => Math.max(max, cluster.peakImportance), 0);
+      const imp = peakB - peakA;
+      if (imp !== 0) return imp;
+      if (b.clusters.length !== a.clusters.length) return b.clusters.length - a.clusters.length;
+      return a.title.localeCompare(b.title, 'zh-Hans');
+    });
+
+    const outline: ClusterReportOutline = {
+      mode: 'clustered',
+      totalInsights: reportInsights.length,
+      rawInsights: eligible.length,
+      minImportance,
+      triage: {
+        enabled: triageStats.enabled,
+        highKept: triageStats.highKept,
+        midCandidates: triageStats.midCandidates,
+        midKept: triageStats.midKept
+      },
+      totalClusters: clusters.length,
+      shownClusters: shown,
+      sections
+    };
+
+    const markdown = renderClusterReportMarkdown(outline, reportWindow, timezone, headline);
+
+    const report = await prisma.report.create({
+      data: {
+        periodStart: reportWindow.start,
+        periodEnd: reportWindow.end,
+        headline,
+        content: markdown,
+        outline: outline as unknown as Prisma.JsonObject,
+        aiRunId: aiRun.id,
+        profileId: profile.id
+      }
+    });
+
+    await prisma.aiRun.update({
+      where: { id: aiRun.id },
+      data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
+    });
+
+    logger.info('Report profile generation completed', {
+      ...windowMeta,
+      reportId: report.id,
+      insights: insights.length,
+      eligible: eligible.length,
+      clusterCandidates: outline.totalInsights,
+      triageEnabled: triageStats.enabled,
+      triageHighKept: triageStats.highKept,
+      triageMidCandidates: triageStats.midCandidates,
+      triageMidKept: triageStats.midKept,
+      clusters: outline.totalClusters,
+      shownClusters: outline.shownClusters
+    });
+
+    return report;
+  } catch (error) {
+    await prisma.aiRun.update({
+      where: { id: aiRun.id },
+      data: {
+        status: AiRunStatus.FAILED,
+        error: error instanceof Error ? error.message : 'unknown error',
+        completedAt: new Date()
+      }
+    });
+    logger.error('Report profile generation failed', error);
+    throw error;
+  }
+}
+
 export async function generateReport(window?: ReportWindow | null) {
   const resolvedWindow = window ?? (await defaultWindow());
   if (!resolvedWindow) {
@@ -1235,7 +1720,7 @@ export async function generateReport(window?: ReportWindow | null) {
       },
       verdict: { not: 'ignore' }
     },
-    include: { tweet: true },
+    include: { tweet: { include: { subscription: true } } },
     orderBy: { createdAt: 'asc' }
   });
 
@@ -1275,7 +1760,7 @@ export async function generateReport(window?: ReportWindow | null) {
       embeddingStats.updated > 0
         ? await prisma.tweetInsight.findMany({
             where: { tweetId: { in: reportInsights.map((insight) => insight.tweetId) } },
-            include: { tweet: true },
+            include: { tweet: { include: { subscription: true } } },
             orderBy: { createdAt: 'asc' }
           })
         : reportInsights;
@@ -1303,12 +1788,12 @@ export async function generateReport(window?: ReportWindow | null) {
         ...windowMeta,
         eligible: reportInsights.length
       });
-      const blueprint = buildTagReportPayload(reportInsights, reportWindow);
+      const blueprint = buildTagReportPayload(reportInsights, reportWindow, config.REPORT_TIMEZONE);
       if (!blueprint.sections?.length) {
         logger.info('Tag-based report builder produced no sections', windowMeta);
         return null;
       }
-      const markdown = renderReportMarkdown(blueprint, reportWindow);
+      const markdown = renderReportMarkdown(blueprint, reportWindow, config.REPORT_TIMEZONE);
       const report = await prisma.report.create({
         data: {
           periodStart: reportWindow.start,
@@ -1381,6 +1866,7 @@ export async function generateReport(window?: ReportWindow | null) {
       mode: 'clustered',
       totalInsights: reportInsights.length,
       rawInsights: eligible.length,
+      minImportance: REPORT_MIN_IMPORTANCE,
       triage: {
         enabled: triageStats.enabled,
         highKept: triageStats.highKept,
@@ -1392,13 +1878,14 @@ export async function generateReport(window?: ReportWindow | null) {
       sections
     };
 
-    const markdown = renderClusterReportMarkdown(outline, reportWindow);
+    const headline = `${formatDisplayDate(reportWindow.end, config.REPORT_TIMEZONE)} 主题聚类汇总`;
+    const markdown = renderClusterReportMarkdown(outline, reportWindow, config.REPORT_TIMEZONE, headline);
 
     const report = await prisma.report.create({
       data: {
         periodStart: reportWindow.start,
         periodEnd: reportWindow.end,
-        headline: `${formatDisplayDate(reportWindow.end, config.REPORT_TIMEZONE)} 主题聚类汇总`,
+        headline,
         content: markdown,
         outline: outline as unknown as Prisma.JsonObject,
         aiRunId: aiRun.id
@@ -1438,13 +1925,10 @@ export async function generateReport(window?: ReportWindow | null) {
   }
 }
 
-function renderReportMarkdown(payload: ReportPayload, window: { start: Date; end: Date }) {
+function renderReportMarkdown(payload: ReportPayload, window: { start: Date; end: Date }, timezone: string) {
   const lines = [
     `# ${payload.headline}`,
-    `> 时间范围：${formatDisplayDate(window.start, config.REPORT_TIMEZONE)} - ${formatDisplayDate(
-      window.end,
-      config.REPORT_TIMEZONE
-    )}`,
+    `> 时间范围：${formatDisplayDate(window.start, timezone)} - ${formatDisplayDate(window.end, timezone)}`,
     '## 概览'
   ];
 

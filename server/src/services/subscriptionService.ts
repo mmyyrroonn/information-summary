@@ -5,11 +5,28 @@ export function normalizeScreenName(screenName: string) {
   return screenName.replace(/^@/, '').trim().toLowerCase();
 }
 
+function normalizeTags(tags?: string[]) {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  tags
+    .map((tag) => tag.trim().toLowerCase())
+    .filter((tag) => Boolean(tag))
+    .forEach((tag) => {
+      if (seen.has(tag)) return;
+      seen.add(tag);
+      normalized.push(tag);
+    });
+  return normalized;
+}
+
 export async function listSubscriptions() {
   return prisma.subscription.findMany({ orderBy: { createdAt: 'desc' } });
 }
 
-export async function createSubscription(payload: { screenName: string; displayName?: string }) {
+export async function createSubscription(payload: { screenName: string; displayName?: string; tags?: string[] }) {
   const normalized = normalizeScreenName(payload.screenName);
   if (!normalized) {
     throw new Error('screenName is required');
@@ -18,7 +35,8 @@ export async function createSubscription(payload: { screenName: string; displayN
   return prisma.subscription.create({
     data: {
       screenName: normalized,
-      displayName: payload.displayName ?? null
+      displayName: payload.displayName ?? null,
+      tags: normalizeTags(payload.tags)
     }
   });
 }
@@ -27,6 +45,7 @@ export async function createSubscriptionIfNotExists(payload: {
   screenName: string;
   displayName?: string;
   avatarUrl?: string | null;
+  tags?: string[];
 }) {
   const normalized = normalizeScreenName(payload.screenName);
   if (!normalized) {
@@ -38,7 +57,8 @@ export async function createSubscriptionIfNotExists(payload: {
       data: {
         screenName: normalized,
         displayName: payload.displayName ?? null,
-        avatarUrl: payload.avatarUrl ?? null
+        avatarUrl: payload.avatarUrl ?? null,
+        tags: normalizeTags(payload.tags)
       }
     });
     return { subscription, created: true };
@@ -65,5 +85,23 @@ export async function setSubscriptionStatus(id: string, status: SubscriptionStat
       status,
       unsubscribedAt: status === 'UNSUBSCRIBED' ? new Date() : null
     }
+  });
+}
+
+export async function updateSubscription(
+  id: string,
+  payload: { status?: SubscriptionStatus; tags?: string[] }
+) {
+  const data: { status?: SubscriptionStatus; unsubscribedAt?: Date | null; tags?: string[] } = {};
+  if (payload.status) {
+    data.status = payload.status;
+    data.unsubscribedAt = payload.status === 'UNSUBSCRIBED' ? new Date() : null;
+  }
+  if (payload.tags) {
+    data.tags = normalizeTags(payload.tags);
+  }
+  return prisma.subscription.update({
+    where: { id },
+    data
   });
 }

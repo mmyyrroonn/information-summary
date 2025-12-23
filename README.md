@@ -37,15 +37,12 @@
 | `REPORT_CLUSTER_THRESHOLD` | 聚类相似度阈值（越高越保守），默认 `0.9` |
 | `REPORT_CLUSTER_MAX` | 日报最多展示主题簇数，默认 `0`（不限制） |
 | `REPORT_MIN_IMPORTANCE` | 生成报告时纳入的最低重要度（importance≥x），默认 `2` |
-| `REPORT_FOCUS_TAGS` | 关注的 tag（逗号分隔，如 `market,defi,airdrop`），用于让打分/二次筛选更贴合偏好 |
-| `REPORT_DEEMPHASIZE_TAGS` | 降权的 tag（逗号分隔，如 `infrastructure,ecosystem`），用于让打分/二次筛选更保守 |
 | `REPORT_MID_TRIAGE_ENABLED` | 是否对 importance=2-3 的洞察做二次 AI 精筛，默认 `true` |
 | `REPORT_MID_TRIAGE_CONCURRENCY` | 二次精筛并发数，默认 `1` |
 | `REPORT_MID_TRIAGE_CHUNK_SIZE` | 二次精筛每次提交条数，默认 `30` |
 | `REPORT_MID_TRIAGE_MAX_KEEP_PER_CHUNK` | 二次精筛每个 chunk 最多保留条数，默认 `15` |
 | `TG_BOT_TOKEN` / `TG_CHAT_ID` | Telegram 推送默认配置，可在 UI 中覆盖 |
 | `TG_MESSAGE_THREAD_ID` | Telegram 话题 (topic) ID，仅超级群话题需要 |
-| `REPORT_CRON_SCHEDULE` | 汇总/推送报告的 `node-cron` 表达式，默认每天 03:00 |
 | `FETCH_CRON_SCHEDULE` | 批量抓取订阅的 `node-cron` 表达式，默认每 30 分钟一次 |
 | `CLASSIFY_CRON_SCHEDULE` | AI 筛选兜底定时器，默认每 20 分钟检查一次 |
 | `FETCH_BATCH_SIZE` | 每个抓取周期处理的订阅数量，默认 5 个，方便分散压力 |
@@ -108,7 +105,7 @@
 2. **抓取任务**：`/api/tasks/fetch` 会遍历订阅账号，通过 RapidAPI 拉取当日新推文并落库；同一账号默认 12 小时冷却，可根据 `limit` 参数或定时器设置分批执行。
 3. **AI 筛选**：`/api/tasks/analyze` 读取未分析推文，调用 DeepSeek 批量打分，结构化写入 `TweetInsight`。
 4. **报告生成**：`/api/tasks/report` 根据当日洞察生成 Markdown 周报，可选择是否立刻推送 Telegram。
-5. **定时器**：抓取任务按 `FETCH_CRON_SCHEDULE` 分批运行（每批遵守 12 小时冷却，只处理少量订阅），积累到一定数量的未处理推文后自动触发 AI 筛选；`CLASSIFY_CRON_SCHEDULE` 兜底检查，`REPORT_CRON_SCHEDULE` 负责每日汇总与推送。
+5. **定时器**：抓取任务按 `FETCH_CRON_SCHEDULE` 分批运行（每批遵守 12 小时冷却，只处理少量订阅），积累到一定数量的未处理推文后自动触发 AI 筛选；`CLASSIFY_CRON_SCHEDULE` 兜底检查，报告由 `ReportProfile` 的 `scheduleCron` 驱动生成与推送。
 6. **前端面板**：
    - 手动触发「抓取/AI/报告」
    - 配置 Telegram token/chat id
@@ -118,7 +115,8 @@
 - `GET /health`：存活检测
 - `GET/POST/DELETE /api/subscriptions`：订阅 CRUD；`POST /api/subscriptions/:id/fetch` 手动抓取
 - `POST /api/tasks/fetch|analyze|report`：手动触发工作流（report 支持 `{ notify: boolean }`）
-- `GET /api/reports`、`GET /api/reports/:id`、`POST /api/reports/:id/send`
+- `GET /api/reports`（支持 `profileId` 过滤）、`GET /api/reports/:id`、`POST /api/reports/:id/send`
+- `GET/POST/PUT/DELETE /api/report-profiles`、`POST /api/report-profiles/:id/run`
 - `GET/PUT /api/config/notification`：管理 Telegram 配置
 
 ## 构建与发布
