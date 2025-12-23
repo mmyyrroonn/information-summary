@@ -20,7 +20,7 @@ function App() {
         </div>
         <nav className="nav-tabs">
           <button className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-            控制台
+            日报浏览
           </button>
           <button className={activeTab === 'tweets' ? 'active' : ''} onClick={() => setActiveTab('tweets')}>
             推文浏览

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { api } from '../api';
-import type { BackgroundJobSummary, JobEnqueueResponse, ReportDetail, ReportProfile, ReportSummary } from '../types';
+import type { ReportDetail, ReportSummary } from '../types';
 
 marked.setOptions({
   gfm: true,
@@ -15,19 +15,6 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
     node.setAttribute('rel', 'noreferrer noopener');
   }
 });
-
-type TaskType = 'fetch' | 'analyze' | 'report';
-
-interface TaskJobState {
-  job?: BackgroundJobSummary;
-  skipInfo?: {
-    reason?: string;
-    pending: number;
-    threshold?: number;
-  };
-}
-
-const POLL_INTERVAL_MS = 4000;
 
 type ClusteredReportOutline = {
   mode: 'clustered';
@@ -78,22 +65,8 @@ function tweetLink(id: string) {
 export function DashboardPage() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(null);
-  const [notifyOnReport, setNotifyOnReport] = useState(true);
-  const [reportWindowEnd, setReportWindowEnd] = useState('');
-  const [defaultProfile, setDefaultProfile] = useState<ReportProfile | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
-  const [taskJobs, setTaskJobs] = useState<Record<TaskType, TaskJobState>>({
-    fetch: {},
-    analyze: {},
-    report: {}
-  });
-  const pollers = useRef<Record<TaskType, number | null>>({
-    fetch: null,
-    analyze: null,
-    report: null
-  });
-  const aliveRef = useRef(true);
   const reportHtml = useMemo(() => {
     if (!selectedReport?.content) {
       return '';
@@ -108,12 +81,6 @@ export function DashboardPage() {
 
   useEffect(() => {
     refreshReports();
-    refreshDefaultProfile();
-    hydrateActiveJobs();
-    return () => {
-      aliveRef.current = false;
-      (['fetch', 'analyze', 'report'] as TaskType[]).forEach((task) => stopPolling(task));
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -131,227 +98,12 @@ export function DashboardPage() {
     }
   }
 
-  async function refreshDefaultProfile() {
-    try {
-      const profile = await api.getDefaultReportProfile();
-      setDefaultProfile(profile);
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '加载默认 profile 失败');
-    }
-  }
-
   async function loadReport(id: string) {
     try {
       const data = await api.getReport(id);
       setSelectedReport(data);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '读取日报失败');
-    }
-  }
-
-  async function hydrateActiveJobs() {
-    try {
-      const jobs = await api.listJobs({ limit: 20 });
-      jobs
-        .filter((job) => job.status === 'PENDING' || job.status === 'RUNNING')
-        .forEach((job) => {
-          const task = mapJobType(job.type);
-          if (!task) return;
-          setTaskJobs((prev) => ({
-            ...prev,
-            [task]: { job }
-          }));
-          startJobPolling(task, job.id);
-        });
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '加载任务状态失败');
-    }
-  }
-
-  function mapJobType(type: string): TaskType | null {
-    switch (type) {
-      case 'fetch-subscriptions':
-        return 'fetch';
-      case 'classify-tweets':
-        return 'analyze';
-      case 'report-pipeline':
-      case 'report-profile':
-        return 'report';
-      default:
-        return null;
-    }
-  }
-
-  function shortJobId(id: string) {
-    return id.slice(0, 8);
-  }
-
-  function stopPolling(task: TaskType) {
-    const timer = pollers.current[task];
-    if (timer) {
-      window.clearTimeout(timer);
-      pollers.current[task] = null;
-    }
-  }
-
-  function startJobPolling(task: TaskType, jobId: string) {
-    stopPolling(task);
-    const poll = async () => {
-      try {
-        const job = await api.getJob(jobId);
-        if (!aliveRef.current) return;
-        setTaskJobs((prev) => ({
-          ...prev,
-          [task]: { job }
-        }));
-        if (job.status === 'COMPLETED') {
-          stopPolling(task);
-          handleJobCompletion(task);
-          return;
-        }
-        if (job.status === 'FAILED') {
-          stopPolling(task);
-          setStatusMessage(job.lastError ? `任务失败：${job.lastError}` : '任务失败');
-          return;
-        }
-        pollers.current[task] = window.setTimeout(poll, POLL_INTERVAL_MS);
-      } catch (error) {
-        stopPolling(task);
-        if (!aliveRef.current) {
-          return;
-        }
-        setStatusMessage(error instanceof Error ? error.message : '任务状态查询失败');
-      }
-    };
-    void poll();
-  }
-
-  function handleJobCompletion(task: TaskType) {
-    if (!aliveRef.current) return;
-    if (task === 'fetch') {
-      setStatusMessage('抓取任务完成');
-    } else if (task === 'analyze') {
-      setStatusMessage('AI 筛选任务完成');
-    } else {
-      setStatusMessage('日报生成完成');
-      void refreshReports();
-    }
-  }
-
-  function handleJobEnqueue(task: TaskType, result: JobEnqueueResponse, label: string) {
-    setTaskJobs((prev) => ({
-      ...prev,
-      [task]: { job: result.job }
-    }));
-    const message =
-      result.message ??
-      (result.created
-        ? `${label}已加入队列（${shortJobId(result.job.id)}）`
-        : `${label}已在执行（${shortJobId(result.job.id)}）`);
-    setStatusMessage(message);
-    startJobPolling(task, result.job.id);
-  }
-
-  function renderJobStatus(task: TaskType) {
-    const state = taskJobs[task];
-    if (!state) {
-      return null;
-    }
-    if (state.skipInfo && !state.job) {
-      const { pending, threshold, reason } = state.skipInfo;
-      const text =
-        reason === 'below-threshold'
-          ? `待处理推文 ${pending}${threshold ? `/${threshold}` : ''}，尚未达到阈值`
-          : '当前没有待处理推文';
-      return <p className="job-status muted">{text}</p>;
-    }
-    const job = state.job;
-    if (!job) {
-      return null;
-    }
-    const labelMap = {
-      PENDING: '排队中',
-      RUNNING: '执行中',
-      COMPLETED: '已完成',
-      FAILED: '失败'
-    } as const;
-    const base = labelMap[job.status] ?? job.status;
-    const timestamp =
-      job.status === 'RUNNING' && job.lockedAt
-        ? new Date(job.lockedAt).toLocaleTimeString()
-        : job.status === 'COMPLETED' && job.completedAt
-          ? new Date(job.completedAt).toLocaleTimeString()
-          : null;
-    const extra =
-      job.status === 'FAILED' && job.lastError
-        ? `：${job.lastError}`
-        : job.status === 'COMPLETED'
-          ? ' ✅'
-          : '';
-    return (
-      <p className={`job-status status-${job.status.toLowerCase()}`}>
-        {`任务 ${shortJobId(job.id)} ${base}${timestamp ? `（${timestamp}）` : ''}${extra}`}
-      </p>
-    );
-  }
-
-  async function runTask(task: TaskType) {
-    setBusy(`task-${task}`);
-    try {
-      if (task === 'fetch') {
-        const result = await api.runFetchTask();
-        handleJobEnqueue('fetch', result, '抓取任务');
-      } else if (task === 'analyze') {
-        const result = await api.runAnalyzeTask();
-        if (result.skipped) {
-          const message =
-            result.reason === 'below-threshold'
-              ? `待处理推文 ${result.pending}${result.threshold ? `/${result.threshold}` : ''}，暂不触发`
-              : '当前没有待处理推文';
-          setStatusMessage(message);
-          setTaskJobs((prev) => ({
-            ...prev,
-            analyze: {
-              skipInfo: {
-                reason: result.reason,
-                pending: result.pending,
-                threshold: result.threshold
-              }
-            }
-          }));
-          return;
-        }
-        if (result.job) {
-          handleJobEnqueue(
-            'analyze',
-            {
-              job: result.job,
-              created: result.created ?? false
-            },
-            'AI 筛选任务'
-          );
-        }
-      } else {
-        const windowEnd = reportWindowEnd.trim();
-        let windowEndIso: string | undefined;
-        if (windowEnd) {
-          const parsed = new Date(windowEnd);
-          if (Number.isNaN(parsed.getTime())) {
-            setStatusMessage('窗口结束时间格式不正确');
-            return;
-          }
-          windowEndIso = parsed.toISOString();
-        }
-        const result = await api.runReportTask({
-          notify: notifyOnReport,
-          ...(windowEndIso ? { windowEnd: windowEndIso } : {})
-        });
-        handleJobEnqueue('report', result, notifyOnReport ? '推送日报任务' : '日报生成任务');
-      }
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '任务执行失败');
-    } finally {
-      setBusy(null);
     }
   }
 
@@ -371,55 +123,6 @@ export function DashboardPage() {
   return (
     <>
       {statusMessage && <p className="status">{statusMessage}</p>}
-      <section>
-        <div className="section-head">
-          <h2>处理工作流</h2>
-        </div>
-        <div className="task-grid">
-          <div className="task-card">
-            <h3>1. 抓取推文</h3>
-            <p>遍历全部订阅，获取当天未处理推文。</p>
-            <button onClick={() => runTask('fetch')} disabled={busy === 'task-fetch'}>
-              {busy === 'task-fetch' ? '执行中...' : '执行'}
-            </button>
-            {renderJobStatus('fetch')}
-          </div>
-          <div className="task-card">
-            <h3>2. AI 筛选</h3>
-            <p>DeepSeek 打标签，过滤掉噪音，提炼重点。</p>
-            <button onClick={() => runTask('analyze')} disabled={busy === 'task-analyze'}>
-              {busy === 'task-analyze' ? '执行中...' : '执行'}
-            </button>
-            {renderJobStatus('analyze')}
-          </div>
-          <div className="task-card">
-            <h3>3. 汇总 & 推送</h3>
-            <div className="report-runner">
-              <label className="notify-toggle">
-                <input type="checkbox" checked={notifyOnReport} onChange={(e) => setNotifyOnReport(e.target.checked)} />
-                生成后自动推送到 Telegram
-              </label>
-              <label>
-                窗口结束时间
-                <input
-                  type="datetime-local"
-                  value={reportWindowEnd}
-                  onChange={(e) => setReportWindowEnd(e.target.value)}
-                />
-                <span className="hint">留空则使用当前时间</span>
-              </label>
-              <p className="hint">
-                默认 Profile：{defaultProfile ? `${defaultProfile.name} · ${defaultProfile.windowHours}h · ${defaultProfile.timezone}` : '加载中...'}
-              </p>
-            </div>
-            <button onClick={() => runTask('report')} disabled={busy === 'task-report'}>
-              {busy === 'task-report' ? '执行中...' : '生成日报'}
-            </button>
-            {renderJobStatus('report')}
-          </div>
-        </div>
-      </section>
-
       <section>
         <div className="section-head">
           <h2>日报记录</h2>

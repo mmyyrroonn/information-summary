@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import type {
   BackgroundJobSummary,
   BackgroundJobStatus,
+  JobEnqueueResponse,
   ReportProfile,
   ReportProfileGroupBy,
   TagOption,
@@ -26,6 +27,7 @@ const statusOptions: { value: '' | BackgroundJobStatus; label: string }[] = [
 ];
 
 const JOB_LIST_LIMIT = 20;
+const WORKFLOW_POLL_INTERVAL_MS = 4000;
 const PROFILE_DEFAULT_TIMEZONE = 'Asia/Shanghai';
 const PROFILE_DEFAULT_CRON = '0 9 * * *';
 
@@ -63,6 +65,17 @@ type ProfileDraft = {
 type ProfileRunOptions = {
   notify: boolean;
   windowEnd: string;
+};
+
+type WorkflowTask = 'fetch' | 'analyze';
+
+type WorkflowJobState = {
+  job?: BackgroundJobSummary;
+  skipInfo?: {
+    reason?: string;
+    pending: number;
+    threshold?: number;
+  };
 };
 
 function createEmptyDraft(): ProfileDraft {
@@ -221,7 +234,9 @@ export function DevJobsPage() {
     status: ''
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [queueMessage, setQueueMessage] = useState<string | null>(null);
+  const [workflowMessage, setWorkflowMessage] = useState<string | null>(null);
+  const [notifyMessage, setNotifyMessage] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState('');
   const [testing, setTesting] = useState(false);
   const [profiles, setProfiles] = useState<ReportProfile[]>([]);
@@ -236,6 +251,13 @@ export function DevJobsPage() {
   const [runningProfileId, setRunningProfileId] = useState<string | null>(null);
   const [deletingProfileId, setDeletingProfileId] = useState<string | null>(null);
   const [runOptions, setRunOptions] = useState<Record<string, ProfileRunOptions>>({});
+  const [workflowJobs, setWorkflowJobs] = useState<Record<WorkflowTask, WorkflowJobState>>({
+    fetch: {},
+    analyze: {}
+  });
+  const [workflowBusy, setWorkflowBusy] = useState<WorkflowTask | null>(null);
+  const workflowPollers = useRef<Record<WorkflowTask, number | null>>({ fetch: null, analyze: null });
+  const workflowAliveRef = useRef(true);
 
   useEffect(() => {
     void refreshJobs();
@@ -250,6 +272,16 @@ export function DevJobsPage() {
     void refreshTagOptions();
   }, []);
 
+  useEffect(() => {
+    workflowAliveRef.current = true;
+    void hydrateWorkflowJobs();
+    return () => {
+      workflowAliveRef.current = false;
+      (['fetch', 'analyze'] as WorkflowTask[]).forEach((task) => stopWorkflowPolling(task));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function refreshJobs() {
     try {
       setLoading(true);
@@ -260,9 +292,193 @@ export function DevJobsPage() {
       });
       setJobs(response);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '加载任务失败');
+      setQueueMessage(error instanceof Error ? error.message : '加载任务失败');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function hydrateWorkflowJobs() {
+    try {
+      const response = await api.listJobs({ limit: JOB_LIST_LIMIT });
+      response
+        .filter((job) => job.status === 'PENDING' || job.status === 'RUNNING')
+        .forEach((job) => {
+          const task = mapWorkflowType(job.type);
+          if (!task) return;
+          setWorkflowJobs((prev) => ({
+            ...prev,
+            [task]: { job }
+          }));
+          startWorkflowPolling(task, job.id);
+        });
+    } catch (error) {
+      setWorkflowMessage(error instanceof Error ? error.message : '加载任务状态失败');
+    }
+  }
+
+  function mapWorkflowType(type: string): WorkflowTask | null {
+    switch (type) {
+      case 'fetch-subscriptions':
+        return 'fetch';
+      case 'classify-tweets':
+        return 'analyze';
+      default:
+        return null;
+    }
+  }
+
+  function shortJobId(id: string) {
+    return id.slice(0, 8);
+  }
+
+  function stopWorkflowPolling(task: WorkflowTask) {
+    const timer = workflowPollers.current[task];
+    if (timer) {
+      window.clearTimeout(timer);
+      workflowPollers.current[task] = null;
+    }
+  }
+
+  function startWorkflowPolling(task: WorkflowTask, jobId: string) {
+    stopWorkflowPolling(task);
+    const poll = async () => {
+      try {
+        const job = await api.getJob(jobId);
+        if (!workflowAliveRef.current) return;
+        setWorkflowJobs((prev) => ({
+          ...prev,
+          [task]: { job }
+        }));
+        if (job.status === 'COMPLETED') {
+          stopWorkflowPolling(task);
+          handleWorkflowCompletion(task);
+          return;
+        }
+        if (job.status === 'FAILED') {
+          stopWorkflowPolling(task);
+          setWorkflowMessage(job.lastError ? `任务失败：${job.lastError}` : '任务失败');
+          return;
+        }
+        workflowPollers.current[task] = window.setTimeout(poll, WORKFLOW_POLL_INTERVAL_MS);
+      } catch (error) {
+        stopWorkflowPolling(task);
+        if (!workflowAliveRef.current) {
+          return;
+        }
+        setWorkflowMessage(error instanceof Error ? error.message : '任务状态查询失败');
+      }
+    };
+    void poll();
+  }
+
+  function handleWorkflowCompletion(task: WorkflowTask) {
+    if (!workflowAliveRef.current) return;
+    setWorkflowMessage(task === 'fetch' ? '抓取任务完成' : 'AI 筛选任务完成');
+    void refreshJobs();
+  }
+
+  function handleWorkflowEnqueue(task: WorkflowTask, result: JobEnqueueResponse, label: string) {
+    setWorkflowJobs((prev) => ({
+      ...prev,
+      [task]: { job: result.job }
+    }));
+    const message =
+      result.message ??
+      (result.created
+        ? `${label}已加入队列（${shortJobId(result.job.id)}）`
+        : `${label}已在执行（${shortJobId(result.job.id)}）`);
+    setWorkflowMessage(message);
+    startWorkflowPolling(task, result.job.id);
+    void refreshJobs();
+  }
+
+  function renderWorkflowStatus(task: WorkflowTask) {
+    const state = workflowJobs[task];
+    if (!state) {
+      return null;
+    }
+    if (state.skipInfo && !state.job) {
+      const { pending, threshold, reason } = state.skipInfo;
+      const text =
+        reason === 'below-threshold'
+          ? `待处理推文 ${pending}${threshold ? `/${threshold}` : ''}，尚未达到阈值`
+          : '当前没有待处理推文';
+      return <p className="job-status muted">{text}</p>;
+    }
+    const job = state.job;
+    if (!job) {
+      return null;
+    }
+    const labelMap = {
+      PENDING: '排队中',
+      RUNNING: '执行中',
+      COMPLETED: '已完成',
+      FAILED: '失败'
+    } as const;
+    const base = labelMap[job.status] ?? job.status;
+    const timestamp =
+      job.status === 'RUNNING' && job.lockedAt
+        ? new Date(job.lockedAt).toLocaleTimeString()
+        : job.status === 'COMPLETED' && job.completedAt
+          ? new Date(job.completedAt).toLocaleTimeString()
+          : null;
+    const extra =
+      job.status === 'FAILED' && job.lastError
+        ? `：${job.lastError}`
+        : job.status === 'COMPLETED'
+          ? ' ✅'
+          : '';
+    return (
+      <p className={`job-status status-${job.status.toLowerCase()}`}>
+        {`任务 ${shortJobId(job.id)} ${base}${timestamp ? `（${timestamp}）` : ''}${extra}`}
+      </p>
+    );
+  }
+
+  async function runWorkflowTask(task: WorkflowTask) {
+    setWorkflowBusy(task);
+    setWorkflowMessage(null);
+    try {
+      if (task === 'fetch') {
+        const result = await api.runFetchTask();
+        handleWorkflowEnqueue('fetch', result, '抓取任务');
+        return;
+      }
+      const result = await api.runAnalyzeTask();
+      if (result.skipped) {
+        stopWorkflowPolling('analyze');
+        const message =
+          result.reason === 'below-threshold'
+            ? `待处理推文 ${result.pending}${result.threshold ? `/${result.threshold}` : ''}，暂不触发`
+            : '当前没有待处理推文';
+        setWorkflowMessage(message);
+        setWorkflowJobs((prev) => ({
+          ...prev,
+          analyze: {
+            skipInfo: {
+              reason: result.reason,
+              pending: result.pending,
+              threshold: result.threshold
+            }
+          }
+        }));
+        return;
+      }
+      if (result.job) {
+        handleWorkflowEnqueue(
+          'analyze',
+          {
+            job: result.job,
+            created: result.created ?? false
+          },
+          'AI 筛选任务'
+        );
+      }
+    } catch (error) {
+      setWorkflowMessage(error instanceof Error ? error.message : '任务执行失败');
+    } finally {
+      setWorkflowBusy(null);
     }
   }
 
@@ -409,9 +625,9 @@ export function DevJobsPage() {
     try {
       await api.deleteJob(job.id);
       setJobs((prev) => prev.filter((item) => item.id !== job.id));
-      setMessage(`任务 ${job.id.slice(0, 8)} 已删除`);
+      setQueueMessage(`任务 ${job.id.slice(0, 8)} 已删除`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '删除失败');
+      setQueueMessage(error instanceof Error ? error.message : '删除失败');
     }
   }
 
@@ -421,9 +637,9 @@ export function DevJobsPage() {
       const trimmed = testMessage.trim();
       const result = await api.sendTelegramTest(trimmed ? { message: trimmed } : {});
       const threadHint = result.messageThreadId ? `，topic ${result.messageThreadId}` : '';
-      setMessage(`测试推送成功${threadHint}`);
+      setNotifyMessage(`测试推送成功${threadHint}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '测试推送失败');
+      setNotifyMessage(error instanceof Error ? error.message : '测试推送失败');
     } finally {
       setTesting(false);
     }
@@ -824,12 +1040,60 @@ export function DevJobsPage() {
       <div className="dev-divider" />
 
       <div className="section-head">
+        <h2>DEV · 处理工作流</h2>
+      </div>
+      {workflowMessage && <p className="status">{workflowMessage}</p>}
+      <div className="task-grid">
+        <div className="task-card">
+          <h3>1. 抓取推文</h3>
+          <p>遍历全部订阅，获取当天未处理推文。</p>
+          <button type="button" onClick={() => runWorkflowTask('fetch')} disabled={workflowBusy === 'fetch'}>
+            {workflowBusy === 'fetch' ? '执行中...' : '执行'}
+          </button>
+          {renderWorkflowStatus('fetch')}
+        </div>
+        <div className="task-card">
+          <h3>2. AI 筛选</h3>
+          <p>DeepSeek 打标签，过滤掉噪音，提炼重点。</p>
+          <button type="button" onClick={() => runWorkflowTask('analyze')} disabled={workflowBusy === 'analyze'}>
+            {workflowBusy === 'analyze' ? '执行中...' : '执行'}
+          </button>
+          {renderWorkflowStatus('analyze')}
+        </div>
+      </div>
+
+      <div className="dev-divider" />
+
+      <div className="section-head">
+        <h2>DEV · Telegram 测试推送</h2>
+      </div>
+      {notifyMessage && <p className="status">{notifyMessage}</p>}
+      <div className="dev-notify">
+        <p className="hint">使用当前配置的 TG_CHAT_ID / TG_MESSAGE_THREAD_ID</p>
+        <div className="config-grid">
+          <label>
+            内容
+            <input
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+              placeholder="可留空，默认生成测试文案"
+            />
+          </label>
+          <button type="button" onClick={handleTestPush} disabled={testing}>
+            {testing ? '推送中...' : '发送测试消息'}
+          </button>
+        </div>
+      </div>
+
+      <div className="dev-divider" />
+
+      <div className="section-head">
         <h2>DEV · 队列管理</h2>
         <button type="button" onClick={refreshJobs} disabled={loading}>
           {loading ? '刷新中...' : '刷新'}
         </button>
       </div>
-      {message && <p className="status">{message}</p>}
+      {queueMessage && <p className="status">{queueMessage}</p>}
       <div className="jobs-controls">
         <label>
           类型
@@ -860,24 +1124,7 @@ export function DevJobsPage() {
           </select>
         </label>
       </div>
-      <div className="dev-notify">
-        <h3>Telegram 测试推送</h3>
-        <p className="hint">使用当前配置的 TG_CHAT_ID / TG_MESSAGE_THREAD_ID</p>
-        <div className="config-grid">
-          <label>
-            内容
-            <input
-              value={testMessage}
-              onChange={(e) => setTestMessage(e.target.value)}
-              placeholder="可留空，默认生成测试文案"
-            />
-          </label>
-          <button type="button" onClick={handleTestPush} disabled={testing}>
-            {testing ? '推送中...' : '发送测试消息'}
-          </button>
-        </div>
-        <p className="hint">任务列表仅展示最近 {JOB_LIST_LIMIT} 条。</p>
-      </div>
+      <p className="hint">任务列表仅展示最近 {JOB_LIST_LIMIT} 条。</p>
 
       <div className="jobs-table-wrapper">
         <table className="jobs-table">
