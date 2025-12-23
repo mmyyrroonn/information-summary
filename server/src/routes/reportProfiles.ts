@@ -12,6 +12,7 @@ import {
   updateReportProfile
 } from '../services/reportProfileService';
 import { enqueueJob } from '../jobs/jobQueue';
+import { refreshReportProfileSchedules } from '../jobs/scheduler';
 import { serializeJob } from '../services/jobService';
 
 const router = Router();
@@ -117,6 +118,7 @@ router.post('/', async (req, res, next) => {
       aiFilterPrompt: normalizePrompt(body.aiFilterPrompt),
       aiFilterMaxKeepPerChunk: body.aiFilterMaxKeepPerChunk ?? null
     });
+    await refreshReportProfileSchedules();
     res.status(201).json(profile);
   } catch (error) {
     next(error);
@@ -174,6 +176,7 @@ router.put('/:id', async (req, res, next) => {
       data.aiFilterMaxKeepPerChunk = body.aiFilterMaxKeepPerChunk;
     }
     const updated = await updateReportProfile(params.id, data);
+    await refreshReportProfileSchedules();
     res.json(updated);
   } catch (error) {
     next(error);
@@ -184,6 +187,7 @@ router.delete('/:id', async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
     await deleteReportProfile(params.id);
+    await refreshReportProfileSchedules();
     res.status(204).end();
   } catch (error) {
     next(error);

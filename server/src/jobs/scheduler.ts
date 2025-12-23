@@ -5,10 +5,19 @@ import { enqueueJob } from './jobQueue';
 import { requestClassificationRun } from './classificationTrigger';
 import { listEnabledReportProfiles } from '../services/reportProfileService';
 
+type ReportProfileTask = ReturnType<typeof cron.schedule>;
+
+const reportProfileTasks = new Map<string, ReportProfileTask>();
+
 export function startScheduler() {
   registerFetchJob();
   registerClassifyJob();
   void registerReportProfileJobs();
+}
+
+export async function refreshReportProfileSchedules() {
+  stopReportProfileTasks();
+  await registerReportProfileJobs();
 }
 
 function registerFetchJob() {
@@ -65,7 +74,7 @@ async function registerReportProfileJobs() {
         });
         return;
       }
-      cron.schedule(
+      const task = cron.schedule(
         schedule,
         () => {
           const triggeredAt = new Date();
@@ -79,6 +88,7 @@ async function registerReportProfileJobs() {
         },
         { timezone: profile.timezone }
       );
+      reportProfileTasks.set(profile.id, task);
       logger.info('Report profile job registered', {
         profileId: profile.id,
         name: profile.name,
@@ -89,6 +99,13 @@ async function registerReportProfileJobs() {
   } catch (error) {
     logger.error('Failed to register report profiles', error);
   }
+}
+
+function stopReportProfileTasks() {
+  reportProfileTasks.forEach((task) => {
+    task.stop();
+  });
+  reportProfileTasks.clear();
 }
 
 async function enqueueFetchJob() {
