@@ -51,7 +51,7 @@ function sumInto(acc: number[], v: number[]) {
 }
 
 function primaryTag(tags: string[]) {
-  return tags.find((tag) => Boolean(tag?.trim()))?.trim().toLowerCase() ?? 'others';
+  return tags.find((tag) => Boolean(tag?.trim()))?.trim().toLowerCase() ?? 'other';
 }
 
 function intersectTags(a: string[], b: string[]) {
