@@ -850,8 +850,10 @@ export function DevJobsPage() {
                 <div className="profile-meta">
                   <span>分组：{groupByOptions.find((item) => item.value === profile.groupBy)?.label ?? profile.groupBy}</span>
                   <span>最低重要度：{profile.minImportance}</span>
-                  <span>推文标签：{formatList(profile.includeTweetTags) || '不限'}</span>
-                  <span>作者标签：{formatList(profile.includeAuthorTags) || '不限'}</span>
+                  <span>推文标签（包含）：{formatList(profile.includeTweetTags) || '不限'}</span>
+                  <span>推文标签（排除）：{formatList(profile.excludeTweetTags) || '无'}</span>
+                  <span>作者标签（包含）：{formatList(profile.includeAuthorTags) || '不限'}</span>
+                  <span>作者标签（排除）：{formatList(profile.excludeAuthorTags) || '无'}</span>
                   <span>AI 二次筛选：{profile.aiFilterEnabled ? '启用' : '关闭'}</span>
                 </div>
                 <div className="profile-runner">
