@@ -66,6 +66,7 @@ export function DashboardPage() {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const [statusLink, setStatusLink] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const reportHtml = useMemo(() => {
     if (!selectedReport?.content) {
@@ -95,6 +96,7 @@ export function DashboardPage() {
       }
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '加载日报失败');
+      setStatusLink(null);
     }
   }
 
@@ -104,6 +106,7 @@ export function DashboardPage() {
       setSelectedReport(data);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '读取日报失败');
+      setStatusLink(null);
     }
   }
 
@@ -112,9 +115,27 @@ export function DashboardPage() {
     try {
       await api.sendReport(id);
       setStatusMessage('推送成功');
+      setStatusLink(null);
       await refreshReports();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '推送失败');
+      setStatusLink(null);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handlePublishReport(id: string) {
+    setBusy(`publish-${id}`);
+    try {
+      const result = await api.publishReport(id);
+      const link = result.url || result.indexUrl || null;
+      setStatusMessage(link ? 'GitHub 发布成功' : 'GitHub 发布成功（未配置链接）');
+      setStatusLink(link);
+      await refreshReports();
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'GitHub 发布失败');
+      setStatusLink(null);
     } finally {
       setBusy(null);
     }
@@ -122,7 +143,19 @@ export function DashboardPage() {
 
   return (
     <>
-      {statusMessage && <p className="status">{statusMessage}</p>}
+      {statusMessage && (
+        <p className="status">
+          {statusMessage}
+          {statusLink ? (
+            <>
+              {' '}
+              <a href={statusLink} target="_blank" rel="noreferrer">
+                打开
+              </a>
+            </>
+          ) : null}
+        </p>
+      )}
       <section>
         <div className="section-head">
           <h2>日报记录</h2>
@@ -149,7 +182,8 @@ export function DashboardPage() {
                   </p>
                 </div>
                 <div className="row-actions">
-                  <span>{report.deliveredAt ? '已推送' : '未推送'}</span>
+                  <span>Telegram: {report.deliveredAt ? '已推送' : '未推送'}</span>
+                  <span>GitHub: {report.publishedAt ? '已发布' : '未发布'}</span>
                   <button
                     className="ghost"
                     type="button"
@@ -160,6 +194,17 @@ export function DashboardPage() {
                     disabled={busy === `send-${report.id}`}
                   >
                     推送
+                  </button>
+                  <button
+                    className="ghost"
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePublishReport(report.id);
+                    }}
+                    disabled={busy === `publish-${report.id}`}
+                  >
+                    推送 GitHub
                   </button>
                 </div>
               </div>

@@ -133,6 +133,7 @@ export interface ReportSummary {
   periodStart: string;
   periodEnd: string;
   createdAt: string;
+  publishedAt?: string | null;
   deliveredAt?: string | null;
   profileId?: string | null;
 }
@@ -140,6 +141,12 @@ export interface ReportSummary {
 export interface ReportDetail extends ReportSummary {
   content: string;
   outline?: unknown | null;
+}
+
+export interface ReportPublishResult {
+  publishedAt: string;
+  url?: string | null;
+  indexUrl?: string | null;
 }
 
 export type ReportProfileGroupBy = 'cluster' | 'tag' | 'author';

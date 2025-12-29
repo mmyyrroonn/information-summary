@@ -1,7 +1,9 @@
+import type { Report } from '@prisma/client';
 import { logger } from '../logger';
 import { config } from '../config';
 import { fetchAllSubscriptions } from '../services/ingestService';
 import { classifyTweets, generateReportForProfile, sendReportAndNotify } from '../services/aiService';
+import { publishReportToGithub } from '../services/githubPublishService';
 import { getOrCreateDefaultReportProfile, getReportProfile } from '../services/reportProfileService';
 import { withAiProcessingLock } from '../services/lockService';
 import { JobPayloadMap, QueuedJob } from './jobQueue';
@@ -87,6 +89,8 @@ export async function handleReportPipelineJob(job: QueuedJob<'report-pipeline'>)
           });
           return;
         }
+
+        await autoPublishReport(report);
         const notificationResult = { attempted: shouldNotify, delivered: false };
 
         if (shouldNotify) {
@@ -165,6 +169,7 @@ export async function handleReportProfileJob(job: QueuedJob<'report-profile'>) {
         return;
       }
 
+      await autoPublishReport(report);
       const notificationResult = { attempted: shouldNotify, delivered: false };
       if (shouldNotify) {
         try {
@@ -220,5 +225,19 @@ export async function handleJob(job: QueuedJob) {
       break;
     default:
       logger.warn('Unknown job type encountered', { jobId: job.id, type: job.type });
+  }
+}
+
+async function autoPublishReport(report: Report) {
+  if (!config.GITHUB_PAGES_AUTO_PUBLISH) {
+    return;
+  }
+  try {
+    await publishReportToGithub(report);
+  } catch (error) {
+    logger.error('Report auto-publish failed', {
+      reportId: report.id,
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : error
+    });
   }
 }

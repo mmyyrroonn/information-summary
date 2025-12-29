@@ -5,6 +5,7 @@ import type {
   TelegramTestResult,
   ReportDetail,
   ReportSummary,
+  ReportPublishResult,
   ReportProfile,
   ReportProfileGroupBy,
   FetchResult,
@@ -75,6 +76,7 @@ interface ApiClient {
   listReports: (params?: { profileId?: string; limit?: number }) => Promise<ReportSummary[]>;
   getReport: (id: string) => Promise<ReportDetail>;
   sendReport: (id: string) => Promise<unknown>;
+  publishReport: (id: string) => Promise<ReportPublishResult>;
   listReportProfiles: () => Promise<ReportProfile[]>;
   createReportProfile: (payload: ReportProfileCreatePayload) => Promise<ReportProfile>;
   updateReportProfile: (id: string, payload: ReportProfileUpdatePayload) => Promise<ReportProfile>;
@@ -194,6 +196,7 @@ export const api: ApiClient = {
   },
   getReport: (id) => request<ReportDetail>(`/reports/${id}`),
   sendReport: (id) => request(`/reports/${id}/send`, { method: 'POST' }),
+  publishReport: (id) => request<ReportPublishResult>(`/reports/${id}/publish`, { method: 'POST' }),
   listReportProfiles: () => request<ReportProfile[]>('/report-profiles'),
   createReportProfile: (payload) =>
     request<ReportProfile>('/report-profiles', { method: 'POST', body: JSON.stringify(payload) }),

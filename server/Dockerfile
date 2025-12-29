@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1
 
 FROM node:20-bookworm-slim AS base
-RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl git openssh-client \
+  && rm -rf /var/lib/apt/lists/*
 
 FROM base AS deps
 WORKDIR /app

@@ -23,6 +23,7 @@ export async function listReports(options: ReportListOptions = {}) {
       periodStart: true,
       periodEnd: true,
       createdAt: true,
+      publishedAt: true,
       deliveredAt: true,
       profileId: true
     },

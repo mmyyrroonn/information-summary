@@ -50,6 +50,16 @@
 | `CLASSIFY_MIN_TWEETS` | 自动触发 AI 筛选所需的最少待处理推文数量 |
 | `REPORT_TIMEZONE` | 统计/展示使用的时区 |
 | `BASE_WEB_URL` | 生成报告时引用的 Web 端地址 |
+| `GITHUB_PAGES_REPO_PATH` | GitHub Pages 仓库本地路径（用于推送日报 Markdown） |
+| `GITHUB_PAGES_BRANCH` | GitHub Pages 发布分支，默认 `main` |
+| `GITHUB_PAGES_REPORT_DIR` | 报告目录，默认 `reports` |
+| `GITHUB_PAGES_INDEX_FILE` | 列表页文件名，默认 `index.md` |
+| `GITHUB_PAGES_BASE_URL` | Pages 基础 URL（用于返回可点击链接） |
+| `GITHUB_PAGES_SSH_KEY_PATH` | GitHub deploy key 路径（可选） |
+| `GITHUB_PAGES_SSH_COMMAND` | 自定义 Git SSH 命令（优先级高于 key path） |
+| `GITHUB_PAGES_COMMIT_NAME` | 自动提交的作者名 |
+| `GITHUB_PAGES_COMMIT_EMAIL` | 自动提交的作者邮箱 |
+| `GITHUB_PAGES_AUTO_PUBLISH` | 生成日报后自动发布到 GitHub Pages，默认 `false` |
 
 前端 `.env` 只需要 `VITE_API_BASE_URL` 指向后端 `/api`。
 
@@ -115,7 +125,7 @@
 - `GET /health`：存活检测
 - `GET/POST/DELETE /api/subscriptions`：订阅 CRUD；`POST /api/subscriptions/:id/fetch` 手动抓取
 - `POST /api/tasks/fetch|analyze|report`：手动触发工作流（report 支持 `{ notify, profileId, windowEnd }`）
-- `GET /api/reports`（支持 `profileId` 过滤）、`GET /api/reports/:id`、`POST /api/reports/:id/send`
+- `GET /api/reports`（支持 `profileId` 过滤）、`GET /api/reports/:id`、`POST /api/reports/:id/send`、`POST /api/reports/:id/publish`
 - `GET/POST/PUT/DELETE /api/report-profiles`、`POST /api/report-profiles/:id/run`
 - `GET/PUT /api/config/notification`：管理 Telegram 配置
 

@@ -30,7 +30,17 @@ const envSchema = z.object({
   CLASSIFY_CONCURRENCY: z.coerce.number().default(4),
   REPORT_TIMEZONE: z.string().default('Asia/Shanghai'),
   BASE_WEB_URL: z.string().default('http://localhost:5173'),
-  AI_LOCK_TTL_MS: z.coerce.number().default(60 * 60 * 1000)
+  AI_LOCK_TTL_MS: z.coerce.number().default(60 * 60 * 1000),
+  GITHUB_PAGES_REPO_PATH: z.string().optional(),
+  GITHUB_PAGES_BRANCH: z.string().default('main'),
+  GITHUB_PAGES_REPORT_DIR: z.string().default('reports'),
+  GITHUB_PAGES_INDEX_FILE: z.string().default('index.md'),
+  GITHUB_PAGES_BASE_URL: z.string().optional(),
+  GITHUB_PAGES_SSH_KEY_PATH: z.string().optional(),
+  GITHUB_PAGES_SSH_COMMAND: z.string().optional(),
+  GITHUB_PAGES_COMMIT_NAME: z.string().default('report-bot'),
+  GITHUB_PAGES_COMMIT_EMAIL: z.string().default('report-bot@local'),
+  GITHUB_PAGES_AUTO_PUBLISH: z.coerce.boolean().default(false)
 });
 
 const parsed = envSchema.safeParse(process.env);

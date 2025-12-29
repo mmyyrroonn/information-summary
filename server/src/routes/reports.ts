@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { listReports, getReport } from '../services/reportService';
 import { sendReportAndNotify } from '../services/aiService';
+import { publishReportToGithub } from '../services/githubPublishService';
 
 const router = Router();
 
@@ -47,6 +48,23 @@ router.post('/:id/send', async (req, res, next) => {
     }
     const result = await sendReportAndNotify(report);
     res.json(result ?? { message: 'No notification channel configured' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/publish', async (req, res, next) => {
+  try {
+    const report = await getReport(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    const result = await publishReportToGithub(report);
+    res.json({
+      publishedAt: result.publishedAt,
+      url: result.url,
+      indexUrl: result.indexUrl
+    });
   } catch (error) {
     next(error);
   }

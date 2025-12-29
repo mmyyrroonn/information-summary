@@ -11,3 +11,5 @@ web/.env
 pnpm-lock.yaml
 yarn.lock
 *.log
+report_key
+report_key.pub
