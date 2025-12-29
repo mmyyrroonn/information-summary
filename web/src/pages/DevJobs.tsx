@@ -42,7 +42,7 @@ const verdictOptions = [
   { value: 'actionable', label: '可行动' }
 ] as const;
 
-const TAG_SUGGESTION_LIMIT = 8;
+const TAG_SUGGESTION_LIMIT = 15;
 
 type ProfileDraft = {
   name: string;
