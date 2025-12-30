@@ -64,6 +64,7 @@ export function SubscriptionsPage() {
   const [autoResult, setAutoResult] = useState<AutoUnsubscribeResponse | null>(null);
   const [autoResultFilter, setAutoResultFilter] = useState<'changes' | 'unsubscribe' | 'resubscribe'>('changes');
   const [autoResultQuery, setAutoResultQuery] = useState('');
+  const [listQuery, setListQuery] = useState('');
 
   useEffect(() => {
     refreshSubscriptions();
@@ -362,6 +363,16 @@ export function SubscriptionsPage() {
     return item.screenName.toLowerCase().includes(autoQuery);
   });
 
+  const normalizedListQuery = listQuery.trim().toLowerCase();
+  const normalizedHandleQuery = normalizeHandle(listQuery);
+  const screenNameQuery = normalizedHandleQuery || normalizedListQuery;
+  const filteredSubscriptions = subscriptions.filter((sub) => {
+    if (!normalizedListQuery) return true;
+    if (screenNameQuery && sub.screenName.toLowerCase().includes(screenNameQuery)) return true;
+    if (sub.displayName && sub.displayName.toLowerCase().includes(normalizedListQuery)) return true;
+    return false;
+  });
+
   function formatImportResult(source: string, identifier: string, result: SubscriptionImportResult) {
     const timestamp = new Date().toLocaleTimeString();
     const summary = `[${timestamp}] ${source} ${identifier}｜获取 ${result.fetched}，新增 ${result.created}，已存在 ${result.existing}，跳过 ${result.skipped}，nextCursor=${
@@ -544,7 +555,6 @@ export function SubscriptionsPage() {
             </p>
           </div>
         </div>
-
         <div className="stats-summary">
           <div className="stats-summary-head">
             <p className="stats-summary-title">统计图表</p>
@@ -722,12 +732,25 @@ export function SubscriptionsPage() {
             </div>
           </div>
         </div>
+        <div className="subscription-form">
+          <input
+            placeholder="筛选 @账号 或 备注"
+            value={listQuery}
+            onChange={(e) => setListQuery(e.target.value)}
+          />
+          <button type="button" className="ghost" onClick={() => setListQuery('')} disabled={!listQuery.trim()}>
+            清空
+          </button>
+        </div>
+        <p className="hint">匹配 {filteredSubscriptions.length} / {subscriptions.length}</p>
 
         {subscriptions.length === 0 ? (
           <p className="empty list-empty">暂无订阅</p>
+        ) : filteredSubscriptions.length === 0 ? (
+          <p className="empty list-empty">没有匹配的订阅</p>
         ) : (
           <div className="list">
-            {subscriptions.map((sub) => {
+            {filteredSubscriptions.map((sub) => {
               const stats = statsById[sub.id];
               return (
                 <div key={sub.id} className="list-item">
