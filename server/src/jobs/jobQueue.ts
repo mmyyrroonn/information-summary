@@ -29,6 +29,7 @@ export interface JobPayloadMap {
 }
 
 const ACTIVE_STATUSES: BackgroundJobStatus[] = [BackgroundJobStatus.PENDING, BackgroundJobStatus.RUNNING];
+const STALE_RUNNING_JOB_MS = 3 * 60 * 60 * 1000;
 
 export interface EnqueueJobOptions {
   runAt?: Date;
@@ -204,4 +205,36 @@ export async function requeueJob(job: QueuedJob, options?: { delayMs?: number; r
     where: { id: job.id },
     data
   });
+}
+
+export async function markStaleRunningJobsCompleted(options?: { maxAgeMs?: number; now?: Date }) {
+  const now = options?.now ?? new Date();
+  const maxAgeMs = options?.maxAgeMs ?? STALE_RUNNING_JOB_MS;
+  const cutoff = new Date(now.getTime() - maxAgeMs);
+  const staleJobs = await prisma.backgroundJob.findMany({
+    where: {
+      status: BackgroundJobStatus.RUNNING,
+      OR: [{ lockedAt: { lte: cutoff } }, { lockedAt: null, createdAt: { lte: cutoff } }]
+    },
+    select: {
+      id: true
+    }
+  });
+
+  if (staleJobs.length === 0) {
+    return { updated: 0, jobIds: [], cutoff };
+  }
+
+  const jobIds = staleJobs.map((job) => job.id);
+  const result = await prisma.backgroundJob.updateMany({
+    where: { id: { in: jobIds }, status: BackgroundJobStatus.RUNNING },
+    data: {
+      status: BackgroundJobStatus.COMPLETED,
+      completedAt: now,
+      lockedAt: null,
+      lockedBy: null
+    }
+  });
+
+  return { updated: result.count, jobIds, cutoff };
 }

@@ -2,9 +2,10 @@ import { randomUUID } from 'crypto';
 import { logger } from '../logger';
 import { AiLockUnavailableError } from '../errors';
 import { handleJob } from './jobHandlers';
-import { markJobComplete, markJobFailed, reserveNextJob, requeueJob } from './jobQueue';
+import { markJobComplete, markJobFailed, markStaleRunningJobsCompleted, reserveNextJob, requeueJob } from './jobQueue';
 
 const IDLE_SLEEP_MS = 2000;
+const STALE_JOB_SWEEP_INTERVAL_MS = 60 * 60 * 1000;
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -13,6 +14,24 @@ function sleep(ms: number) {
 export async function startJobWorker() {
   const workerId = randomUUID();
   logger.info('Background worker booting', { workerId });
+  const sweepStaleJobs = async () => {
+    try {
+      const cleanup = await markStaleRunningJobsCompleted();
+      if (cleanup.updated > 0) {
+        logger.warn('Marked stale running jobs as completed', {
+          count: cleanup.updated,
+          cutoff: cleanup.cutoff.toISOString(),
+          jobIds: cleanup.jobIds
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to cleanup stale running jobs', error);
+    }
+  };
+  await sweepStaleJobs();
+  setInterval(() => {
+    void sweepStaleJobs();
+  }, STALE_JOB_SWEEP_INTERVAL_MS);
 
   while (true) {
     const job = await reserveNextJob(workerId);
