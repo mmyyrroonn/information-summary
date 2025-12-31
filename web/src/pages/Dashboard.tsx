@@ -175,37 +175,39 @@ export function DashboardPage() {
                   if (e.key === 'Enter') loadReport(report.id);
                 }}
               >
-                <div>
+                <div className="report-info">
                   <p className="title">{report.headline}</p>
                   <p className="meta">
                     {new Date(report.periodStart).toLocaleDateString()} - {new Date(report.periodEnd).toLocaleDateString()}
                   </p>
-                </div>
-                <div className="row-actions">
-                  <span>Telegram: {report.deliveredAt ? '已推送' : '未推送'}</span>
-                  <span>GitHub: {report.publishedAt ? '已发布' : '未发布'}</span>
-                  <button
-                    className="ghost"
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSendReport(report.id);
-                    }}
-                    disabled={busy === `send-${report.id}`}
-                  >
-                    推送
-                  </button>
-                  <button
-                    className="ghost"
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePublishReport(report.id);
-                    }}
-                    disabled={busy === `publish-${report.id}`}
-                  >
-                    推送 GitHub
-                  </button>
+                  <div className="report-actions">
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSendReport(report.id);
+                      }}
+                      disabled={busy === `send-${report.id}`}
+                    >
+                      推送TG
+                    </button>
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePublishReport(report.id);
+                      }}
+                      disabled={busy === `publish-${report.id}`}
+                    >
+                      推送 GitHub
+                    </button>
+                  </div>
+                  <div className="report-status">
+                    <span>Telegram: {report.deliveredAt ? '已推送' : '未推送'}</span>
+                    <span>GitHub: {report.publishedAt ? '已发布' : '未发布'}</span>
+                  </div>
                 </div>
               </div>
             ))}
