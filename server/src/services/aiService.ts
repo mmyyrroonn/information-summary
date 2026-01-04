@@ -214,7 +214,7 @@ export async function classifyTweets(options?: ClassificationOptions) {
         insights: null,
         abandonedAt: null
       },
-      orderBy: { tweetedAt: 'asc' }
+      orderBy: { tweetedAt: 'desc' }
     });
 
     logger.info('Loaded pending tweets for classification', { pending: tweets.length });
@@ -240,7 +240,7 @@ export async function classifyTweetsByIds(tweetIds: string[], options?: Classifi
         insights: null,
         abandonedAt: null
       },
-      orderBy: { tweetedAt: 'asc' }
+      orderBy: { tweetedAt: 'desc' }
     });
 
     logger.info('Loaded targeted tweets for classification', {
