@@ -61,6 +61,7 @@ interface ApiClient {
     minHighScoreTweets?: number;
     minHighScoreRatio?: number;
     highScoreMinImportance?: number;
+    protectNewSubscriptions?: boolean;
     dryRun?: boolean;
   }) => Promise<AutoUnsubscribeResponse>;
   importListMembers: (payload: { listId: string; cursor?: string }) => Promise<SubscriptionImportResult>;

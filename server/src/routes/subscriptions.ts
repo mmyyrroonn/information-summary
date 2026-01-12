@@ -122,6 +122,7 @@ router.post('/auto-unsubscribe', async (req, res, next) => {
         minHighScoreTweets: z.number().int().optional(),
         minHighScoreRatio: z.number().optional(),
         highScoreMinImportance: z.number().int().optional(),
+        protectNewSubscriptions: z.boolean().optional(),
         dryRun: z.boolean().optional()
       })
       .parse(req.body ?? {});
@@ -130,7 +131,8 @@ router.post('/auto-unsubscribe', async (req, res, next) => {
       minAvgImportance: body.minAvgImportance ?? 3.0,
       minHighScoreTweets: body.minHighScoreTweets ?? 6,
       minHighScoreRatio: body.minHighScoreRatio ?? 0.25,
-      highScoreMinImportance: body.highScoreMinImportance ?? 4
+      highScoreMinImportance: body.highScoreMinImportance ?? 4,
+      protectNewSubscriptions: body.protectNewSubscriptions ?? true
     };
 
     const dryRun = body.dryRun ?? true;

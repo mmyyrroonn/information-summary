@@ -25,6 +25,16 @@ function normalizeRatio(value) {
   return value;
 }
 
+function parseBooleanArg(rawValue, fallback) {
+  if (rawValue === undefined) return fallback;
+  if (rawValue === true) return true;
+  const normalized = String(rawValue).trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  return fallback;
+}
+
 function decideAction(currentStatus, keep) {
   const desiredStatus = keep ? SubscriptionStatus.SUBSCRIBED : SubscriptionStatus.UNSUBSCRIBED;
   if (currentStatus === desiredStatus) return { action: 'none', desiredStatus };
@@ -44,6 +54,7 @@ async function main() {
   };
 
   const apply = Boolean(args.get('apply'));
+  const protectNewSubscriptions = parseBooleanArg(args.get('protectNewSubscriptions'), true);
   const freezeDays = Math.floor(parseNumberArg(args.get('freezeDays'), 14));
 
   const prisma = new PrismaClient();
@@ -82,7 +93,7 @@ async function main() {
 
       const hasScoreData = scoredTweets > 0;
       const isNewSubscription = sub.createdAt.getTime() >= minCreatedAtMs;
-      const shouldFreeze = !hasScoreData || isNewSubscription;
+      const shouldFreeze = protectNewSubscriptions && isNewSubscription;
 
       const matchedAvg = hasScoreData && typeof avgImportance === 'number' && avgImportance >= thresholds.minAvgImportance;
       const matchedHighCount = hasScoreData && highScoreTweets >= thresholds.minHighScoreTweets;
@@ -113,7 +124,9 @@ async function main() {
     const candidates = decisions.filter((d) => d.action !== 'none');
 
     console.log('Thresholds:', thresholds);
-    console.log(`Freeze: skip if scoredTweets==0 OR createdAt within ${freezeDays} days`);
+    console.log(
+      `Freeze: ${protectNewSubscriptions ? `skip if createdAt within ${freezeDays} days` : 'disabled'}`
+    );
     console.log(`Evaluated: ${decisions.length}`);
     console.log(`Will unsubscribe: ${toUnsubscribe.length}`);
     console.log(`Will resubscribe: ${toResubscribe.length}`);

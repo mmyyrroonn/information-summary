@@ -59,7 +59,8 @@ export function SubscriptionsPage() {
     minAvgImportance: 3.0,
     minHighScoreTweets: 6,
     minHighScoreRatio: 0.25,
-    highScoreMinImportance: 4
+    highScoreMinImportance: 4,
+    protectNewSubscriptions: true
   });
   const [autoResult, setAutoResult] = useState<AutoUnsubscribeResponse | null>(null);
   const [autoResultFilter, setAutoResultFilter] = useState<'changes' | 'unsubscribe' | 'resubscribe'>('changes');
@@ -186,7 +187,7 @@ export function SubscriptionsPage() {
       const ok = confirm(
         `将按规则同步订阅状态（会同时取消订阅 + 恢复订阅）：\n- 均分 ≥ ${autoRule.minAvgImportance}\n- 或 高分数量 ≥ ${autoRule.minHighScoreTweets}（importance≥${autoRule.highScoreMinImportance}）\n- 或 高分占比 > ${Math.round(
           autoRule.minHighScoreRatio * 100
-        )}%\n\n确定执行吗？`
+        )}%\n- 两周保护（新订阅不变更）：${autoRule.protectNewSubscriptions ? '开启' : '关闭'}\n\n确定执行吗？`
       );
       if (!ok) return;
     }
@@ -198,6 +199,7 @@ export function SubscriptionsPage() {
         minHighScoreTweets: autoRule.minHighScoreTweets,
         minHighScoreRatio: autoRule.minHighScoreRatio,
         highScoreMinImportance: autoRule.highScoreMinImportance,
+        protectNewSubscriptions: autoRule.protectNewSubscriptions,
         dryRun
       });
       setAutoResult(result);
@@ -572,7 +574,7 @@ export function SubscriptionsPage() {
             当前样本：{visibleStatsItems.length} 人（其中有评分 {scoredUsers.length} 人，高分人数 {usersWithHighScore.length} 人，高分占比≥50% {usersWithHighRatio.length} 人）。
           </p>
           <p className="hint">
-            自动同步规则的保护：无评分数据（scoredTweets=0）或订阅创建时间两周内的账号，不参与本次变更。
+            自动同步规则的保护：可选开启“两周保护”，开启时订阅创建时间两周内的账号不参与本次变更。
           </p>
           <div className="auto-rule">
             <div className="auto-rule-grid">
@@ -628,6 +630,19 @@ export function SubscriptionsPage() {
                     setAutoRule((prev) => ({
                       ...prev,
                       highScoreMinImportance: Math.max(1, Math.floor(coerceNumber(e.target.value, prev.highScoreMinImportance)))
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                <span>两周保护（新订阅不变更）</span>
+                <input
+                  type="checkbox"
+                  checked={autoRule.protectNewSubscriptions}
+                  onChange={(e) =>
+                    setAutoRule((prev) => ({
+                      ...prev,
+                      protectNewSubscriptions: e.target.checked
                     }))
                   }
                 />

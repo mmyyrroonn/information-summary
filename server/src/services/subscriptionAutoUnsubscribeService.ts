@@ -7,6 +7,7 @@ export interface AutoUnsubscribeThresholds {
   minHighScoreTweets: number;
   minHighScoreRatio: number;
   highScoreMinImportance: number;
+  protectNewSubscriptions: boolean;
 }
 
 export type AutoSubscriptionAction = 'none' | 'unsubscribe' | 'resubscribe';
@@ -66,7 +67,7 @@ export async function evaluateAutoUnsubscribe(thresholds: AutoUnsubscribeThresho
     const keep = matchedAvg || matchedHighCount || matchedHighRatio;
     const desiredStatus = keep ? SubscriptionStatus.SUBSCRIBED : SubscriptionStatus.UNSUBSCRIBED;
 
-    const shouldFreeze = !hasScoreData || isNewSubscription;
+    const shouldFreeze = thresholds.protectNewSubscriptions && isNewSubscription;
     const action: AutoSubscriptionAction = shouldFreeze
       ? 'none'
       : sub.status === desiredStatus

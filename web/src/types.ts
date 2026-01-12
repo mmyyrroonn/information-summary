@@ -85,6 +85,7 @@ export interface AutoUnsubscribeResponse {
     minHighScoreTweets: number;
     minHighScoreRatio: number;
     highScoreMinImportance: number;
+    protectNewSubscriptions: boolean;
   };
   evaluated: number;
   willUnsubscribe: number;
