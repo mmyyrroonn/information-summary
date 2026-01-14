@@ -47,6 +47,7 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    shm_size: '256mb'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}

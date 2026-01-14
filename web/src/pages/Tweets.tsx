@@ -25,6 +25,7 @@ export function TweetsPage() {
   const [subscriptionId, setSubscriptionId] = useState<string | undefined>(undefined);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [search, setSearch] = useState('');
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,7 +38,7 @@ export function TweetsPage() {
 
   useEffect(() => {
     loadTweets();
-  }, [page, sort, subscriptionId, startTime, endTime]);
+  }, [page, sort, subscriptionId, startTime, endTime, search]);
 
   async function loadSubscriptions() {
     try {
@@ -68,7 +69,8 @@ export function TweetsPage() {
         sort,
         subscriptionId,
         startTime: toIso(startTime),
-        endTime: toIso(endTime)
+        endTime: toIso(endTime),
+        q: search.trim() || undefined
       });
       setTweets(response.items);
       setTotal(response.total);
@@ -132,6 +134,19 @@ export function TweetsPage() {
 
         <div className="tweet-filters">
           <label>
+            <span>内容搜索</span>
+            <input
+              type="text"
+              value={search}
+              placeholder="关键词搜索（默认近24h，逗号=AND，分号=OR）"
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </label>
+
+          <label>
             <span>订阅账号</span>
             <select
               value={subscriptionId ?? ''}
@@ -189,6 +204,7 @@ export function TweetsPage() {
                 清除
               </button>
             </div>
+            <p className="hint">未设时间范围时，搜索默认近 24 小时。</p>
           </div>
         </div>
 

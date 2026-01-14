@@ -15,7 +15,8 @@ router.get('/', async (req, res, next) => {
         sort: z.enum(['newest', 'oldest', 'priority']).optional(),
         subscriptionId: z.string().uuid().optional(),
         startTime: z.coerce.date().optional(),
-        endTime: z.coerce.date().optional()
+        endTime: z.coerce.date().optional(),
+        q: z.string().optional()
       })
       .transform((values) => ({
         ...values,
@@ -32,7 +33,8 @@ router.get('/', async (req, res, next) => {
       sort: query.sort ?? 'newest',
       ...(query.subscriptionId ? { subscriptionId: query.subscriptionId } : {}),
       ...(query.startTime ? { startTime: query.startTime } : {}),
-      ...(query.endTime ? { endTime: query.endTime } : {})
+      ...(query.endTime ? { endTime: query.endTime } : {}),
+      ...(query.q ? { search: query.q } : {})
     });
     res.json(tweets);
   } catch (error) {

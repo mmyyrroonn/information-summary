@@ -92,6 +92,7 @@ interface ApiClient {
     subscriptionId?: string;
     startTime?: string;
     endTime?: string;
+    q?: string;
   }) => Promise<TweetListResponse>;
   analyzeTweets: (tweetIds: string[]) => Promise<{ processed: number; insights: number }>;
   listJobs: (params?: { type?: string; status?: BackgroundJobStatus; limit?: number }) => Promise<BackgroundJobSummary[]>;
@@ -231,6 +232,9 @@ export const api: ApiClient = {
     }
     if (params.endTime) {
       search.set('endTime', params.endTime);
+    }
+    if (params.q) {
+      search.set('q', params.q);
     }
     const query = search.toString();
     const path = query ? `/tweets?${query}` : '/tweets';

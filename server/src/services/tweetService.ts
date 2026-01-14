@@ -8,6 +8,35 @@ export interface ListTweetsOptions {
   subscriptionId?: string;
   startTime?: Date;
   endTime?: Date;
+  search?: string;
+}
+
+function buildSearchFilter(raw?: string): Prisma.TweetWhereInput | null {
+  if (!raw) {
+    return null;
+  }
+  const groups = raw
+    .trim()
+    .split(';')
+    .map((group) => group.split(',').map((term) => term.trim()).filter(Boolean))
+    .filter((group) => group.length > 0);
+  if (!groups.length) {
+    return null;
+  }
+
+  const groupFilters: Prisma.TweetWhereInput[] = groups.map((group) => ({
+    AND: group.map((term) => ({
+      OR: [
+        { text: { contains: term, mode: 'insensitive' } },
+        { insights: { is: { summary: { contains: term, mode: 'insensitive' } } } },
+        { insights: { is: { suggestions: { contains: term, mode: 'insensitive' } } } },
+        { insights: { is: { verdict: { contains: term, mode: 'insensitive' } } } },
+        { insights: { is: { tags: { has: term } } } }
+      ]
+    }))
+  }));
+
+  return { OR: groupFilters };
 }
 
 export async function listTweets(options: ListTweetsOptions) {
@@ -15,18 +44,30 @@ export async function listTweets(options: ListTweetsOptions) {
   const pageSize = Math.max(1, Math.min(50, options.pageSize));
   const skip = (page - 1) * pageSize;
 
+  const hasExplicitRange = Boolean(options.startTime || options.endTime);
+  const useDefaultSearchRange = Boolean(options.search && !hasExplicitRange);
+  const searchEndTime = useDefaultSearchRange ? new Date() : options.endTime;
+  const searchStartTime = useDefaultSearchRange
+    ? new Date((searchEndTime ?? new Date()).getTime() - 24 * 60 * 60 * 1000)
+    : options.startTime;
+
   const where: Prisma.TweetWhereInput = {};
   if (options.subscriptionId) {
     where.subscriptionId = options.subscriptionId;
   }
-  if (options.startTime || options.endTime) {
+  if (searchStartTime || searchEndTime) {
     where.tweetedAt = {};
-    if (options.startTime) {
-      where.tweetedAt.gte = options.startTime;
+    if (searchStartTime) {
+      where.tweetedAt.gte = searchStartTime;
     }
-    if (options.endTime) {
-      where.tweetedAt.lte = options.endTime;
+    if (searchEndTime) {
+      where.tweetedAt.lte = searchEndTime;
     }
+  }
+  const searchFilter = buildSearchFilter(options.search);
+  if (searchFilter) {
+    const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
+    where.AND = [...existingAnd, searchFilter];
   }
 
   const orderBy: Prisma.Enumerable<Prisma.TweetOrderByWithRelationInput> =
