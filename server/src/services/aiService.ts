@@ -7,7 +7,7 @@ import { logger } from '../logger';
 import { chunk } from '../utils/chunk';
 import { safeJsonParse } from '../utils/json';
 import { formatDisplayDate, withTz } from '../utils/time';
-import { sendMarkdownToTelegram } from './notificationService';
+import { sendHighScoreMarkdownToTelegram, sendMarkdownToTelegram } from './notificationService';
 import { withAiProcessingLock } from './lockService';
 import { TweetBatchFailedError, TweetBatchFailureMeta, TweetBatchFailureReason } from '../errors';
 import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from './embeddingService';
@@ -2038,10 +2038,140 @@ function renderReportMarkdown(payload: ReportPayload, window: { start: Date; end
   return lines.join('\n\n');
 }
 
+type HighScoreEntry = {
+  category: string;
+  text: string;
+};
+
+function isClusterOutline(outline: unknown): outline is ClusterReportOutline {
+  if (!outline || typeof outline !== 'object') {
+    return false;
+  }
+  const candidate = outline as { mode?: unknown; sections?: unknown };
+  return candidate.mode === 'clustered' && Array.isArray(candidate.sections);
+}
+
+function extractHighScoreEntries(outline: unknown): HighScoreEntry[] {
+  if (!outline || typeof outline !== 'object') {
+    return [];
+  }
+
+  if (isClusterOutline(outline)) {
+    const entries: HighScoreEntry[] = [];
+    outline.sections.forEach((section) => {
+      if (!Array.isArray(section.clusters)) {
+        return;
+      }
+      section.clusters.forEach((cluster) => {
+        const representativeImportance = cluster.representative?.importance ?? 0;
+        if (representativeImportance < HIGH_PRIORITY_IMPORTANCE) {
+          return;
+        }
+        const summary = cluster.representative?.summary?.trim();
+        if (!summary) {
+          return;
+        }
+        const category = section.title?.trim() || '其他';
+        const tags = cluster.tags?.length ? ` [${cluster.tags.slice(0, 5).join(', ')}]` : '';
+        const link = cluster.representative?.tweetUrl ? ` [推文](${cluster.representative.tweetUrl})` : '';
+        const detail = `（${cluster.size}条 / 最高${cluster.peakImportance}⭐）`;
+        entries.push({ category, text: `${summary}${detail}${link}${tags}` });
+      });
+    });
+    return entries;
+  }
+
+  const payload = outline as ReportPayload;
+  if (!Array.isArray(payload.sections)) {
+    return [];
+  }
+  const entries: HighScoreEntry[] = [];
+  payload.sections.forEach((section) => {
+    if (!Array.isArray(section.items)) {
+      return;
+    }
+    section.items.forEach((item) => {
+      const importance = item.importance ?? 0;
+      if (importance < HIGH_PRIORITY_IMPORTANCE) {
+        return;
+      }
+      const summary = item.summary?.trim();
+      if (!summary) {
+        return;
+      }
+      const category = section.title?.trim() || '其他';
+      const reference = item.tweetUrl ?? item.tweetId;
+      const suffix = reference ? ` (${reference})` : '';
+      const stars = item.importance ? `${item.importance}⭐ ` : '';
+      entries.push({ category, text: `${stars}${summary}${suffix}` });
+    });
+  });
+  return entries;
+}
+
+function buildHighScoreReportMarkdown(report: Report) {
+  const entries = extractHighScoreEntries(report.outline);
+  if (!entries.length) {
+    return null;
+  }
+  const headline = `${report.headline} 高分速览`;
+  const timeRangeLine =
+    report.content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.startsWith('> 时间范围：')) ||
+    `> 时间范围：${formatDisplayDate(report.periodStart, config.REPORT_TIMEZONE)} - ${formatDisplayDate(
+      report.periodEnd,
+      config.REPORT_TIMEZONE
+    )}`;
+  const lines = [`# ${headline}`, timeRangeLine, '', '## 重点洞察'];
+  const buckets = new Map<string, string[]>();
+  entries.forEach((entry) => {
+    const key = entry.category?.trim() || '其他';
+    const list = buckets.get(key) ?? [];
+    list.push(entry.text);
+    buckets.set(key, list);
+  });
+  for (const [category, items] of buckets.entries()) {
+    lines.push('', `### ${category}`);
+    items.forEach((item) => lines.push(`- ${item}`));
+  }
+  return lines.join('\n');
+}
+
+export type HighScoreSendResult = {
+  delivered: boolean;
+  parts?: number;
+  reason?: 'no-high-score' | 'high-score-channel-missing';
+};
+
+export async function sendHighScoreReport(report: Report): Promise<HighScoreSendResult> {
+  const markdown = buildHighScoreReportMarkdown(report);
+  if (!markdown) {
+    return { delivered: false, reason: 'no-high-score' };
+  }
+  const result = await sendHighScoreMarkdownToTelegram(markdown);
+  if (!result) {
+    return { delivered: false, reason: 'high-score-channel-missing' };
+  }
+  return { delivered: true, parts: result.parts };
+}
+
 export async function sendReportAndNotify(report: Report | null) {
   if (!report) return null;
   logger.info('Dispatching report notification', { reportId: report.id });
   await sendMarkdownToTelegram(report.content);
+  const highScoreMarkdown = buildHighScoreReportMarkdown(report);
+  if (highScoreMarkdown) {
+    try {
+      await sendHighScoreMarkdownToTelegram(highScoreMarkdown);
+    } catch (error) {
+      logger.warn('High-score report notification failed', {
+        reportId: report.id,
+        error: getErrorMessage(error)
+      });
+    }
+  }
   logger.info('Report notification delivered', { reportId: report.id });
   return prisma.report.update({
     where: { id: report.id },

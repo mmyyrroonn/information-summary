@@ -12,6 +12,12 @@ type ReportEntry = {
   text: string;
 };
 
+type TelegramTarget = {
+  botToken: string | null;
+  chatId: string | null;
+  messageThreadId: number | null;
+};
+
 function parseMessageThreadId(value?: string | null) {
   if (!value) {
     return null;
@@ -128,7 +134,9 @@ export async function getNotificationConfig() {
   return {
     tgBotToken: dbConfig?.tgBotToken ?? config.TG_BOT_TOKEN ?? null,
     tgChatId: dbConfig?.tgChatId ?? config.TG_CHAT_ID ?? null,
-    tgMessageThreadId: dbConfig?.tgMessageThreadId ?? config.TG_MESSAGE_THREAD_ID ?? null
+    tgMessageThreadId: dbConfig?.tgMessageThreadId ?? config.TG_MESSAGE_THREAD_ID ?? null,
+    tgHighScoreMessageThreadId:
+      dbConfig?.tgHighScoreMessageThreadId ?? config.TG_HIGH_SCORE_MESSAGE_THREAD_ID ?? null
   };
 }
 
@@ -136,6 +144,7 @@ export async function updateNotificationConfig(payload: {
   tgBotToken: string | null;
   tgChatId: string | null;
   tgMessageThreadId: string | null;
+  tgHighScoreMessageThreadId: string | null;
 }) {
   await prisma.notificationConfig.upsert({
     where: { id: 1 },
@@ -143,36 +152,67 @@ export async function updateNotificationConfig(payload: {
       id: 1,
       tgBotToken: payload.tgBotToken,
       tgChatId: payload.tgChatId,
-      tgMessageThreadId: payload.tgMessageThreadId
+      tgMessageThreadId: payload.tgMessageThreadId,
+      tgHighScoreMessageThreadId: payload.tgHighScoreMessageThreadId
     },
     update: {
       tgBotToken: payload.tgBotToken,
       tgChatId: payload.tgChatId,
-      tgMessageThreadId: payload.tgMessageThreadId
+      tgMessageThreadId: payload.tgMessageThreadId,
+      tgHighScoreMessageThreadId: payload.tgHighScoreMessageThreadId
     }
   });
   return getNotificationConfig();
 }
 
-export async function sendMarkdownToTelegram(markdown: string) {
-  const cfg = await getNotificationConfig();
-  if (!cfg.tgBotToken || !cfg.tgChatId) {
+async function sendMarkdownToTelegramWithTarget(markdown: string, target: TelegramTarget) {
+  if (!target.botToken || !target.chatId) {
     logger.warn('Telegram config missing, skipping push');
     return null;
   }
 
-  const messageThreadId = parseMessageThreadId(cfg.tgMessageThreadId);
   const messages = buildTelegramMessages(markdown, TELEGRAM_ITEMS_PER_MESSAGE).filter((message) => message.trim());
   for (const message of messages) {
-    const threadPayload = messageThreadId === null ? {} : { message_thread_id: messageThreadId };
-    await axios.post(`https://api.telegram.org/bot${cfg.tgBotToken}/sendMessage`, {
-      chat_id: cfg.tgChatId,
+    const threadPayload = target.messageThreadId === null ? {} : { message_thread_id: target.messageThreadId };
+    await axios.post(`https://api.telegram.org/bot${target.botToken}/sendMessage`, {
+      chat_id: target.chatId,
       text: message,
       ...threadPayload
     });
   }
 
   return { delivered: true, parts: messages.length };
+}
+
+export async function sendMarkdownToTelegram(markdown: string) {
+  const cfg = await getNotificationConfig();
+  const messageThreadId = parseMessageThreadId(cfg.tgMessageThreadId);
+  return sendMarkdownToTelegramWithTarget(markdown, {
+    botToken: cfg.tgBotToken,
+    chatId: cfg.tgChatId,
+    messageThreadId
+  });
+}
+
+export async function sendHighScoreMarkdownToTelegram(markdown: string) {
+  const cfg = await getNotificationConfig();
+  if (!cfg.tgHighScoreMessageThreadId) {
+    return null;
+  }
+  const messageThreadId = parseMessageThreadId(cfg.tgHighScoreMessageThreadId);
+  if (messageThreadId === null) {
+    logger.warn('Telegram high-score thread id invalid, skipping push');
+    return null;
+  }
+  const defaultThreadId = parseMessageThreadId(cfg.tgMessageThreadId);
+  if (defaultThreadId !== null && defaultThreadId === messageThreadId) {
+    return null;
+  }
+  return sendMarkdownToTelegramWithTarget(markdown, {
+    botToken: cfg.tgBotToken,
+    chatId: cfg.tgChatId,
+    messageThreadId
+  });
 }
 
 export async function sendTestTelegramMessage(message?: string) {

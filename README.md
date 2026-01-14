@@ -43,6 +43,7 @@
 | `REPORT_MID_TRIAGE_MAX_KEEP_PER_CHUNK` | 二次精筛每个 chunk 最多保留条数，默认 `15` |
 | `TG_BOT_TOKEN` / `TG_CHAT_ID` | Telegram 推送默认配置，可在 UI 中覆盖 |
 | `TG_MESSAGE_THREAD_ID` | Telegram 话题 (topic) ID，仅超级群话题需要 |
+| `TG_HIGH_SCORE_MESSAGE_THREAD_ID` | Telegram 高分速览推送的话题 ID（只推 importance≥4） |
 | `FETCH_CRON_SCHEDULE` | 批量抓取订阅的 `node-cron` 表达式，默认每 30 分钟一次 |
 | `CLASSIFY_CRON_SCHEDULE` | AI 筛选兜底定时器，默认每 20 分钟检查一次 |
 | `FETCH_BATCH_SIZE` | 每个抓取周期处理的订阅数量，默认 5 个，方便分散压力 |

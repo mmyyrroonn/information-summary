@@ -125,6 +125,20 @@ export function DashboardPage() {
     }
   }
 
+  async function handleSendHighScoreReport(id: string) {
+    setBusy(`send-high-${id}`);
+    try {
+      await api.sendHighScoreReport(id);
+      setStatusMessage('高分推送成功');
+      setStatusLink(null);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : '高分推送失败');
+      setStatusLink(null);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function handlePublishReport(id: string) {
     setBusy(`publish-${id}`);
     try {
@@ -191,6 +205,17 @@ export function DashboardPage() {
                       disabled={busy === `send-${report.id}`}
                     >
                       推送TG
+                    </button>
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSendHighScoreReport(report.id);
+                      }}
+                      disabled={busy === `send-high-${report.id}`}
+                    >
+                      推送高分
                     </button>
                     <button
                       className="ghost"

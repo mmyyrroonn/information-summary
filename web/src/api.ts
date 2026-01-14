@@ -3,6 +3,7 @@ import type {
   SubscriptionStatus,
   NotificationConfig,
   TelegramTestResult,
+  HighScoreSendResult,
   ReportDetail,
   ReportSummary,
   ReportPublishResult,
@@ -72,6 +73,7 @@ interface ApiClient {
   getNotificationConfig: () => Promise<NotificationConfig>;
   updateNotificationConfig: (payload: NotificationConfig) => Promise<NotificationConfig>;
   sendTelegramTest: (payload?: { message?: string }) => Promise<TelegramTestResult>;
+  sendHighScoreReport: (id: string) => Promise<HighScoreSendResult>;
   listTagOptions: (params?: { limit?: number }) => Promise<TagOptionsResponse>;
   getDefaultReportProfile: () => Promise<ReportProfile>;
   listReports: (params?: { profileId?: string; limit?: number }) => Promise<ReportSummary[]>;
@@ -173,6 +175,7 @@ export const api: ApiClient = {
     request<NotificationConfig>('/config/notification', { method: 'PUT', body: JSON.stringify(payload) }),
   sendTelegramTest: (payload = {}) =>
     request<TelegramTestResult>('/dev/notifications/test', { method: 'POST', body: JSON.stringify(payload) }),
+  sendHighScoreReport: (id) => request<HighScoreSendResult>(`/reports/${id}/send-high-score`, { method: 'POST' }),
   listTagOptions: (params = {}) => {
     const search = new URLSearchParams();
     if (typeof params.limit === 'number') {

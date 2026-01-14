@@ -22,6 +22,7 @@ const envSchema = z.object({
   TG_BOT_TOKEN: z.string().optional(),
   TG_CHAT_ID: z.string().optional(),
   TG_MESSAGE_THREAD_ID: z.string().optional(),
+  TG_HIGH_SCORE_MESSAGE_THREAD_ID: z.string().optional(),
   FETCH_CRON_SCHEDULE: z.string().default('*/1 * * * *'),
   CLASSIFY_CRON_SCHEDULE: z.string().default('*/5 * * * *'),
   FETCH_BATCH_SIZE: z.coerce.number().default(10),

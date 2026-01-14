@@ -146,6 +146,7 @@ model NotificationConfig {
   tgBotToken        String?
   tgChatId          String?
   tgMessageThreadId String?
+  tgHighScoreMessageThreadId String?
   updatedAt         DateTime @updatedAt
 }
 

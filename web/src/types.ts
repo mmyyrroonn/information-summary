@@ -109,6 +109,7 @@ export interface NotificationConfig {
   tgBotToken: string | null;
   tgChatId: string | null;
   tgMessageThreadId: string | null;
+  tgHighScoreMessageThreadId: string | null;
 }
 
 export interface TelegramTestResult {
@@ -116,6 +117,11 @@ export interface TelegramTestResult {
   text: string;
   messageThreadId: number | null;
   chatId: string;
+}
+
+export interface HighScoreSendResult {
+  delivered: boolean;
+  parts?: number;
 }
 
 export interface TagOption {
