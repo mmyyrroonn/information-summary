@@ -46,6 +46,7 @@ const TRIAGE_MAX_KEEP_PER_CHUNK = Math.max(
 );
 const TRIAGE_CONCURRENCY = Math.max(1, Math.floor(config.REPORT_MID_TRIAGE_CONCURRENCY));
 const HIGH_PRIORITY_IMPORTANCE = 4;
+const HIGH_SCORE_SUMMARY_LIMIT = 5;
 const MEDIUM_MIN_IMPORTANCE = 2;
 const MEDIUM_MAX_IMPORTANCE = 3;
 const REPORT_MIN_IMPORTANCE = Math.max(1, Math.min(5, Math.floor(config.REPORT_MIN_IMPORTANCE ?? MEDIUM_MIN_IMPORTANCE)));
@@ -2107,6 +2108,44 @@ function extractHighScoreEntries(outline: unknown): HighScoreEntry[] {
     });
   });
   return entries;
+}
+
+function normalizeSummaryText(text: string) {
+  let output = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1: $2');
+  output = output.replace(/\s*\[([^\]]+)\]\s*$/, ' Tags: $1');
+  return output.trim();
+}
+
+function formatHighScoreSummaryEntry(entry: HighScoreEntry) {
+  const category = entry.category?.trim();
+  const prefix = category ? `【${category}】` : '';
+  const normalized = normalizeSummaryText(entry.text);
+  return truncateText(`${prefix}${normalized}`, 180);
+}
+
+export function buildHighScoreSummaryMarkdown(report: Report, previewUrl: string, maxItems = HIGH_SCORE_SUMMARY_LIMIT) {
+  const entries = extractHighScoreEntries(report.outline);
+  const timeRangeLine =
+    report.content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line.startsWith('> 时间范围：')) ||
+    `> 时间范围：${formatDisplayDate(report.periodStart, config.REPORT_TIMEZONE)} - ${formatDisplayDate(
+      report.periodEnd,
+      config.REPORT_TIMEZONE
+    )}`;
+  const lines = [`# ${report.headline}`, timeRangeLine, '', '## 摘要'];
+  if (entries.length) {
+    const trimmedEntries = entries.slice(0, Math.max(1, maxItems));
+    trimmedEntries.forEach((entry, idx) => lines.push(`${idx + 1}. ${formatHighScoreSummaryEntry(entry)}`));
+    if (entries.length > trimmedEntries.length) {
+      lines.push(`... 等 ${entries.length - trimmedEntries.length} 条高分洞察，详见完整报告。`);
+    }
+  } else {
+    lines.push('本期暂无高分洞察，详见完整报告。');
+  }
+  lines.push('', `预览链接：${previewUrl}`);
+  return lines.join('\n');
 }
 
 function buildHighScoreReportMarkdown(report: Report) {

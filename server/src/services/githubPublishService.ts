@@ -7,6 +7,8 @@ import type { Report } from '@prisma/client';
 import { prisma } from '../db';
 import { config } from '../config';
 import { logger } from '../logger';
+import { buildHighScoreSummaryMarkdown } from './aiService';
+import { sendHighScoreMarkdownToTelegram } from './notificationService';
 
 const execFileAsync = promisify(execFile);
 
@@ -115,6 +117,39 @@ async function runGitSafe(repoPath: string, args: string[]) {
       stderr: err.stderr?.toString() ?? ''
     };
   }
+}
+
+function extractGithubRepoSlug(remoteUrl: string) {
+  const cleaned = remoteUrl.trim().replace(/\.git$/i, '').replace(/\/+$/, '');
+  const sshMatch = cleaned.match(/^git@github\.com:([^/]+\/[^/]+)$/i);
+  if (sshMatch) {
+    return sshMatch[1];
+  }
+  const sshAltMatch = cleaned.match(/^ssh:\/\/git@github\.com\/([^/]+\/[^/]+)$/i);
+  if (sshAltMatch) {
+    return sshAltMatch[1];
+  }
+  const httpsMatch = cleaned.match(/^(?:https?|git):\/\/github\.com\/([^/]+\/[^/]+)$/i);
+  if (httpsMatch) {
+    return httpsMatch[1];
+  }
+  return null;
+}
+
+async function resolveGithubPreviewUrl(repoPath: string, branch: string, reportRelPath: string) {
+  const remoteResult = await runGitSafe(repoPath, ['remote', 'get-url', 'origin']);
+  if (!remoteResult.ok) {
+    return null;
+  }
+  const remoteUrl = remoteResult.stdout.trim();
+  if (!remoteUrl) {
+    return null;
+  }
+  const slug = extractGithubRepoSlug(remoteUrl);
+  if (!slug) {
+    return null;
+  }
+  return `https://github.com/${slug}/blob/${branch}/${reportRelPath}`;
 }
 
 async function ensureRepoReady(repoPath: string, branch: string) {
@@ -250,6 +285,23 @@ export async function publishReportToGithub(report: Report): Promise<PublishResu
   const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : null;
   const url = normalizedBase ? `${normalizedBase}/${reportRelPath}` : null;
   const indexUrl = normalizedBase ? `${normalizedBase}/${toPosixPath(reportDir)}/` : null;
+  let summaryDelivered = false;
+  if (pushed) {
+    const previewUrl = (await resolveGithubPreviewUrl(repoPath, branch, reportRelPath)) ?? url;
+    if (previewUrl) {
+      const summaryMarkdown = buildHighScoreSummaryMarkdown(report, previewUrl);
+      try {
+        summaryDelivered = Boolean(await sendHighScoreMarkdownToTelegram(summaryMarkdown));
+      } catch (error) {
+        logger.warn('High-score summary notification failed', {
+          reportId: report.id,
+          error: error instanceof Error ? { message: error.message, stack: error.stack } : error
+        });
+      }
+    } else {
+      logger.warn('Missing GitHub preview URL, skipping high-score summary notification', { reportId: report.id });
+    }
+  }
 
   logger.info('Report published to GitHub Pages', {
     reportId: report.id,
@@ -257,7 +309,8 @@ export async function publishReportToGithub(report: Report): Promise<PublishResu
     branch,
     reportRelPath,
     committed,
-    pushed
+    pushed,
+    summaryDelivered
   });
 
   return {
