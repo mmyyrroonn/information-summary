@@ -2064,8 +2064,8 @@ function extractHighScoreEntries(outline: unknown): HighScoreEntry[] {
         return;
       }
       section.clusters.forEach((cluster) => {
-        const representativeImportance = cluster.representative?.importance ?? 0;
-        if (representativeImportance < HIGH_PRIORITY_IMPORTANCE) {
+        const peakImportance = cluster.peakImportance ?? 0;
+        if (peakImportance < HIGH_PRIORITY_IMPORTANCE) {
           return;
         }
         const summary = cluster.representative?.summary?.trim();
@@ -2123,7 +2123,7 @@ function formatHighScoreSummaryEntry(entry: HighScoreEntry) {
   return truncateText(`${prefix}${normalized}`, 180);
 }
 
-export function buildHighScoreSummaryMarkdown(report: Report, previewUrl: string, maxItems = HIGH_SCORE_SUMMARY_LIMIT) {
+export function buildHighScoreSummaryMarkdown(report: Report, previewUrl: string) {
   const entries = extractHighScoreEntries(report.outline);
   const timeRangeLine =
     report.content
@@ -2134,17 +2134,7 @@ export function buildHighScoreSummaryMarkdown(report: Report, previewUrl: string
       report.periodEnd,
       config.REPORT_TIMEZONE
     )}`;
-  const lines = [`# ${report.headline}`, timeRangeLine, '', '## 摘要'];
-  if (entries.length) {
-    const trimmedEntries = entries.slice(0, Math.max(1, maxItems));
-    trimmedEntries.forEach((entry, idx) => lines.push(`${idx + 1}. ${formatHighScoreSummaryEntry(entry)}`));
-    if (entries.length > trimmedEntries.length) {
-      lines.push(`... 等 ${entries.length - trimmedEntries.length} 条高分洞察，详见完整报告。`);
-    }
-  } else {
-    lines.push('本期暂无高分洞察，详见完整报告。');
-  }
-  lines.push('', `预览链接：${previewUrl}`);
+  const lines = [`# ${report.headline}`, timeRangeLine, '', `高分条目：${entries.length} 条`, `预览链接：${previewUrl}`];
   return lines.join('\n');
 }
 
