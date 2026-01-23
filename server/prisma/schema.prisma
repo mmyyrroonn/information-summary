@@ -117,6 +117,19 @@ model Report {
   deliveryTarget String?
 }
 
+model RoutingEmbeddingCache {
+  id               String   @id @default(uuid())
+  model            String
+  dimensions       Int
+  positives        Json
+  negatives        Json
+  positiveCount    Int
+  negativeCount    Int
+  sourceWindowDays Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 model ReportProfile {
   id                     String   @id @default(uuid())
   name                   String

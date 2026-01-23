@@ -5,6 +5,7 @@ import { enqueueJob } from '../jobs/jobQueue';
 import { requestClassificationRun } from '../jobs/classificationTrigger';
 import { getJobById, listJobs, serializeJob } from '../services/jobService';
 import { getOrCreateDefaultReportProfile } from '../services/reportProfileService';
+import { refreshRoutingEmbeddingCache } from '../services/aiService';
 
 const router = Router();
 const jobTypeSchema = z.enum(['fetch-subscriptions', 'classify-tweets', 'report-pipeline', 'report-profile'] as const);
@@ -129,6 +130,15 @@ router.post('/report', async (req, res, next) => {
       job: serializeJob(job),
       notify
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/embedding-cache/refresh', async (_req, res, next) => {
+  try {
+    const result = await refreshRoutingEmbeddingCache('manual');
+    res.status(result.updated ? 200 : 202).json(result);
   } catch (error) {
     next(error);
   }
