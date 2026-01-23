@@ -396,6 +396,9 @@ export async function applyEmbeddingRouting(tweets: Tweet[]) {
       }
 
       const tweet = tweets[index];
+      if (!tweet) {
+        return;
+      }
       if (maxNeg >= ROUTE_EMBEDDING_DROP_SIM && maxNeg - maxPos >= ROUTE_EMBEDDING_DROP_MARGIN) {
         ignored.push({ tweet, reason: 'embed-drop' });
         bumpReason('embed-drop');
