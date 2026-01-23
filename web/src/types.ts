@@ -237,11 +237,15 @@ export interface TweetStatsResponse {
   totals: {
     totalTweets: number;
     scoredTweets: number;
+    viewTweets: number;
     highScoreMinImportance: number;
     highScoreTweets: number;
     avgLength: number | null;
     medianLength: number | null;
     p90Length: number | null;
+    avgViews: number | null;
+    medianViews: number | null;
+    p90Views: number | null;
     avgImportance: number | null;
     lengthImportanceCorrelation: number | null;
   };
@@ -252,6 +256,16 @@ export interface TweetStatsResponse {
     count: number;
     avgLength: number | null;
     avgImportance: number | null;
+    avgViews: number | null;
+  }>;
+  viewBuckets: Array<{
+    label: string;
+    min: number;
+    max: number | null;
+    count: number;
+    avgViews: number | null;
+    avgImportance: number | null;
+    avgLength: number | null;
   }>;
   lengthByImportance: Array<{
     importance: number;
@@ -261,22 +275,29 @@ export interface TweetStatsResponse {
     maxLength: number | null;
     medianLength: number | null;
     p90Length: number | null;
+    avgViews: number | null;
   }>;
   scoreLengthMatrix: {
     buckets: Array<{ label: string; min: number; max: number | null }>;
-    rows: Array<{ importance: number; counts: number[]; total: number; avgLength: number | null }>;
+    rows: Array<{ importance: number; counts: number[]; total: number; avgLength: number | null; avgViews: number | null }>;
+  };
+  scoreViewMatrix: {
+    buckets: Array<{ label: string; min: number; max: number | null }>;
+    rows: Array<{ importance: number; counts: number[]; total: number; avgViews: number | null }>;
   };
   verdictStats: Array<{
     verdict: string;
     count: number;
     avgLength: number | null;
     avgImportance: number | null;
+    avgViews: number | null;
   }>;
   tagStats: Array<{
     tag: string;
     count: number;
     avgLength: number | null;
     avgImportance: number | null;
+    avgViews: number | null;
     highScoreRatio: number | null;
   }>;
   highScoreProfile: {
@@ -286,6 +307,10 @@ export interface TweetStatsResponse {
     avgLength: number | null;
     medianLength: number | null;
     p90Length: number | null;
+    viewCount: number;
+    avgViews: number | null;
+    medianViews: number | null;
+    p90Views: number | null;
     avgTagsPerTweet: number | null;
     suggestionRate: number | null;
     summaryRate: number | null;

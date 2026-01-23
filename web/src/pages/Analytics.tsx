@@ -30,6 +30,13 @@ function formatPercent(value: number | null | undefined, digits = 0) {
   return `${(value * 100).toFixed(digits)}%`;
 }
 
+function formatCount(value: number | null | undefined) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return '—';
+  }
+  return Math.round(value).toLocaleString('en-US');
+}
+
 function formatVerdict(value: string) {
   switch (value) {
     case 'actionable':
@@ -96,10 +103,23 @@ export function AnalyticsPage() {
     return Math.max(...stats.lengthBuckets.map((bucket) => bucket.count), 1);
   }, [stats]);
 
+  const viewBucketMax = useMemo(() => {
+    if (!stats?.viewBuckets.length) return 1;
+    return Math.max(...stats.viewBuckets.map((bucket) => bucket.count), 1);
+  }, [stats]);
+
   const matrixMax = useMemo(() => {
     if (!stats?.scoreLengthMatrix.rows.length) return 1;
     return Math.max(
       ...stats.scoreLengthMatrix.rows.flatMap((row) => row.counts),
+      1
+    );
+  }, [stats]);
+
+  const viewMatrixMax = useMemo(() => {
+    if (!stats?.scoreViewMatrix.rows.length) return 1;
+    return Math.max(
+      ...stats.scoreViewMatrix.rows.flatMap((row) => row.counts),
       1
     );
   }, [stats]);
@@ -110,6 +130,7 @@ export function AnalyticsPage() {
     stats?.totals.scoredTweets && stats.totals.highScoreTweets
       ? stats.totals.highScoreTweets / stats.totals.scoredTweets
       : null;
+  const viewCoverage = stats?.totals.totalTweets ? stats.totals.viewTweets / stats.totals.totalTweets : null;
 
   const hasTimeFilter = Boolean(startTime || endTime);
 
@@ -145,6 +166,11 @@ export function AnalyticsPage() {
                 <span>长度/得分相关</span>
                 <strong className="analytics-mono">{formatNumber(stats?.totals.lengthImportanceCorrelation, 2)}</strong>
                 <p className="hint">皮尔逊相关</p>
+              </div>
+              <div className="summary-item">
+                <span>平均浏览量</span>
+                <strong className="analytics-mono">{formatCount(stats?.totals.avgViews)}</strong>
+                <p className="hint">覆盖 {formatPercent(viewCoverage, 0)}</p>
               </div>
             </div>
           </div>
@@ -245,6 +271,11 @@ export function AnalyticsPage() {
             <p className="analytics-value analytics-mono">{formatNumber(stats?.totals.lengthImportanceCorrelation, 2)}</p>
             <p className="analytics-meta">长度与得分的线性相关</p>
           </div>
+          <div className="analytics-card">
+            <p className="analytics-label">平均浏览量</p>
+            <p className="analytics-value analytics-mono">{formatCount(stats?.totals.avgViews)}</p>
+            <p className="analytics-meta">P90 {formatCount(stats?.totals.p90Views)}</p>
+          </div>
           <div className="analytics-card highlight">
             <p className="analytics-label">高分特征</p>
             <p className="analytics-value analytics-mono">{formatNumber(highScore?.avgTagsPerTweet, 2)} 标签/条</p>
@@ -272,6 +303,35 @@ export function AnalyticsPage() {
                     <span>{bucket.count}</span>
                     <span>{formatNumber(bucket.avgLength, 0)}字</span>
                     <span>{formatNumber(bucket.avgImportance, 2)}分</span>
+                    <span>{formatCount(bucket.avgViews)}</span>
+                  </div>
+                </div>
+              );
+            })}
+            {!stats && <p className="empty">暂无统计数据</p>}
+          </div>
+        </section>
+
+        <section className="analytics-panel">
+          <div className="section-head">
+            <div>
+              <h3>浏览量分布</h3>
+              <p className="hint">按浏览量区间观察得分与占比。</p>
+            </div>
+          </div>
+          <div className="analytics-bars">
+            {stats?.viewBuckets.map((bucket) => {
+              const width = `${(bucket.count / viewBucketMax) * 100}%`;
+              return (
+                <div key={bucket.label} className="analytics-bar-row">
+                  <div className="analytics-bar-label">{bucket.label}</div>
+                  <div className="analytics-bar">
+                    <span style={{ width }} />
+                  </div>
+                  <div className="analytics-bar-meta analytics-mono">
+                    <span>{bucket.count}</span>
+                    <span>{formatCount(bucket.avgViews)}</span>
+                    <span>{formatNumber(bucket.avgImportance, 2)}分</span>
                   </div>
                 </div>
               );
@@ -296,6 +356,7 @@ export function AnalyticsPage() {
                     <th key={bucket.label}>{bucket.label}</th>
                   ))}
                   <th>均长</th>
+                  <th>均浏览</th>
                   <th>总量</th>
                 </tr>
               </thead>
@@ -315,6 +376,50 @@ export function AnalyticsPage() {
                       );
                     })}
                     <td className="analytics-mono">{formatNumber(row.avgLength, 0)}</td>
+                    <td className="analytics-mono">{formatCount(row.avgViews)}</td>
+                    <td className="analytics-mono">{row.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="analytics-panel">
+          <div className="section-head">
+            <div>
+              <h3>得分 × 浏览量透视</h3>
+              <p className="hint">不同重要度在浏览量区间的分布。</p>
+            </div>
+          </div>
+          <div className="matrix-scroll">
+            <table className="analytics-table matrix-table">
+              <thead>
+                <tr>
+                  <th>得分</th>
+                  {stats?.scoreViewMatrix.buckets.map((bucket) => (
+                    <th key={bucket.label}>{bucket.label}</th>
+                  ))}
+                  <th>均浏览</th>
+                  <th>总量</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats?.scoreViewMatrix.rows.map((row) => (
+                  <tr key={row.importance}>
+                    <td className="analytics-mono">{row.importance}</td>
+                    {row.counts.map((count, idx) => {
+                      const intensity = count / viewMatrixMax;
+                      const background = `rgba(249, 115, 22, ${0.08 + intensity * 0.62})`;
+                      return (
+                        <td key={`${row.importance}-${idx}`}>
+                          <div className="matrix-cell" style={{ background }}>
+                            <span className="analytics-mono">{count || '-'}</span>
+                          </div>
+                        </td>
+                      );
+                    })}
+                    <td className="analytics-mono">{formatCount(row.avgViews)}</td>
                     <td className="analytics-mono">{row.total}</td>
                   </tr>
                 ))}
@@ -340,6 +445,7 @@ export function AnalyticsPage() {
                     <th>数量</th>
                     <th>平均长度</th>
                     <th>平均得分</th>
+                    <th>平均浏览</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -349,6 +455,7 @@ export function AnalyticsPage() {
                       <td className="analytics-mono">{item.count}</td>
                       <td className="analytics-mono">{formatNumber(item.avgLength, 0)}字</td>
                       <td className="analytics-mono">{formatNumber(item.avgImportance, 2)}</td>
+                      <td className="analytics-mono">{formatCount(item.avgViews)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -363,6 +470,7 @@ export function AnalyticsPage() {
                     <th>数量</th>
                     <th>平均长度</th>
                     <th>平均得分</th>
+                    <th>平均浏览</th>
                     <th>高分率</th>
                   </tr>
                 </thead>
@@ -373,6 +481,7 @@ export function AnalyticsPage() {
                       <td className="analytics-mono">{item.count}</td>
                       <td className="analytics-mono">{formatNumber(item.avgLength, 0)}字</td>
                       <td className="analytics-mono">{formatNumber(item.avgImportance, 2)}</td>
+                      <td className="analytics-mono">{formatCount(item.avgViews)}</td>
                       <td className="analytics-mono">{formatPercent(item.highScoreRatio, 0)}</td>
                     </tr>
                   ))}
@@ -394,6 +503,11 @@ export function AnalyticsPage() {
               <p className="analytics-label">高分均长</p>
               <p className="analytics-value analytics-mono">{formatNumber(highScore?.avgLength, 0)}字</p>
               <p className="analytics-meta">P90 {formatNumber(highScore?.p90Length, 0)}字</p>
+            </div>
+            <div className="analytics-card">
+              <p className="analytics-label">高分均浏览</p>
+              <p className="analytics-value analytics-mono">{formatCount(highScore?.avgViews)}</p>
+              <p className="analytics-meta">P90 {formatCount(highScore?.p90Views)}</p>
             </div>
             <div className="analytics-card">
               <p className="analytics-label">高分标签密度</p>
