@@ -31,6 +31,19 @@ export interface ClassificationJobResponse {
   threshold?: number;
 }
 
+export interface RoutingEmbeddingRefreshResult {
+  updated: boolean;
+  reason?: 'embeddings-disabled' | 'insufficient-samples';
+  windowDays: number;
+  positiveSample: number;
+  negativeSample: number;
+  positives?: number;
+  negatives?: number;
+  model?: string;
+  dimensions?: number;
+  updatedAt?: string;
+}
+
 export type SubscriptionStatus = 'SUBSCRIBED' | 'UNSUBSCRIBED';
 
 export interface Subscription {

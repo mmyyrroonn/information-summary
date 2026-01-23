@@ -137,7 +137,24 @@ router.post('/report', async (req, res, next) => {
 
 router.post('/embedding-cache/refresh', async (_req, res, next) => {
   try {
-    const result = await refreshRoutingEmbeddingCache('manual');
+    const body = z
+      .object({
+        windowDays: z.coerce.number().int().positive().optional(),
+        positiveSample: z.coerce.number().int().positive().optional(),
+        negativeSample: z.coerce.number().int().positive().optional()
+      })
+      .parse(_req.body ?? {});
+    const options: { windowDays?: number; positiveSample?: number; negativeSample?: number } = {};
+    if (typeof body.windowDays === 'number') {
+      options.windowDays = body.windowDays;
+    }
+    if (typeof body.positiveSample === 'number') {
+      options.positiveSample = body.positiveSample;
+    }
+    if (typeof body.negativeSample === 'number') {
+      options.negativeSample = body.negativeSample;
+    }
+    const result = await refreshRoutingEmbeddingCache('manual', options);
     res.status(result.updated ? 200 : 202).json(result);
   } catch (error) {
     next(error);

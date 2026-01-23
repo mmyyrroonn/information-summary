@@ -73,7 +73,33 @@ type RoutingCache = {
   negatives: number[][];
 };
 
+type RoutingRefreshOptions = {
+  windowDays?: number;
+  positiveSample?: number;
+  negativeSample?: number;
+};
+
+type RoutingRefreshParams = {
+  windowDays: number;
+  positiveSample: number;
+  negativeSample: number;
+};
+
 let routingCache: RoutingCache | null = null;
+
+function toPositiveInt(value: number | undefined, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  const intValue = Math.floor(value);
+  return intValue > 0 ? intValue : fallback;
+}
+
+function normalizeRoutingRefreshOptions(options?: RoutingRefreshOptions): RoutingRefreshParams {
+  return {
+    windowDays: toPositiveInt(options?.windowDays, ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS),
+    positiveSample: toPositiveInt(options?.positiveSample, ROUTE_EMBEDDING_POS_SAMPLE),
+    negativeSample: toPositiveInt(options?.negativeSample, ROUTE_EMBEDDING_NEG_SAMPLE)
+  };
+}
 
 function normalizeVector(vector: number[]) {
   let norm = 0;
@@ -173,22 +199,22 @@ async function loadRoutingSamples(limit: number, whereSql: Prisma.Sql, since: Da
   return rows;
 }
 
-async function buildRoutingEmbeddingCacheData() {
+async function buildRoutingEmbeddingCacheData(params: RoutingRefreshParams) {
   if (!embeddingsEnabled()) {
     logger.warn('Embeddings disabled, skip routing cache build');
     return null;
   }
   const model = config.EMBEDDING_MODEL;
   const dimensions = config.EMBEDDING_DIMENSIONS;
-  const since = new Date(Date.now() - ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const since = new Date(Date.now() - params.windowDays * 24 * 60 * 60 * 1000);
   const [positiveRows, negativeRows] = await Promise.all([
     loadRoutingSamples(
-      ROUTE_EMBEDDING_POS_SAMPLE,
+      params.positiveSample,
       Prisma.sql`ti."importance" >= ${HIGH_PRIORITY_IMPORTANCE}`,
       since
     ),
     loadRoutingSamples(
-      ROUTE_EMBEDDING_NEG_SAMPLE,
+      params.negativeSample,
       Prisma.sql`(ti."importance" IS NOT NULL AND ti."importance" <= 2) OR ti."verdict" = 'ignore'`,
       since
     )
@@ -204,7 +230,10 @@ async function buildRoutingEmbeddingCacheData() {
   if (positiveTexts.length < ROUTE_EMBEDDING_MIN_SAMPLE || negativeTexts.length < ROUTE_EMBEDDING_MIN_SAMPLE) {
     logger.warn('Routing embedding samples insufficient, skip routing', {
       positive: positiveTexts.length,
-      negative: negativeTexts.length
+      negative: negativeTexts.length,
+      windowDays: params.windowDays,
+      positiveSample: params.positiveSample,
+      negativeSample: params.negativeSample
     });
     return null;
   }
@@ -212,6 +241,9 @@ async function buildRoutingEmbeddingCacheData() {
   logger.info('Building routing embedding samples', {
     positives: positiveTexts.length,
     negatives: negativeTexts.length,
+    windowDays: params.windowDays,
+    positiveSample: params.positiveSample,
+    negativeSample: params.negativeSample,
     model,
     dimensions
   });
@@ -234,6 +266,7 @@ async function persistRoutingEmbeddingCache(data: {
   dimensions: number;
   positives: number[][];
   negatives: number[][];
+  sourceWindowDays: number;
 }) {
   const record = await prisma.routingEmbeddingCache.upsert({
     where: { id: ROUTING_CACHE_ID },
@@ -244,7 +277,7 @@ async function persistRoutingEmbeddingCache(data: {
       negatives: data.negatives,
       positiveCount: data.positives.length,
       negativeCount: data.negatives.length,
-      sourceWindowDays: ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS
+      sourceWindowDays: data.sourceWindowDays
     },
     create: {
       id: ROUTING_CACHE_ID,
@@ -254,7 +287,7 @@ async function persistRoutingEmbeddingCache(data: {
       negatives: data.negatives,
       positiveCount: data.positives.length,
       negativeCount: data.negatives.length,
-      sourceWindowDays: ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS
+      sourceWindowDays: data.sourceWindowDays
     }
   });
 
@@ -269,21 +302,25 @@ async function persistRoutingEmbeddingCache(data: {
   return routingCache;
 }
 
-export async function refreshRoutingEmbeddingCache(reason = 'manual') {
+export async function refreshRoutingEmbeddingCache(reason = 'manual', options?: RoutingRefreshOptions) {
+  const params = normalizeRoutingRefreshOptions(options);
   if (!embeddingsEnabled()) {
-    return { updated: false, reason: 'embeddings-disabled' };
+    return { updated: false, reason: 'embeddings-disabled', ...params };
   }
-  const data = await buildRoutingEmbeddingCacheData();
+  const data = await buildRoutingEmbeddingCacheData(params);
   if (!data) {
-    return { updated: false, reason: 'insufficient-samples' };
+    return { updated: false, reason: 'insufficient-samples', ...params };
   }
-  const cache = await persistRoutingEmbeddingCache(data);
+  const cache = await persistRoutingEmbeddingCache({ ...data, sourceWindowDays: params.windowDays });
   logger.info('Routing embedding cache refreshed', {
     reason,
     positives: cache.positives.length,
     negatives: cache.negatives.length,
     model: cache.model,
-    dimensions: cache.dimensions
+    dimensions: cache.dimensions,
+    windowDays: params.windowDays,
+    positiveSample: params.positiveSample,
+    negativeSample: params.negativeSample
   });
   return {
     updated: true,
@@ -291,7 +328,8 @@ export async function refreshRoutingEmbeddingCache(reason = 'manual') {
     negatives: cache.negatives.length,
     model: cache.model,
     dimensions: cache.dimensions,
-    updatedAt: new Date(cache.updatedAtMs).toISOString()
+    updatedAt: new Date(cache.updatedAtMs).toISOString(),
+    ...params
   };
 }
 
@@ -300,9 +338,10 @@ async function loadRoutingEmbeddingCache() {
   const record = await prisma.routingEmbeddingCache.findUnique({ where: { id: ROUTING_CACHE_ID } });
   if (!record) {
     logger.info('Routing embedding cache missing, building');
-    const data = await buildRoutingEmbeddingCacheData();
+    const params = normalizeRoutingRefreshOptions();
+    const data = await buildRoutingEmbeddingCacheData(params);
     if (!data) return null;
-    return persistRoutingEmbeddingCache(data);
+    return persistRoutingEmbeddingCache({ ...data, sourceWindowDays: params.windowDays });
   }
 
   const updatedAtMs = record.updatedAt.getTime();
@@ -322,9 +361,10 @@ async function loadRoutingEmbeddingCache() {
       currentModel: config.EMBEDDING_MODEL,
       currentDimensions: config.EMBEDDING_DIMENSIONS
     });
-    const data = await buildRoutingEmbeddingCacheData();
+    const params = normalizeRoutingRefreshOptions();
+    const data = await buildRoutingEmbeddingCacheData(params);
     if (!data) return null;
-    return persistRoutingEmbeddingCache(data);
+    return persistRoutingEmbeddingCache({ ...data, sourceWindowDays: params.windowDays });
   }
 
   const positives = parseVectorMatrix(record.positives, record.dimensions);
@@ -334,9 +374,10 @@ async function loadRoutingEmbeddingCache() {
       positives: positives.length,
       negatives: negatives.length
     });
-    const data = await buildRoutingEmbeddingCacheData();
+    const params = normalizeRoutingRefreshOptions();
+    const data = await buildRoutingEmbeddingCacheData(params);
     if (!data) return null;
-    return persistRoutingEmbeddingCache(data);
+    return persistRoutingEmbeddingCache({ ...data, sourceWindowDays: params.windowDays });
   }
 
   routingCache = {

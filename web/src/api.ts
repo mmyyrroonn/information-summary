@@ -18,6 +18,7 @@ import type {
   BackgroundJobStatus,
   JobEnqueueResponse,
   ClassificationJobResponse,
+  RoutingEmbeddingRefreshResult,
   TagOptionsResponse,
   TweetStatsResponse
 } from './types';
@@ -70,6 +71,11 @@ interface ApiClient {
   importFollowingUsers: (payload: { screenName?: string; userId?: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   runFetchTask: () => Promise<JobEnqueueResponse>;
   runAnalyzeTask: () => Promise<ClassificationJobResponse>;
+  refreshRoutingEmbeddingCache: (payload?: {
+    windowDays?: number;
+    positiveSample?: number;
+    negativeSample?: number;
+  }) => Promise<RoutingEmbeddingRefreshResult>;
   runReportTask: (payload: { notify: boolean; profileId?: string; windowEnd?: string }) => Promise<JobEnqueueResponse>;
   getNotificationConfig: () => Promise<NotificationConfig>;
   updateNotificationConfig: (payload: NotificationConfig) => Promise<NotificationConfig>;
@@ -170,6 +176,11 @@ export const api: ApiClient = {
       body: JSON.stringify({ dedupe: true })
     }),
   runAnalyzeTask: () => request<ClassificationJobResponse>('/tasks/analyze', { method: 'POST' }),
+  refreshRoutingEmbeddingCache: (payload = {}) =>
+    request<RoutingEmbeddingRefreshResult>('/tasks/embedding-cache/refresh', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
   runReportTask: (payload) =>
     request<JobEnqueueResponse>('/tasks/report', {
       method: 'POST',

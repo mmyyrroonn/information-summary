@@ -6,6 +6,7 @@ import type {
   JobEnqueueResponse,
   ReportProfile,
   ReportProfileGroupBy,
+  RoutingEmbeddingRefreshResult,
   TagOption,
   TagOptionsResponse
 } from '../types';
@@ -65,6 +66,12 @@ type ProfileDraft = {
 type ProfileRunOptions = {
   notify: boolean;
   windowEnd: string;
+};
+
+type RoutingRefreshDraft = {
+  windowDays: string;
+  positiveSample: string;
+  negativeSample: string;
 };
 
 type WorkflowTask = 'fetch' | 'analyze';
@@ -136,6 +143,37 @@ function getTagSuggestions(value: string, options: TagOption[]) {
     .filter((option) => !selected.has(option.tag))
     .filter((option) => (lastToken ? option.tag.includes(lastToken) : true))
     .slice(0, TAG_SUGGESTION_LIMIT);
+}
+
+function parseOptionalPositiveInt(value: string, label: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return { value: undefined };
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return { error: `${label}需要正整数` };
+  }
+  return { value: Math.floor(parsed) };
+}
+
+function formatRoutingRefreshResult(result: RoutingEmbeddingRefreshResult) {
+  const base =
+    result.updated
+      ? '缓存刷新成功'
+      : result.reason === 'embeddings-disabled'
+        ? 'Embeddings 未启用，未刷新'
+        : '样本不足，未刷新';
+  const details = [
+    `窗口 ${result.windowDays} 天`,
+    `目标 ${result.positiveSample}/${result.negativeSample}`,
+    result.updated && typeof result.positives === 'number' && typeof result.negatives === 'number'
+      ? `实际 ${result.positives}/${result.negatives}`
+      : null,
+    result.model && result.dimensions ? `${result.model} · ${result.dimensions}D` : result.model ?? null,
+    result.updatedAt ? `更新时间 ${new Date(result.updatedAt).toLocaleString()}` : null
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  return details ? `${base}（${details}）` : base;
 }
 
 function TagInput({
@@ -236,9 +274,16 @@ export function DevJobsPage() {
   const [loading, setLoading] = useState(false);
   const [queueMessage, setQueueMessage] = useState<string | null>(null);
   const [workflowMessage, setWorkflowMessage] = useState<string | null>(null);
+  const [routingRefreshMessage, setRoutingRefreshMessage] = useState<string | null>(null);
   const [notifyMessage, setNotifyMessage] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState('');
   const [testing, setTesting] = useState(false);
+  const [routingRefreshing, setRoutingRefreshing] = useState(false);
+  const [routingRefreshDraft, setRoutingRefreshDraft] = useState<RoutingRefreshDraft>({
+    windowDays: '',
+    positiveSample: '',
+    negativeSample: ''
+  });
   const [profiles, setProfiles] = useState<ReportProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
@@ -479,6 +524,50 @@ export function DevJobsPage() {
       setWorkflowMessage(error instanceof Error ? error.message : '任务执行失败');
     } finally {
       setWorkflowBusy(null);
+    }
+  }
+
+  async function handleRoutingCacheRefresh() {
+    setRoutingRefreshMessage(null);
+    const windowDays = parseOptionalPositiveInt(routingRefreshDraft.windowDays, '样本窗口');
+    if (windowDays.error) {
+      setRoutingRefreshMessage(windowDays.error);
+      return;
+    }
+    const positiveSample = parseOptionalPositiveInt(routingRefreshDraft.positiveSample, '正样本数量');
+    if (positiveSample.error) {
+      setRoutingRefreshMessage(positiveSample.error);
+      return;
+    }
+    const negativeSample = parseOptionalPositiveInt(routingRefreshDraft.negativeSample, '负样本数量');
+    if (negativeSample.error) {
+      setRoutingRefreshMessage(negativeSample.error);
+      return;
+    }
+
+    const payload: {
+      windowDays?: number;
+      positiveSample?: number;
+      negativeSample?: number;
+    } = {};
+    if (typeof windowDays.value === 'number') {
+      payload.windowDays = windowDays.value;
+    }
+    if (typeof positiveSample.value === 'number') {
+      payload.positiveSample = positiveSample.value;
+    }
+    if (typeof negativeSample.value === 'number') {
+      payload.negativeSample = negativeSample.value;
+    }
+
+    setRoutingRefreshing(true);
+    try {
+      const result = await api.refreshRoutingEmbeddingCache(payload);
+      setRoutingRefreshMessage(formatRoutingRefreshResult(result));
+    } catch (error) {
+      setRoutingRefreshMessage(error instanceof Error ? error.message : '刷新失败');
+    } finally {
+      setRoutingRefreshing(false);
     }
   }
 
@@ -1062,6 +1151,51 @@ export function DevJobsPage() {
             {workflowBusy === 'analyze' ? '执行中...' : '执行'}
           </button>
           {renderWorkflowStatus('analyze')}
+        </div>
+      </div>
+
+      <div className="dev-divider" />
+
+      <div className="section-head">
+        <h2>DEV · Embedding 路由缓存</h2>
+      </div>
+      {routingRefreshMessage && <p className="status">{routingRefreshMessage}</p>}
+      <div className="dev-notify">
+        <p className="hint">留空使用默认：窗口 120 天 / 正样本 180 / 负样本 360</p>
+        <div className="config-grid">
+          <label>
+            样本窗口（天）
+            <input
+              type="number"
+              min={1}
+              placeholder="默认 120"
+              value={routingRefreshDraft.windowDays}
+              onChange={(e) => setRoutingRefreshDraft((prev) => ({ ...prev, windowDays: e.target.value }))}
+            />
+          </label>
+          <label>
+            正样本数量
+            <input
+              type="number"
+              min={1}
+              placeholder="默认 180"
+              value={routingRefreshDraft.positiveSample}
+              onChange={(e) => setRoutingRefreshDraft((prev) => ({ ...prev, positiveSample: e.target.value }))}
+            />
+          </label>
+          <label>
+            负样本数量
+            <input
+              type="number"
+              min={1}
+              placeholder="默认 360"
+              value={routingRefreshDraft.negativeSample}
+              onChange={(e) => setRoutingRefreshDraft((prev) => ({ ...prev, negativeSample: e.target.value }))}
+            />
+          </label>
+          <button type="button" onClick={handleRoutingCacheRefresh} disabled={routingRefreshing}>
+            {routingRefreshing ? '刷新中...' : '刷新缓存'}
+          </button>
         </div>
       </div>
 
