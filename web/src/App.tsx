@@ -3,9 +3,10 @@ import { DashboardPage } from './pages/Dashboard';
 import { SubscriptionsPage } from './pages/Subscriptions';
 import { TweetsPage } from './pages/Tweets';
 import { DevJobsPage } from './pages/DevJobs';
+import { AnalyticsPage } from './pages/Analytics';
 import './App.css';
 
-type TabKey = 'dashboard' | 'tweets' | 'subscriptions' | 'dev';
+type TabKey = 'dashboard' | 'tweets' | 'analytics' | 'subscriptions' | 'dev';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
@@ -25,6 +26,9 @@ function App() {
           <button className={activeTab === 'tweets' ? 'active' : ''} onClick={() => setActiveTab('tweets')}>
             推文浏览
           </button>
+          <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
+            数据分析
+          </button>
           <button className={activeTab === 'subscriptions' ? 'active' : ''} onClick={() => setActiveTab('subscriptions')}>
             订阅管理
           </button>
@@ -36,6 +40,7 @@ function App() {
 
       {activeTab === 'dashboard' && <DashboardPage />}
       {activeTab === 'tweets' && <TweetsPage />}
+      {activeTab === 'analytics' && <AnalyticsPage />}
       {activeTab === 'subscriptions' && <SubscriptionsPage />}
       {activeTab === 'dev' && <DevJobsPage />}
     </div>

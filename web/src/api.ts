@@ -18,7 +18,8 @@ import type {
   BackgroundJobStatus,
   JobEnqueueResponse,
   ClassificationJobResponse,
-  TagOptionsResponse
+  TagOptionsResponse,
+  TweetStatsResponse
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
@@ -95,6 +96,14 @@ interface ApiClient {
     q?: string;
   }) => Promise<TweetListResponse>;
   analyzeTweets: (tweetIds: string[]) => Promise<{ processed: number; insights: number }>;
+  getTweetStats: (params?: {
+    subscriptionId?: string;
+    startTime?: string;
+    endTime?: string;
+    highScoreMinImportance?: number;
+    tagLimit?: number;
+    authorLimit?: number;
+  }) => Promise<TweetStatsResponse>;
   listJobs: (params?: { type?: string; status?: BackgroundJobStatus; limit?: number }) => Promise<BackgroundJobSummary[]>;
   getJob: (id: string) => Promise<BackgroundJobSummary>;
   deleteJob: (id: string) => Promise<void>;
@@ -245,6 +254,30 @@ export const api: ApiClient = {
       method: 'POST',
       body: JSON.stringify({ tweetIds })
     }),
+  getTweetStats: (params = {}) => {
+    const search = new URLSearchParams();
+    if (params.subscriptionId) {
+      search.set('subscriptionId', params.subscriptionId);
+    }
+    if (params.startTime) {
+      search.set('startTime', params.startTime);
+    }
+    if (params.endTime) {
+      search.set('endTime', params.endTime);
+    }
+    if (typeof params.highScoreMinImportance === 'number') {
+      search.set('highScoreMinImportance', String(params.highScoreMinImportance));
+    }
+    if (typeof params.tagLimit === 'number') {
+      search.set('tagLimit', String(params.tagLimit));
+    }
+    if (typeof params.authorLimit === 'number') {
+      search.set('authorLimit', String(params.authorLimit));
+    }
+    const query = search.toString();
+    const path = query ? `/tweets/stats?${query}` : '/tweets/stats';
+    return request<TweetStatsResponse>(path);
+  },
   listJobs: (params = {}) => {
     const search = new URLSearchParams();
     if (params.type) {
