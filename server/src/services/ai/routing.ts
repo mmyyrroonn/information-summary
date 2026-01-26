@@ -80,6 +80,11 @@ const RULE_HIGH_SIGNAL_KEYWORDS = [
 const RULE_HIGH_SIGNAL_NEEDLES = RULE_HIGH_SIGNAL_KEYWORDS.map((keyword) => keyword.toLowerCase());
 
 const ROUTING_TAGS = CLASSIFY_ALLOWED_TAGS.filter((tag) => tag !== TAG_FALLBACK_KEY);
+type RoutingTag = (typeof ROUTING_TAGS)[number];
+
+function isRoutingTag(tag: string): tag is RoutingTag {
+  return (ROUTING_TAGS as readonly string[]).includes(tag);
+}
 
 type RoutingRefreshOptions = {
   windowDays?: number;
@@ -89,6 +94,26 @@ type RoutingRefreshOptions = {
 type RoutingRefreshParams = {
   windowDays: number;
   samplePerTag: number;
+};
+
+export type RoutingEmbeddingCacheSummary = {
+  updatedAt: string;
+  model: string;
+  dimensions: number;
+  windowDays: number;
+  samplePerTag: number;
+  tagSampleCounts: Record<string, number>;
+  tagMetrics: Record<string, RoutingEmbeddingTagMetric>;
+  totalSamples: number;
+  negativeSampleCount: number;
+};
+
+export type RoutingEmbeddingTagMetric = {
+  sampleCount: number;
+  meanSim: number | null;
+  p75Sim: number | null;
+  negativeSim: number | null;
+  negativeDistance: number | null;
 };
 
 type TagCacheRecord = {
@@ -175,6 +200,11 @@ function normalizeRoutingRefreshOptions(options?: RoutingRefreshOptions): Routin
     windowDays: toPositiveInt(options?.windowDays, ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS),
     samplePerTag: toPositiveInt(options?.samplePerTag, ROUTE_EMBEDDING_SAMPLE_PER_TAG)
   };
+}
+
+function normalizeRoutingTag(tag: string) {
+  const normalized = normalizeTagAlias(tag.trim().toLowerCase());
+  return isRoutingTag(normalized) ? normalized : null;
 }
 
 function resolveTagThresholds(tag: string, stats?: TagScoreStats): TagThresholds {
@@ -672,6 +702,139 @@ async function persistRoutingTagCache(data: {
   });
 
   return cache;
+}
+
+export async function getRoutingEmbeddingCacheSummary(): Promise<RoutingEmbeddingCacheSummary | null> {
+  if (!embeddingsEnabled()) return null;
+  const record = await prisma.routingTagEmbeddingCache.findUnique({ where: { id: ROUTING_TAG_CACHE_ID } });
+  if (!record) {
+    return null;
+  }
+  const tagSampleCounts = parseTagSampleCounts(record.tagSampleCounts);
+  const tagSamples = parseTagSamples(record.tagSamples, record.dimensions);
+  const negativeSamples = tagSamples[ROUTING_NEGATIVE_KEY] ?? [];
+  const negativeCentroid = negativeSamples.length
+    ? buildCentroid(negativeSamples, record.dimensions)
+    : null;
+  const tagMetrics: Record<string, RoutingEmbeddingTagMetric> = {};
+  Object.entries(tagSampleCounts).forEach(([tag, sampleCount]) => {
+    if (tag === ROUTING_NEGATIVE_KEY) {
+      return;
+    }
+    const samples = tagSamples[tag] ?? [];
+    if (!samples.length) {
+      tagMetrics[tag] = {
+        sampleCount,
+        meanSim: null,
+        p75Sim: null,
+        negativeSim: null,
+        negativeDistance: null
+      };
+      return;
+    }
+    const centroid = buildCentroid(samples, record.dimensions);
+    const stats = computeTagStats(samples, centroid);
+    const negativeSim = negativeCentroid ? dot(centroid, negativeCentroid) : null;
+    tagMetrics[tag] = {
+      sampleCount,
+      meanSim: stats.mean,
+      p75Sim: stats.p75,
+      negativeSim,
+      negativeDistance: negativeSim === null ? null : 1 - negativeSim
+    };
+  });
+  const totalSamples = Object.entries(tagSampleCounts).reduce(
+    (acc, [tag, count]) => (tag === ROUTING_NEGATIVE_KEY ? acc : acc + count),
+    0
+  );
+  return {
+    updatedAt: record.updatedAt.toISOString(),
+    model: record.model,
+    dimensions: record.dimensions,
+    windowDays: record.sourceWindowDays,
+    samplePerTag: record.samplePerTag,
+    tagSampleCounts,
+    tagMetrics,
+    totalSamples,
+    negativeSampleCount: tagSampleCounts[ROUTING_NEGATIVE_KEY] ?? 0
+  };
+}
+
+export async function refreshRoutingEmbeddingCacheForTag(tag: string, reason = 'manual') {
+  if (!embeddingsEnabled()) {
+    return { updated: false, reason: 'embeddings-disabled', tag };
+  }
+  const normalizedTag = normalizeRoutingTag(tag);
+  if (!normalizedTag) {
+    return { updated: false, reason: 'unknown-tag', tag };
+  }
+
+  const record = await prisma.routingTagEmbeddingCache.findUnique({ where: { id: ROUTING_TAG_CACHE_ID } });
+  if (!record) {
+    logger.info('Routing tag cache missing, building full cache', { tag: normalizedTag, reason });
+    return refreshRoutingEmbeddingCache(reason);
+  }
+
+  if (record.model !== config.EMBEDDING_MODEL || record.dimensions !== config.EMBEDDING_DIMENSIONS) {
+    logger.warn('Routing tag cache model mismatch, rebuilding full cache', {
+      tag: normalizedTag,
+      storedModel: record.model,
+      storedDimensions: record.dimensions,
+      currentModel: config.EMBEDDING_MODEL,
+      currentDimensions: config.EMBEDDING_DIMENSIONS
+    });
+    return refreshRoutingEmbeddingCache(reason);
+  }
+
+  const params: RoutingRefreshParams = {
+    windowDays: record.sourceWindowDays,
+    samplePerTag: record.samplePerTag
+  };
+  const candidates = await loadTagSamples(normalizedTag, params);
+  const embeddings = candidates.length ? await ensureTweetEmbeddings(candidates) : new Map<string, number[]>();
+  const vectors = candidates
+    .map((candidate) => embeddings.get(candidate.tweetId))
+    .filter((vector): vector is number[] => Array.isArray(vector) && vector.length === record.dimensions)
+    .map((vector) => normalizeVector(vector));
+
+  const tagSamples = parseTagSamples(record.tagSamples, record.dimensions);
+  const tagSampleCounts = parseTagSampleCounts(record.tagSampleCounts);
+  tagSampleCounts[normalizedTag] = vectors.length;
+  if (vectors.length < ROUTE_EMBEDDING_MIN_SAMPLE) {
+    logger.warn('Routing tag sample insufficient, skip tag refresh', {
+      tag: normalizedTag,
+      count: vectors.length,
+      min: ROUTE_EMBEDDING_MIN_SAMPLE
+    });
+    delete tagSamples[normalizedTag];
+  } else {
+    tagSamples[normalizedTag] = vectors;
+  }
+
+  const cache = await persistRoutingTagCache({
+    model: record.model,
+    dimensions: record.dimensions,
+    tagSamples,
+    tagSampleCounts,
+    samplePerTag: record.samplePerTag,
+    sourceWindowDays: record.sourceWindowDays
+  });
+
+  logger.info('Routing tag cache refreshed for tag', {
+    reason,
+    tag: normalizedTag,
+    sampleCount: vectors.length,
+    windowDays: cache.windowDays,
+    samplePerTag: cache.samplePerTag
+  });
+
+  return {
+    updated: true,
+    tag: normalizedTag,
+    sampleCount: vectors.length,
+    windowDays: cache.windowDays,
+    samplePerTag: cache.samplePerTag
+  };
 }
 
 export async function refreshRoutingEmbeddingCache(reason = 'manual', options?: RoutingRefreshOptions) {

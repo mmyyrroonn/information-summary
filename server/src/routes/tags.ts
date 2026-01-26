@@ -1,8 +1,17 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
+import { CLASSIFY_ALLOWED_TAGS, TAG_DISPLAY_NAMES, TAG_FALLBACK_KEY } from '../services/ai/shared';
 
 const router = Router();
+
+router.get('/routing', (_req, res) => {
+  const tags = CLASSIFY_ALLOWED_TAGS.filter((tag) => tag !== TAG_FALLBACK_KEY).map((tag) => ({
+    tag,
+    label: TAG_DISPLAY_NAMES[tag] ?? tag
+  }));
+  res.json({ tags });
+});
 
 router.get('/', async (req, res, next) => {
   try {

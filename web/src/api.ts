@@ -18,7 +18,8 @@ import type {
   BackgroundJobStatus,
   JobEnqueueResponse,
   ClassificationJobResponse,
-  RoutingEmbeddingRefreshResult,
+  RoutingEmbeddingCacheSummary,
+  RoutingTagListResponse,
   TagOptionsResponse,
   TweetStatsResponse
 } from './types';
@@ -71,10 +72,10 @@ interface ApiClient {
   importFollowingUsers: (payload: { screenName?: string; userId?: string; cursor?: string }) => Promise<SubscriptionImportResult>;
   runFetchTask: () => Promise<JobEnqueueResponse>;
   runAnalyzeTask: () => Promise<ClassificationJobResponse>;
-  refreshRoutingEmbeddingCache: (payload?: {
-    windowDays?: number;
-    samplePerTag?: number;
-  }) => Promise<RoutingEmbeddingRefreshResult>;
+  getRoutingEmbeddingCacheSummary: () => Promise<RoutingEmbeddingCacheSummary | null>;
+  listRoutingTags: () => Promise<RoutingTagListResponse>;
+  refreshRoutingEmbeddingCache: (payload?: { windowDays?: number; samplePerTag?: number }) => Promise<JobEnqueueResponse>;
+  refreshRoutingEmbeddingCacheTag: (tag: string) => Promise<JobEnqueueResponse>;
   runReportTask: (payload: { notify: boolean; profileId?: string; windowEnd?: string }) => Promise<JobEnqueueResponse>;
   getNotificationConfig: () => Promise<NotificationConfig>;
   updateNotificationConfig: (payload: NotificationConfig) => Promise<NotificationConfig>;
@@ -175,10 +176,17 @@ export const api: ApiClient = {
       body: JSON.stringify({ dedupe: true })
     }),
   runAnalyzeTask: () => request<ClassificationJobResponse>('/tasks/analyze', { method: 'POST' }),
+  getRoutingEmbeddingCacheSummary: () => request<RoutingEmbeddingCacheSummary | null>('/tasks/embedding-cache'),
+  listRoutingTags: () => request<RoutingTagListResponse>('/tags/routing'),
   refreshRoutingEmbeddingCache: (payload = {}) =>
-    request<RoutingEmbeddingRefreshResult>('/tasks/embedding-cache/refresh', {
+    request<JobEnqueueResponse>('/tasks/embedding-cache/refresh', {
       method: 'POST',
       body: JSON.stringify(payload)
+    }),
+  refreshRoutingEmbeddingCacheTag: (tag) =>
+    request<JobEnqueueResponse>('/tasks/embedding-cache/refresh-tag', {
+      method: 'POST',
+      body: JSON.stringify({ tag })
     }),
   runReportTask: (payload) =>
     request<JobEnqueueResponse>('/tasks/report', {

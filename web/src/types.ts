@@ -43,6 +43,30 @@ export interface RoutingEmbeddingRefreshResult {
   updatedAt?: string;
 }
 
+export interface RoutingEmbeddingCacheSummary {
+  updatedAt: string;
+  model: string;
+  dimensions: number;
+  windowDays: number;
+  samplePerTag: number;
+  tagSampleCounts: Record<string, number>;
+  tagMetrics: Record<string, RoutingEmbeddingTagMetric>;
+  totalSamples: number;
+  negativeSampleCount: number;
+}
+
+export interface RoutingEmbeddingTagMetric {
+  sampleCount: number;
+  meanSim: number | null;
+  p75Sim: number | null;
+  negativeSim: number | null;
+  negativeDistance: number | null;
+}
+
+export interface RoutingTagListResponse {
+  tags: Array<{ tag: string; label: string }>;
+}
+
 export type SubscriptionStatus = 'SUBSCRIBED' | 'UNSUBSCRIBED';
 
 export interface Subscription {

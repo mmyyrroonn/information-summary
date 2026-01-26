@@ -5,7 +5,8 @@ import { enqueueJob } from '../jobs/jobQueue';
 import { requestClassificationRun } from '../jobs/classificationTrigger';
 import { getJobById, listJobs, serializeJob } from '../services/jobService';
 import { getOrCreateDefaultReportProfile } from '../services/reportProfileService';
-import { refreshRoutingEmbeddingCache } from '../services/aiService';
+import { getRoutingEmbeddingCacheSummary } from '../services/aiService';
+import { normalizeTagAlias, CLASSIFY_ALLOWED_TAGS, TAG_FALLBACK_KEY } from '../services/ai/shared';
 
 const router = Router();
 const jobTypeSchema = z.enum(
@@ -14,10 +15,24 @@ const jobTypeSchema = z.enum(
     'classify-tweets',
     'classify-tweets-dispatch',
     'classify-tweets-llm',
+    'embedding-cache-refresh',
+    'embedding-cache-refresh-tag',
     'report-pipeline',
     'report-profile'
   ] as const
 );
+
+const ROUTING_TAGS = CLASSIFY_ALLOWED_TAGS.filter((tag) => tag !== TAG_FALLBACK_KEY);
+type RoutingTag = (typeof ROUTING_TAGS)[number];
+
+function isRoutingTag(tag: string): tag is RoutingTag {
+  return (ROUTING_TAGS as readonly string[]).includes(tag);
+}
+
+function resolveRoutingTag(input: string) {
+  const normalized = normalizeTagAlias(input.trim().toLowerCase());
+  return isRoutingTag(normalized) ? normalized : null;
+}
 
 router.post('/fetch', async (req, res, next) => {
   try {
@@ -144,6 +159,15 @@ router.post('/report', async (req, res, next) => {
   }
 });
 
+router.get('/embedding-cache', async (_req, res, next) => {
+  try {
+    const summary = await getRoutingEmbeddingCacheSummary();
+    res.json(summary);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/embedding-cache/refresh', async (_req, res, next) => {
   try {
     const body = z
@@ -152,15 +176,46 @@ router.post('/embedding-cache/refresh', async (_req, res, next) => {
         samplePerTag: z.coerce.number().int().positive().optional()
       })
       .parse(_req.body ?? {});
-    const options: { windowDays?: number; samplePerTag?: number } = {};
+    const payload: { windowDays?: number; samplePerTag?: number; source?: string } = { source: 'manual' };
     if (typeof body.windowDays === 'number') {
-      options.windowDays = body.windowDays;
+      payload.windowDays = body.windowDays;
     }
     if (typeof body.samplePerTag === 'number') {
-      options.samplePerTag = body.samplePerTag;
+      payload.samplePerTag = body.samplePerTag;
     }
-    const result = await refreshRoutingEmbeddingCache('manual', options);
-    res.status(result.updated ? 200 : 202).json(result);
+    const { job, created } = await enqueueJob('embedding-cache-refresh', payload, { dedupe: true });
+    res.status(created ? 202 : 200).json({
+      created,
+      job: serializeJob(job),
+      message: created ? 'Embedding cache refresh enqueued' : 'Embedding cache refresh already running'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/embedding-cache/refresh-tag', async (_req, res, next) => {
+  try {
+    const body = z
+      .object({
+        tag: z.string().min(1)
+      })
+      .parse(_req.body ?? {});
+    const normalized = resolveRoutingTag(body.tag);
+    if (!normalized) {
+      res.status(400).json({ message: 'Unknown routing tag' });
+      return;
+    }
+    const { job, created } = await enqueueJob(
+      'embedding-cache-refresh-tag',
+      { tag: normalized, source: 'manual' },
+      { dedupe: false }
+    );
+    res.status(created ? 202 : 200).json({
+      created,
+      job: serializeJob(job),
+      message: created ? 'Embedding cache tag refresh enqueued' : 'Embedding cache tag refresh already running'
+    });
   } catch (error) {
     next(error);
   }

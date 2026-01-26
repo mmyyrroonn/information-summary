@@ -5,7 +5,11 @@ export {
   classifyTweetsByIdsWithTag,
   dispatchLlmClassificationJobs
 } from './ai/classification';
-export { refreshRoutingEmbeddingCache } from './ai/routing';
+export {
+  getRoutingEmbeddingCacheSummary,
+  refreshRoutingEmbeddingCache,
+  refreshRoutingEmbeddingCacheForTag
+} from './ai/routing';
 export {
   buildHighScoreSummaryMarkdown,
   generateReport,

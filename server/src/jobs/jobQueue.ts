@@ -7,6 +7,8 @@ export type BackgroundJobType =
   | 'classify-tweets'
   | 'classify-tweets-dispatch'
   | 'classify-tweets-llm'
+  | 'embedding-cache-refresh'
+  | 'embedding-cache-refresh-tag'
   | 'report-pipeline'
   | 'report-profile';
 
@@ -28,6 +30,15 @@ export interface JobPayloadMap {
   'classify-tweets-llm': {
     tweetIds: string[];
     tag?: string;
+    source?: string;
+  };
+  'embedding-cache-refresh': {
+    windowDays?: number;
+    samplePerTag?: number;
+    source?: string;
+  };
+  'embedding-cache-refresh-tag': {
+    tag: string;
     source?: string;
   };
   'report-pipeline': {

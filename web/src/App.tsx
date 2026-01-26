@@ -4,9 +4,10 @@ import { SubscriptionsPage } from './pages/Subscriptions';
 import { TweetsPage } from './pages/Tweets';
 import { DevJobsPage } from './pages/DevJobs';
 import { AnalyticsPage } from './pages/Analytics';
+import { EmbeddingCachePage } from './pages/EmbeddingCache';
 import './App.css';
 
-type TabKey = 'dashboard' | 'tweets' | 'analytics' | 'subscriptions' | 'dev';
+type TabKey = 'dashboard' | 'tweets' | 'analytics' | 'subscriptions' | 'embedding-cache' | 'dev';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
@@ -32,6 +33,12 @@ function App() {
           <button className={activeTab === 'subscriptions' ? 'active' : ''} onClick={() => setActiveTab('subscriptions')}>
             订阅管理
           </button>
+          <button
+            className={activeTab === 'embedding-cache' ? 'active' : ''}
+            onClick={() => setActiveTab('embedding-cache')}
+          >
+            Embedding 缓存
+          </button>
           <button className={activeTab === 'dev' ? 'active' : ''} onClick={() => setActiveTab('dev')}>
             DEV 工具
           </button>
@@ -42,6 +49,7 @@ function App() {
       {activeTab === 'tweets' && <TweetsPage />}
       {activeTab === 'analytics' && <AnalyticsPage />}
       {activeTab === 'subscriptions' && <SubscriptionsPage />}
+      {activeTab === 'embedding-cache' && <EmbeddingCachePage />}
       {activeTab === 'dev' && <DevJobsPage />}
     </div>
   );

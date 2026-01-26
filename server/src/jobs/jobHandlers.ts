@@ -8,6 +8,8 @@ import {
   classifyTweetsByIdsWithTag,
   dispatchLlmClassificationJobs,
   generateReportForProfile,
+  refreshRoutingEmbeddingCache,
+  refreshRoutingEmbeddingCacheForTag,
   sendReportAndNotify
 } from '../services/aiService';
 import { publishReportToGithub } from '../services/githubPublishService';
@@ -140,6 +142,50 @@ export async function handleClassifyTweetsLlmJob(job: QueuedJob<'classify-tweets
     logger.error('LLM classification job failed', error);
     throw error;
   }
+}
+
+export async function handleEmbeddingCacheRefreshJob(job: QueuedJob<'embedding-cache-refresh'>) {
+  const payload = (job.payload ?? {}) as JobPayloadMap['embedding-cache-refresh'];
+  const startedAt = Date.now();
+  logger.info('Starting routing embedding cache refresh', {
+    trigger: payload.source ?? 'queue',
+    windowDays: payload.windowDays ?? null,
+    samplePerTag: payload.samplePerTag ?? null,
+    startedAt: new Date(startedAt).toISOString()
+  });
+  const result = await refreshRoutingEmbeddingCache(payload.source ?? 'queue', {
+    ...(typeof payload.windowDays === 'number' ? { windowDays: payload.windowDays } : {}),
+    ...(typeof payload.samplePerTag === 'number' ? { samplePerTag: payload.samplePerTag } : {})
+  });
+  const completedAt = Date.now();
+  logger.info('Routing embedding cache refresh completed', {
+    trigger: payload.source ?? 'queue',
+    completedAt: new Date(completedAt).toISOString(),
+    durationMs: completedAt - startedAt,
+    ...result
+  });
+}
+
+export async function handleEmbeddingCacheRefreshTagJob(job: QueuedJob<'embedding-cache-refresh-tag'>) {
+  const payload = (job.payload ?? {}) as JobPayloadMap['embedding-cache-refresh-tag'];
+  if (!payload.tag) {
+    logger.warn('Routing embedding cache tag refresh skipped, missing tag', { jobId: job.id });
+    return;
+  }
+  const startedAt = Date.now();
+  logger.info('Starting routing embedding cache tag refresh', {
+    trigger: payload.source ?? 'queue',
+    tag: payload.tag,
+    startedAt: new Date(startedAt).toISOString()
+  });
+  const result = await refreshRoutingEmbeddingCacheForTag(payload.tag, payload.source ?? 'queue');
+  const completedAt = Date.now();
+  logger.info('Routing embedding cache tag refresh completed', {
+    trigger: payload.source ?? 'queue',
+    completedAt: new Date(completedAt).toISOString(),
+    durationMs: completedAt - startedAt,
+    ...result
+  });
 }
 
 export async function handleReportPipelineJob(job: QueuedJob<'report-pipeline'>) {
@@ -306,6 +352,12 @@ export async function handleJob(job: QueuedJob) {
       break;
     case 'classify-tweets-llm':
       await handleClassifyTweetsLlmJob(job as QueuedJob<'classify-tweets-llm'>);
+      break;
+    case 'embedding-cache-refresh':
+      await handleEmbeddingCacheRefreshJob(job as QueuedJob<'embedding-cache-refresh'>);
+      break;
+    case 'embedding-cache-refresh-tag':
+      await handleEmbeddingCacheRefreshTagJob(job as QueuedJob<'embedding-cache-refresh-tag'>);
       break;
     case 'report-pipeline':
       await handleReportPipelineJob(job as QueuedJob<'report-pipeline'>);
