@@ -98,7 +98,17 @@ type TagRoutingResult = {
   analyzeByTag: Map<string, Tweet[]>;
   ignored: Array<{ tweet: Tweet; reason: string }>;
   autoHigh: Array<{ tweet: Tweet; reason: string; tag: string; score: number; importance: number }>;
+  decisions: Map<string, TagRoutingDecision>;
   reasonCounts: Map<string, number>;
+};
+
+type TagRoutingDecision = {
+  status: 'analyze' | 'ignored' | 'auto-high';
+  tag?: string;
+  score?: number;
+  margin?: number;
+  reason: string;
+  importance?: number;
 };
 
 type EmbeddingCandidate = { tweetId: string; text: string };
@@ -554,18 +564,25 @@ async function loadRoutingTagCache() {
 
 export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult> {
   const reasonCounts = new Map<string, number>();
+  const decisions = new Map<string, TagRoutingDecision>();
   if (!tweets.length) {
-    return { analyzeByTag: new Map(), ignored: [], autoHigh: [], reasonCounts };
+    return { analyzeByTag: new Map(), ignored: [], autoHigh: [], decisions, reasonCounts };
   }
   if (!embeddingsEnabled()) {
     reasonCounts.set('embed-disabled', tweets.length);
-    return { analyzeByTag: new Map([[ROUTING_UNASSIGNED_TAG, tweets]]), ignored: [], autoHigh: [], reasonCounts };
+    tweets.forEach((tweet) => {
+      decisions.set(tweet.id, { status: 'analyze', reason: 'embed-disabled' });
+    });
+    return { analyzeByTag: new Map([[ROUTING_UNASSIGNED_TAG, tweets]]), ignored: [], autoHigh: [], decisions, reasonCounts };
   }
 
   const cache = await loadRoutingTagCache();
   if (!cache || !Object.keys(cache.tagSamples).length) {
     reasonCounts.set('embed-no-cache', tweets.length);
-    return { analyzeByTag: new Map([[ROUTING_UNASSIGNED_TAG, tweets]]), ignored: [], autoHigh: [], reasonCounts };
+    tweets.forEach((tweet) => {
+      decisions.set(tweet.id, { status: 'analyze', reason: 'embed-no-cache' });
+    });
+    return { analyzeByTag: new Map([[ROUTING_UNASSIGNED_TAG, tweets]]), ignored: [], autoHigh: [], decisions, reasonCounts };
   }
 
   const embeddings = await ensureTweetEmbeddings(tweets.map((tweet) => ({ tweetId: tweet.tweetId, text: tweet.text })));
@@ -589,6 +606,7 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
     if (!vector || vector.length !== cache.dimensions) {
       addAnalyze(ROUTING_UNASSIGNED_TAG, tweet);
       bumpReason('embed-missing');
+      decisions.set(tweet.id, { status: 'analyze', reason: 'embed-missing' });
       return;
     }
     const normalized = normalizeVector(vector);
@@ -616,12 +634,21 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
     if (!bestTag) {
       addAnalyze(ROUTING_UNASSIGNED_TAG, tweet);
       bumpReason('embed-unrouted');
+      decisions.set(tweet.id, { status: 'analyze', reason: 'embed-unrouted' });
       return;
     }
 
     if (bestScore <= ROUTE_CLASSIFY_LOW_SIM) {
       ignored.push({ tweet, reason: 'embed-low' });
       bumpReason('embed-low');
+      const margin = secondScore >= 0 ? bestScore - secondScore : undefined;
+      decisions.set(tweet.id, {
+        status: 'ignored',
+        tag: bestTag,
+        score: bestScore,
+        margin,
+        reason: 'embed-low'
+      });
       return;
     }
 
@@ -637,14 +664,29 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
         importance
       });
       bumpReason(importance === 5 ? 'embed-high-5' : 'embed-high-4');
+      decisions.set(tweet.id, {
+        status: 'auto-high',
+        tag: bestTag,
+        score: bestScore,
+        margin,
+        reason: 'embed-high',
+        importance
+      });
       return;
     }
 
     addAnalyze(bestTag, tweet);
     bumpReason('embed-analyze');
+    decisions.set(tweet.id, {
+      status: 'analyze',
+      tag: bestTag,
+      score: bestScore,
+      margin: hasRunnerUp ? margin : undefined,
+      reason: 'embed-analyze'
+    });
   });
 
-  return { analyzeByTag, ignored, autoHigh, reasonCounts };
+  return { analyzeByTag, ignored, autoHigh, decisions, reasonCounts };
 }
 
 export function applyRuleBasedRouting(tweets: Tweet[]) {

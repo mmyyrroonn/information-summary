@@ -1,5 +1,4 @@
-import { BackgroundJob, BackgroundJobStatus } from '@prisma/client';
-import { prisma } from '../db';
+import { BackgroundJob } from '@prisma/client';
 import { config } from '../config';
 import { logger } from '../logger';
 import { countPendingTweets } from '../services/aiService';
@@ -15,7 +14,7 @@ export interface ClassificationTriggerResult {
   job?: BackgroundJob;
   created?: boolean;
   skipped?: boolean;
-  reason?: 'none-pending' | 'below-threshold' | 'llm-inflight';
+  reason?: 'none-pending' | 'below-threshold';
   pending: number;
   threshold?: number;
 }
@@ -33,22 +32,6 @@ export async function requestClassificationRun(
       checkedAt: new Date().toISOString()
     });
     return { skipped: true, reason: 'none-pending', pending };
-  }
-
-  const inflightLlmJobs = await prisma.backgroundJob.count({
-    where: {
-      type: 'classify-tweets-llm',
-      status: { in: [BackgroundJobStatus.PENDING, BackgroundJobStatus.RUNNING] }
-    }
-  });
-  if (inflightLlmJobs > 0) {
-    logger.info('LLM classification jobs in flight, skipping routing', {
-      trigger,
-      pending,
-      inflight: inflightLlmJobs,
-      checkedAt: new Date().toISOString()
-    });
-    return { skipped: true, reason: 'llm-inflight', pending };
   }
 
   const threshold = options?.minPending ?? config.CLASSIFY_MIN_TWEETS;

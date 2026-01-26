@@ -5,6 +5,7 @@ import { logger } from '../logger';
 export type BackgroundJobType =
   | 'fetch-subscriptions'
   | 'classify-tweets'
+  | 'classify-tweets-dispatch'
   | 'classify-tweets-llm'
   | 'report-pipeline'
   | 'report-profile';
@@ -19,6 +20,10 @@ export interface JobPayloadMap {
     force?: boolean;
     minPending?: number;
     pendingCount?: number;
+  };
+  'classify-tweets-dispatch': {
+    source?: string;
+    tagMin?: number;
   };
   'classify-tweets-llm': {
     tweetIds: string[];

@@ -26,7 +26,7 @@ export interface ClassificationJobResponse {
   job?: BackgroundJobSummary;
   created?: boolean;
   skipped?: boolean;
-  reason?: 'none-pending' | 'below-threshold' | 'llm-inflight';
+  reason?: 'none-pending' | 'below-threshold';
   pending: number;
   threshold?: number;
 }

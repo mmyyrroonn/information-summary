@@ -1,8 +1,15 @@
-import type { Report } from '@prisma/client';
+import { RoutingStatus, type Report } from '@prisma/client';
 import { logger } from '../logger';
 import { config } from '../config';
+import { prisma } from '../db';
 import { fetchAllSubscriptions } from '../services/ingestService';
-import { classifyTweets, classifyTweetsByIdsWithTag, generateReportForProfile, sendReportAndNotify } from '../services/aiService';
+import {
+  classifyTweets,
+  classifyTweetsByIdsWithTag,
+  dispatchLlmClassificationJobs,
+  generateReportForProfile,
+  sendReportAndNotify
+} from '../services/aiService';
 import { publishReportToGithub } from '../services/githubPublishService';
 import { getOrCreateDefaultReportProfile, getReportProfile } from '../services/reportProfileService';
 import { withAiProcessingLock } from '../services/lockService';
@@ -45,20 +52,11 @@ export async function handleClassifyTweetsJob(job: QueuedJob<'classify-tweets'>)
   });
   try {
     const result = await classifyTweets({ lockHolderId: `job:${job.id}` });
-    const enqueueResults = await Promise.all(
-      result.llmPlans.map((plan) =>
-        enqueueJob(
-          'classify-tweets-llm',
-          {
-            tweetIds: plan.tweetIds,
-            tag: plan.tag,
-            source: payload.source ?? 'queue'
-          },
-          { dedupe: false }
-        )
-      )
+    await enqueueJob(
+      'classify-tweets-dispatch',
+      { source: payload.source ?? 'queue' },
+      { dedupe: true }
     );
-    const enqueuedJobs = enqueueResults.filter((entry) => entry.created).length;
     const completedAt = Date.now();
     logger.info('Classification completed', {
       trigger: payload.source ?? 'queue',
@@ -67,12 +65,37 @@ export async function handleClassifyTweetsJob(job: QueuedJob<'classify-tweets'>)
       pending: result.pending,
       limited: result.limited,
       autoInsights: result.autoInsights,
-      queuedTweets: result.queuedTweets,
-      queuedJobs: result.llmPlans.length,
-      enqueuedJobs
+      routedTweets: result.routedTweets,
+      routedTags: result.routedTags
     });
   } catch (error) {
     logger.error('Classification job failed', error);
+    throw error;
+  }
+}
+
+export async function handleClassifyTweetsDispatchJob(job: QueuedJob<'classify-tweets-dispatch'>) {
+  const payload = (job.payload ?? {}) as JobPayloadMap['classify-tweets-dispatch'];
+  const startedAt = Date.now();
+  logger.info('Starting classification dispatch job', {
+    trigger: payload.source ?? 'queue',
+    tagMin: payload.tagMin ?? null,
+    startedAt: new Date(startedAt).toISOString()
+  });
+  try {
+    const result = await dispatchLlmClassificationJobs({
+      tagMin: payload.tagMin,
+      source: payload.source ?? 'queue'
+    });
+    const completedAt = Date.now();
+    logger.info('Classification dispatch completed', {
+      trigger: payload.source ?? 'queue',
+      completedAt: new Date(completedAt).toISOString(),
+      durationMs: completedAt - startedAt,
+      ...result
+    });
+  } catch (error) {
+    logger.error('Classification dispatch job failed', error);
     throw error;
   }
 }
@@ -99,6 +122,20 @@ export async function handleClassifyTweetsLlmJob(job: QueuedJob<'classify-tweets
       ...result
     });
   } catch (error) {
+    if (payload.tweetIds?.length) {
+      await prisma.tweet.updateMany({
+        where: {
+          id: { in: payload.tweetIds },
+          routingStatus: RoutingStatus.LLM_QUEUED,
+          insights: null,
+          abandonedAt: null
+        },
+        data: {
+          routingStatus: RoutingStatus.ROUTED,
+          llmQueuedAt: null
+        }
+      });
+    }
     logger.error('LLM classification job failed', error);
     throw error;
   }
@@ -262,6 +299,9 @@ export async function handleJob(job: QueuedJob) {
       break;
     case 'classify-tweets':
       await handleClassifyTweetsJob(job as QueuedJob<'classify-tweets'>);
+      break;
+    case 'classify-tweets-dispatch':
+      await handleClassifyTweetsDispatchJob(job as QueuedJob<'classify-tweets-dispatch'>);
       break;
     case 'classify-tweets-llm':
       await handleClassifyTweetsLlmJob(job as QueuedJob<'classify-tweets-llm'>);

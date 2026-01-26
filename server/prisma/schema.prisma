@@ -26,6 +26,14 @@ enum BackgroundJobStatus {
   FAILED
 }
 
+enum RoutingStatus {
+  PENDING
+  IGNORED
+  AUTO_HIGH
+  ROUTED
+  LLM_QUEUED
+}
+
 enum SubscriptionStatus {
   SUBSCRIBED
   UNSUBSCRIBED
@@ -64,8 +72,18 @@ model Tweet {
   processedAt    DateTime?
   abandonedAt    DateTime?
   abandonReason  String?
+  routingStatus  RoutingStatus @default(PENDING)
+  routingTag     String?
+  routingScore   Float?
+  routingMargin  Float?
+  routingReason  String?
+  routedAt       DateTime?
+  llmQueuedAt    DateTime?
   insights       TweetInsight?
   embedding      TweetEmbedding?
+
+  @@index([routingStatus, routingTag])
+  @@index([routingStatus, llmQueuedAt])
 }
 
 model TweetInsight {

@@ -15,6 +15,7 @@ const typeOptions = [
   { value: '', label: '全部类型' },
   { value: 'fetch-subscriptions', label: '抓取推文' },
   { value: 'classify-tweets', label: 'AI 分类' },
+  { value: 'classify-tweets-dispatch', label: 'AI 分发' },
   { value: 'classify-tweets-llm', label: 'AI 分类 (LLM)' },
   { value: 'report-pipeline', label: '生成日报' },
   { value: 'report-profile', label: 'Profile 日报' }
@@ -445,9 +446,7 @@ export function DevJobsPage() {
       const text =
         reason === 'below-threshold'
           ? `待处理推文 ${pending}${threshold ? `/${threshold}` : ''}，尚未达到阈值`
-          : reason === 'llm-inflight'
-            ? '已有 LLM 分类任务在执行中'
-            : '当前没有待处理推文';
+          : '当前没有待处理推文';
       return <p className="job-status muted">{text}</p>;
     }
     const job = state.job;
@@ -495,9 +494,7 @@ export function DevJobsPage() {
         const message =
           result.reason === 'below-threshold'
             ? `待处理推文 ${result.pending}${result.threshold ? `/${result.threshold}` : ''}，暂不触发`
-            : result.reason === 'llm-inflight'
-              ? '已有 LLM 分类任务在执行中，暂不触发'
-              : '当前没有待处理推文';
+            : '当前没有待处理推文';
         setWorkflowMessage(message);
         setWorkflowJobs((prev) => ({
           ...prev,
@@ -1298,6 +1295,8 @@ function renderType(type: string) {
       return '抓取推文';
     case 'classify-tweets':
       return 'AI 分类';
+    case 'classify-tweets-dispatch':
+      return 'AI 分发';
     case 'classify-tweets-llm':
       return 'AI 分类 (LLM)';
     case 'report-pipeline':

@@ -47,6 +47,7 @@ function registerClassifyJob() {
     const triggeredAt = new Date();
     logger.info('Classify cron triggered', { schedule, triggeredAt: triggeredAt.toISOString() });
     void requestClassificationRun('cron', { force: true });
+    void enqueueJob('classify-tweets-dispatch', { source: 'cron' }, { dedupe: true });
   });
 
   logger.info(`Classify job registered with expression ${schedule}`);

@@ -1,9 +1,10 @@
 import { randomUUID } from 'crypto';
-import { AiRunKind, AiRunStatus, Tweet } from '@prisma/client';
+import { AiRunKind, AiRunStatus, RoutingStatus, Tweet } from '@prisma/client';
 import { prisma } from '../../db';
 import { config } from '../../config';
 import { logger } from '../../logger';
 import { chunk } from '../../utils/chunk';
+import { enqueueJob } from '../../jobs/jobQueue';
 import { withAiProcessingLock } from '../lockService';
 import { TweetBatchFailedError, TweetBatchFailureMeta, TweetBatchFailureReason } from '../../errors';
 import { runStructuredCompletion } from './openaiClient';
@@ -24,6 +25,7 @@ const CLASSIFY_MAX_BATCHES = 100;
 const CLASSIFY_MAX_TWEETS = 1000;
 const CLASSIFY_LLM_JOB_SIZE = 50;
 const CLASSIFY_CONCURRENCY = Math.max(1, config.CLASSIFY_CONCURRENCY ?? 4);
+const CLASSIFY_TAG_MIN_TWEETS = Math.max(1, config.CLASSIFY_TAG_MIN_TWEETS ?? 10);
 const CLASSIFY_MAX_RETRIES = 3;
 const CLASSIFY_RETRY_DELAY_MS = 1500;
 const TAG_ROUTING_HINTS: Record<string, string> = {
@@ -107,23 +109,40 @@ interface ClassificationOptions {
   lockHolderId?: string;
 }
 
+interface DispatchOptions {
+  tagMin?: number;
+  source?: string;
+}
+
+interface DispatchResult {
+  minPerTag: number;
+  eligibleTags: number;
+  queuedJobs: number;
+  queuedTweets: number;
+}
+
 interface LlmBatch {
   tag?: string;
   tweets: Tweet[];
-}
-
-interface LlmJobPlan {
-  tag?: string;
-  tweetIds: string[];
 }
 
 interface ClassificationPlan {
   pending: number;
   limited: boolean;
   autoInsights: number;
-  queuedTweets: number;
-  llmPlans: LlmJobPlan[];
+  routedTweets: number;
+  routedTags: number;
 }
+
+type RoutingRecord = {
+  tweet: Tweet;
+  status: RoutingStatus;
+  tag?: string | null;
+  score?: number;
+  margin?: number;
+  reason: string;
+  importance?: number;
+};
 
 const CLASSIFY_ALLOWED_VERDICTS = ['ignore', 'watch', 'actionable'] as const;
 
@@ -131,7 +150,8 @@ export async function countPendingTweets() {
   return prisma.tweet.count({
     where: {
       insights: null,
-      abandonedAt: null
+      abandonedAt: null,
+      routingStatus: RoutingStatus.PENDING
     }
   });
 }
@@ -141,7 +161,8 @@ export async function classifyTweets(options?: ClassificationOptions): Promise<C
     const tweets = await prisma.tweet.findMany({
       where: {
         insights: null,
-        abandonedAt: null
+        abandonedAt: null,
+        routingStatus: RoutingStatus.PENDING
       },
       orderBy: { tweetedAt: 'desc' }
     });
@@ -154,29 +175,27 @@ export async function classifyTweets(options?: ClassificationOptions): Promise<C
         pending: 0,
         limited: false,
         autoInsights: 0,
-        queuedTweets: 0,
-        llmPlans: []
+        routedTweets: 0,
+        routedTags: 0
       };
     }
 
     const routing = await routeTweetsForClassification(tweets, { mode: 'pending' });
-    const llmPlans = buildLlmJobPlans(routing.batches);
-    const queuedTweets = llmPlans.reduce((sum, plan) => sum + plan.tweetIds.length, 0);
 
     logger.info('Classification routing completed', {
       pending: tweets.length,
       limited: routing.limited,
       autoInsights: routing.autoInsights,
-      queuedTweets,
-      queuedJobs: llmPlans.length
+      routedTweets: routing.routedTweets,
+      routedTags: routing.routedTags
     });
 
     return {
       pending: tweets.length,
       limited: routing.limited,
       autoInsights: routing.autoInsights,
-      queuedTweets,
-      llmPlans
+      routedTweets: routing.routedTweets,
+      routedTags: routing.routedTags
     };
   });
 }
@@ -245,6 +264,74 @@ export async function classifyTweetsByIdsWithTag(
   });
 }
 
+export async function dispatchLlmClassificationJobs(options?: DispatchOptions): Promise<DispatchResult> {
+  const minPerTag = Math.max(1, options?.tagMin ?? CLASSIFY_TAG_MIN_TWEETS);
+  const baseWhere = {
+    insights: null,
+    abandonedAt: null,
+    routingStatus: RoutingStatus.ROUTED,
+    llmQueuedAt: null
+  };
+  const grouped = await prisma.tweet.groupBy({
+    by: ['routingTag'],
+    where: baseWhere,
+    _count: { _all: true }
+  });
+
+  const eligible = grouped.filter((entry) => (entry._count?._all ?? 0) >= minPerTag);
+  let queuedJobs = 0;
+  let queuedTweets = 0;
+  const queuedAt = new Date();
+
+  for (const entry of eligible) {
+    const tag = entry.routingTag ?? null;
+    const tagWhere = tag ? { routingTag: tag } : { routingTag: null };
+    const candidates = await prisma.tweet.findMany({
+      where: { ...baseWhere, ...tagWhere },
+      orderBy: { tweetedAt: 'desc' },
+      take: CLASSIFY_MAX_TWEETS
+    });
+    if (!candidates.length) continue;
+
+    const chunks = chunk(candidates, CLASSIFY_LLM_JOB_SIZE);
+    for (const batch of chunks) {
+      const tweetIds = batch.map((tweet) => tweet.id);
+      const updated = await prisma.tweet.updateMany({
+        where: {
+          id: { in: tweetIds },
+          routingStatus: RoutingStatus.ROUTED,
+          llmQueuedAt: null
+        },
+        data: {
+          llmQueuedAt: queuedAt,
+          routingStatus: RoutingStatus.LLM_QUEUED
+        }
+      });
+      if (updated.count === 0) {
+        continue;
+      }
+      await enqueueJob(
+        'classify-tweets-llm',
+        {
+          tweetIds,
+          tag: tag ?? undefined,
+          source: options?.source ?? 'dispatch'
+        },
+        { dedupe: false }
+      );
+      queuedJobs += 1;
+      queuedTweets += tweetIds.length;
+    }
+  }
+
+  return {
+    minPerTag,
+    eligibleTags: eligible.length,
+    queuedJobs,
+    queuedTweets
+  };
+}
+
 async function abandonTweetBatch(
   tweets: Tweet[],
   reason: TweetBatchFailureReason,
@@ -272,11 +359,42 @@ async function abandonTweetBatch(
   });
 }
 
+async function persistRoutingRecords(records: RoutingRecord[], routedAt: Date) {
+  if (!records.length) {
+    return;
+  }
+  const updates = records.map((record) => {
+    const data: Parameters<typeof prisma.tweet.update>[0]['data'] = {
+      routingStatus: record.status,
+      routingTag: record.tag ?? null,
+      routingScore: record.score ?? null,
+      routingMargin: record.margin ?? null,
+      routingReason: record.reason,
+      routedAt,
+      llmQueuedAt: null
+    };
+    if (record.status === RoutingStatus.IGNORED || record.status === RoutingStatus.AUTO_HIGH) {
+      data.processedAt = routedAt;
+    }
+    return prisma.tweet.update({
+      where: { id: record.tweet.id },
+      data
+    });
+  });
+
+  const batches = chunk(updates, 100);
+  for (const batch of batches) {
+    await prisma.$transaction(batch);
+  }
+}
+
 type RoutingOutcome = {
   batches: LlmBatch[];
   autoInsights: number;
   limited: boolean;
   autoHigh: number;
+  routedTweets: number;
+  routedTags: number;
 };
 
 async function routeTweetsForClassification(tweets: Tweet[], context: Record<string, unknown> = {}): Promise<RoutingOutcome> {
@@ -285,6 +403,8 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
   const tagResult = await applyTagRouting(ruleResult.analyze);
   const ignoredCombined = [...ruleResult.ignored, ...tagResult.ignored];
   const autoHigh = tagResult.autoHigh;
+  const analyzeById = new Map(ruleResult.analyze.map((tweet) => [tweet.id, tweet]));
+  const routingRecords: RoutingRecord[] = [];
   const mergedReasons = new Map<string, number>();
   for (const [key, value] of ruleResult.reasonCounts.entries()) {
     mergedReasons.set(key, (mergedReasons.get(key) ?? 0) + value);
@@ -292,6 +412,48 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
   for (const [key, value] of tagResult.reasonCounts.entries()) {
     mergedReasons.set(key, (mergedReasons.get(key) ?? 0) + value);
   }
+  ruleResult.ignored.forEach((entry) => {
+    routingRecords.push({
+      tweet: entry.tweet,
+      status: RoutingStatus.IGNORED,
+      reason: entry.reason
+    });
+  });
+  tagResult.decisions.forEach((decision, tweetId) => {
+    const tweet = analyzeById.get(tweetId);
+    if (!tweet) return;
+    if (decision.status === 'ignored') {
+      routingRecords.push({
+        tweet,
+        status: RoutingStatus.IGNORED,
+        tag: decision.tag ?? null,
+        score: decision.score,
+        margin: decision.margin,
+        reason: decision.reason
+      });
+      return;
+    }
+    if (decision.status === 'auto-high') {
+      routingRecords.push({
+        tweet,
+        status: RoutingStatus.AUTO_HIGH,
+        tag: decision.tag ?? null,
+        score: decision.score,
+        margin: decision.margin,
+        reason: decision.reason,
+        importance: decision.importance
+      });
+      return;
+    }
+    routingRecords.push({
+      tweet,
+      status: RoutingStatus.ROUTED,
+      tag: decision.tag ?? null,
+      score: decision.score,
+      margin: decision.margin,
+      reason: decision.reason
+    });
+  });
   const analyzeGroups = Array.from(tagResult.analyzeByTag.entries());
   const analyzeTweets = analyzeGroups.reduce<Tweet[]>((acc, [, batch]) => {
     acc.push(...batch);
@@ -299,6 +461,8 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
   }, []);
   const reasonCounts = Object.fromEntries(mergedReasons);
   const { batches, targetTweets } = buildLlmBatchesFromGroups(analyzeGroups);
+  const routedAt = new Date();
+  await persistRoutingRecords(routingRecords, routedAt);
   logger.info('Routing applied before AI', {
     pending: tweets.length,
     limited: tweets.length > limitedTweets.length,
@@ -314,9 +478,6 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
 
   let autoInsights = 0;
   if (ignoredCombined.length || autoHigh.length) {
-    const now = new Date();
-    const ignoredIds = ignoredCombined.map((entry) => entry.tweet.id);
-    const highIds = autoHigh.map((entry) => entry.tweet.id);
     await prisma.$transaction([
       ...ignoredCombined.map((entry) =>
         prisma.tweetInsight.upsert({
@@ -355,11 +516,7 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
             tags: [entry.tag]
           }
         })
-      ),
-      prisma.tweet.updateMany({
-        where: { id: { in: [...ignoredIds, ...highIds] } },
-        data: { processedAt: now }
-      })
+      )
     ]);
     autoInsights = ignoredCombined.length + autoHigh.length;
   }
@@ -368,7 +525,9 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
     batches,
     autoInsights,
     limited: tweets.length > limitedTweets.length,
-    autoHigh: autoHigh.length
+    autoHigh: autoHigh.length,
+    routedTweets: targetTweets.length,
+    routedTags: analyzeGroups.length
   };
 }
 
@@ -397,33 +556,6 @@ function buildLlmBatchesForTag(tweets: Tweet[], tagHint?: string): LlmBatch[] {
   const allowedTagSet = new Set(CLASSIFY_ALLOWED_TAGS);
   const tag = normalizedHint && allowedTagSet.has(normalizedHint) ? normalizedHint : undefined;
   return chunk(tweets, CLASSIFY_BATCH_SIZE).map((batch) => ({ tag, tweets: batch }));
-}
-
-function buildLlmJobPlans(batches: LlmBatch[]): LlmJobPlan[] {
-  if (!batches.length) return [];
-  const orderedTags: Array<string | undefined> = [];
-  const grouped = new Map<string, Tweet[]>();
-  batches.forEach((batch) => {
-    const key = batch.tag ?? '';
-    if (!grouped.has(key)) {
-      orderedTags.push(batch.tag);
-      grouped.set(key, []);
-    }
-    grouped.get(key)?.push(...batch.tweets);
-  });
-  const plans: LlmJobPlan[] = [];
-  orderedTags.forEach((tag) => {
-    const key = tag ?? '';
-    const tweets = grouped.get(key) ?? [];
-    if (!tweets.length) return;
-    chunk(tweets, CLASSIFY_LLM_JOB_SIZE).forEach((batch) => {
-      plans.push({
-        tag,
-        tweetIds: batch.map((tweet) => tweet.id)
-      });
-    });
-  });
-  return plans;
 }
 
 async function runTweetClassification(tweets: Tweet[], context: Record<string, unknown> = {}) {
