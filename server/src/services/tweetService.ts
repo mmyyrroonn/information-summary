@@ -5,6 +5,7 @@ export interface ListTweetsOptions {
   page: number;
   pageSize: number;
   sort: 'newest' | 'oldest' | 'priority';
+  routing?: 'default' | 'ignored' | 'all';
   subscriptionId?: string;
   startTime?: Date;
   endTime?: Date;
@@ -55,6 +56,11 @@ export async function listTweets(options: ListTweetsOptions) {
   if (options.subscriptionId) {
     where.subscriptionId = options.subscriptionId;
   }
+  if (options.routing === 'ignored') {
+    where.routingStatus = 'IGNORED';
+  } else if (options.routing === 'default') {
+    where.routingStatus = { not: 'IGNORED' };
+  }
   if (searchStartTime || searchEndTime) {
     where.tweetedAt = {};
     if (searchStartTime) {
@@ -94,6 +100,13 @@ export async function listTweets(options: ListTweetsOptions) {
         tweetedAt: true,
         createdAt: true,
         processedAt: true,
+        routingStatus: true,
+        routingTag: true,
+        routingScore: true,
+        routingMargin: true,
+        routingReason: true,
+        routedAt: true,
+        llmQueuedAt: true,
         abandonedAt: true,
         abandonReason: true,
         insights: {

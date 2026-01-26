@@ -236,6 +236,15 @@ export interface TweetRecord {
   tweetedAt: string;
   createdAt: string;
   processedAt?: string | null;
+  routingStatus?: string | null;
+  routingTag?: string | null;
+  routingScore?: number | null;
+  routingMargin?: number | null;
+  routingReason?: string | null;
+  routedAt?: string | null;
+  llmQueuedAt?: string | null;
+  abandonedAt?: string | null;
+  abandonReason?: string | null;
   insights?: TweetInsight | null;
 }
 

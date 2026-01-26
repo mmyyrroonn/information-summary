@@ -793,12 +793,31 @@ button.ghost {
   gap: 0.5rem;
 }
 
+.tweet-actions .tweet-toggle.active {
+  background: #1d4ed8;
+  color: #fff;
+}
+
 .tweet-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 1rem;
   align-items: flex-end;
+}
+
+.tweet-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.7rem;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #475569;
+  font-size: 0.85rem;
+  margin-bottom: 0.9rem;
 }
 
 .tweet-filters label {
@@ -855,6 +874,25 @@ button.ghost {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  box-shadow: 0 12px 24px -22px rgba(15, 23, 42, 0.4);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.tweet-card:hover {
+  box-shadow: 0 16px 32px -24px rgba(15, 23, 42, 0.5);
+  transform: translateY(-1px);
+}
+
+.tweet-card-watch {
+  border-left: 3px solid #f97316;
+}
+
+.tweet-card-actionable {
+  border-left: 3px solid #16a34a;
+}
+
+.tweet-card-ignore {
+  border-left: 3px solid #94a3b8;
 }
 
 .tweet-meta {
@@ -887,6 +925,12 @@ button.ghost {
   color: #0f172a;
   font-size: 0.95rem;
   line-height: 1.5;
+}
+
+.tweet-routing {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #64748b;
 }
 
 .tweet-analysis {
@@ -938,11 +982,38 @@ button.ghost {
   color: #0f172a;
 }
 
+.pill.tag {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
+.pill.status {
+  background: rgba(15, 23, 42, 0.08);
+  color: #475569;
+}
+
+.pill.status.pending {
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+}
+
+.pill.status.failed {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}
+
 .tweet-summary,
 .tweet-tags,
 .tweet-suggestion {
   margin: 0.1rem 0 0;
   color: #0f172a;
+}
+
+.tweet-analysis-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
 }
 
 .tweet-pagination {

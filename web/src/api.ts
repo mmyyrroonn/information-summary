@@ -96,6 +96,7 @@ interface ApiClient {
     page?: number;
     pageSize?: number;
     sort?: 'newest' | 'oldest' | 'priority';
+    routing?: 'default' | 'ignored' | 'all';
     subscriptionId?: string;
     startTime?: string;
     endTime?: string;
@@ -250,6 +251,9 @@ export const api: ApiClient = {
     }
     if (params.sort) {
       search.set('sort', params.sort);
+    }
+    if (params.routing) {
+      search.set('routing', params.routing);
     }
     if (params.subscriptionId) {
       search.set('subscriptionId', params.subscriptionId);
