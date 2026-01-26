@@ -18,7 +18,6 @@ const typeOptions = [
   { value: 'classify-tweets-llm', label: 'AI 分类 (LLM)' },
   { value: 'embedding-cache-refresh', label: 'Embedding 缓存刷新' },
   { value: 'embedding-cache-refresh-tag', label: 'Embedding 缓存刷新 (单类)' },
-  { value: 'report-pipeline', label: '生成日报' },
   { value: 'report-profile', label: 'Profile 日报' }
 ] as const;
 
@@ -1190,8 +1189,6 @@ function renderType(type: string) {
       return 'AI 分发';
     case 'classify-tweets-llm':
       return 'AI 分类 (LLM)';
-    case 'report-pipeline':
-      return '日报管线';
     case 'report-profile':
       return 'Profile 日报';
     default:

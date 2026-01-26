@@ -13,7 +13,7 @@ import {
   sendReportAndNotify
 } from '../services/aiService';
 import { publishReportToGithub } from '../services/githubPublishService';
-import { getOrCreateDefaultReportProfile, getReportProfile } from '../services/reportProfileService';
+import { getReportProfile } from '../services/reportProfileService';
 import { withAiProcessingLock } from '../services/lockService';
 import { enqueueJob, JobPayloadMap, QueuedJob } from './jobQueue';
 
@@ -188,82 +188,6 @@ export async function handleEmbeddingCacheRefreshTagJob(job: QueuedJob<'embeddin
   });
 }
 
-export async function handleReportPipelineJob(job: QueuedJob<'report-pipeline'>) {
-  const payload = (job.payload ?? {}) as JobPayloadMap['report-pipeline'];
-  const shouldNotify = payload.notify ?? true;
-  const startedAt = Date.now();
-  const parsedWindowEnd = payload.windowEnd ? new Date(payload.windowEnd) : null;
-  const windowEnd =
-    parsedWindowEnd && Number.isNaN(parsedWindowEnd.getTime()) ? null : parsedWindowEnd;
-  logger.info('Running queued report pipeline', {
-    trigger: payload.trigger ?? 'queue',
-    notify: shouldNotify,
-    windowEnd: windowEnd?.toISOString() ?? null,
-    startedAt: new Date(startedAt).toISOString()
-  });
-  try {
-    const defaultProfile = await getOrCreateDefaultReportProfile();
-    if (!defaultProfile.enabled) {
-      logger.warn('Default report profile disabled, skipping job', { profileId: defaultProfile.id });
-      return;
-    }
-    await withAiProcessingLock(
-      `job:${job.id}`,
-      async () => {
-        const report = await generateReportForProfile(defaultProfile, windowEnd ?? undefined);
-        if (!report) {
-          logger.info('No report generated for the current window', {
-            checkedAt: new Date().toISOString(),
-            profileId: defaultProfile.id,
-            durationMs: Date.now() - startedAt
-          });
-          return;
-        }
-
-        await autoPublishReport(report);
-        const notificationResult = { attempted: shouldNotify, delivered: false };
-
-        if (shouldNotify) {
-          try {
-            await sendReportAndNotify(report);
-            notificationResult.delivered = true;
-          } catch (notifyError) {
-            logger.error('Report notification failed, skipping Telegram delivery', {
-              reportId: report.id,
-              profileId: defaultProfile.id,
-              error:
-                notifyError instanceof Error
-                  ? { message: notifyError.message, stack: notifyError.stack }
-                  : notifyError
-            });
-          }
-        }
-
-        const completedAt = Date.now();
-
-        if (notificationResult.delivered) {
-          logger.info('Report pipeline completed with notification', {
-            reportId: report.id,
-            completedAt: new Date(completedAt).toISOString(),
-            durationMs: completedAt - startedAt
-          });
-        } else {
-          logger.info('Report generated without notification', {
-            reportId: report.id,
-            completedAt: new Date(completedAt).toISOString(),
-            durationMs: completedAt - startedAt,
-            notificationAttempted: notificationResult.attempted
-          });
-        }
-      },
-      { scope: 'report' }
-    );
-  } catch (error) {
-    logger.error('Report pipeline failed', error);
-    throw error;
-  }
-}
-
 export async function handleReportProfileJob(job: QueuedJob<'report-profile'>) {
   const payload = (job.payload ?? {}) as JobPayloadMap['report-profile'];
   const startedAt = Date.now();
@@ -358,9 +282,6 @@ export async function handleJob(job: QueuedJob) {
       break;
     case 'embedding-cache-refresh-tag':
       await handleEmbeddingCacheRefreshTagJob(job as QueuedJob<'embedding-cache-refresh-tag'>);
-      break;
-    case 'report-pipeline':
-      await handleReportPipelineJob(job as QueuedJob<'report-pipeline'>);
       break;
     case 'report-profile':
       await handleReportProfileJob(job as QueuedJob<'report-profile'>);

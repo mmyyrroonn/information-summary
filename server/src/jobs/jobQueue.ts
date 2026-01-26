@@ -9,7 +9,6 @@ export type BackgroundJobType =
   | 'classify-tweets-llm'
   | 'embedding-cache-refresh'
   | 'embedding-cache-refresh-tag'
-  | 'report-pipeline'
   | 'report-profile';
 
 export interface JobPayloadMap {
@@ -40,11 +39,6 @@ export interface JobPayloadMap {
   'embedding-cache-refresh-tag': {
     tag: string;
     source?: string;
-  };
-  'report-pipeline': {
-    notify?: boolean;
-    trigger?: string;
-    windowEnd?: string;
   };
   'report-profile': {
     profileId: string;

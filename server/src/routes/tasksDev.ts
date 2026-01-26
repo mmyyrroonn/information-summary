@@ -12,7 +12,6 @@ const jobTypeSchema = z.enum(
     'classify-tweets',
     'classify-tweets-dispatch',
     'classify-tweets-llm',
-    'report-pipeline',
     'report-profile'
   ] as const
 );
