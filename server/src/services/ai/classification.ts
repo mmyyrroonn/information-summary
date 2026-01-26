@@ -706,7 +706,7 @@ async function runLlmClassificationBatches(
 
         await prisma.tweet.update({
           where: { id: targetTweet.id },
-          data: { processedAt: new Date() }
+          data: { processedAt: new Date(), routingStatus: RoutingStatus.COMPLETED, llmQueuedAt: null }
         });
         totalInsights += 1;
       }

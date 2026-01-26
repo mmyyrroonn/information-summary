@@ -32,6 +32,7 @@ enum RoutingStatus {
   AUTO_HIGH
   ROUTED
   LLM_QUEUED
+  COMPLETED
 }
 
 enum SubscriptionStatus {

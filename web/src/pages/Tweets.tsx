@@ -38,7 +38,8 @@ const ROUTING_STATUS_LABELS: Record<string, string> = {
   IGNORED: '规则过滤',
   AUTO_HIGH: '自动高优',
   ROUTED: '已路由',
-  LLM_QUEUED: '待 LLM'
+  LLM_QUEUED: '待 LLM',
+  COMPLETED: '已完成'
 };
 
 const ROUTING_REASON_LABELS: Record<string, string> = {
