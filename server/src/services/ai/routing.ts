@@ -19,11 +19,18 @@ const ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS = 120;
 const ROUTE_EMBEDDING_SAMPLE_PER_TAG = 200;
 const ROUTE_EMBEDDING_MIN_SAMPLE = 40;
 const ROUTE_EMBEDDING_MIN_PRIMARY_SAMPLE = 100;
+const ROUTE_EMBEDDING_NEG_SAMPLE = 300;
+const ROUTE_EMBEDDING_NEG_MIN_SAMPLE = 80;
+const ROUTE_NEGATIVE_IMPORTANCE_MAX = 1;
 const ROUTE_CLASSIFY_HIGH_SIM = 0.86;
 const ROUTE_CLASSIFY_HIGH_STRICT = 0.9;
 const ROUTE_CLASSIFY_HIGH_MARGIN = 0.04;
 const ROUTE_CLASSIFY_LOW_SIM = 0.72;
+const ROUTE_CLASSIFY_NEG_GAP_LOW = 0.05;
+const ROUTE_CLASSIFY_NEG_GAP_HIGH = 0.08;
+const ROUTE_TAG_SCORE_TOP_K = 5;
 const ROUTING_UNASSIGNED_TAG = '__unrouted__';
+const ROUTING_NEGATIVE_KEY = '__low_quality__';
 const RULE_MIN_LEN = 80;
 const RULE_LONG_LEN = 160;
 const RULE_LONG_MIN_NUMBER_TOKENS = 3;
@@ -92,6 +99,11 @@ type TagCacheRecord = {
   samplePerTag: number;
   tagSamples: Record<string, number[][]>;
   tagSampleCounts: Record<string, number>;
+  tagCentroids: Record<string, number[]>;
+  tagStats: Record<string, TagScoreStats>;
+  tagThresholds: Record<string, TagThresholds>;
+  negativeCentroid: number[] | null;
+  negativeSampleCount: number;
 };
 
 type TagRoutingResult = {
@@ -107,8 +119,29 @@ type TagRoutingDecision = {
   tag?: string;
   score?: number;
   margin?: number;
+  negativeScore?: number;
+  negativeGap?: number;
   reason: string;
   importance?: number;
+};
+
+type TagScoreStats = {
+  mean: number;
+  min: number;
+  max: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  sampleCount: number;
+};
+
+type TagThresholds = {
+  lowSim: number;
+  highSim: number;
+  highStrict: number;
+  highMargin: number;
+  negGapLow: number;
+  negGapHigh: number;
 };
 
 type EmbeddingCandidate = { tweetId: string; text: string };
@@ -119,6 +152,17 @@ type TagSample = {
 };
 
 let routingTagCache: TagCacheRecord | null = null;
+
+const DEFAULT_TAG_THRESHOLDS: TagThresholds = {
+  lowSim: ROUTE_CLASSIFY_LOW_SIM,
+  highSim: ROUTE_CLASSIFY_HIGH_SIM,
+  highStrict: ROUTE_CLASSIFY_HIGH_STRICT,
+  highMargin: ROUTE_CLASSIFY_HIGH_MARGIN,
+  negGapLow: ROUTE_CLASSIFY_NEG_GAP_LOW,
+  negGapHigh: ROUTE_CLASSIFY_NEG_GAP_HIGH
+};
+
+const TAG_THRESHOLD_OVERRIDES: Partial<Record<string, Partial<TagThresholds>>> = {};
 
 function toPositiveInt(value: number | undefined, fallback: number) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
@@ -131,6 +175,31 @@ function normalizeRoutingRefreshOptions(options?: RoutingRefreshOptions): Routin
     windowDays: toPositiveInt(options?.windowDays, ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS),
     samplePerTag: toPositiveInt(options?.samplePerTag, ROUTE_EMBEDDING_SAMPLE_PER_TAG)
   };
+}
+
+function resolveTagThresholds(tag: string, stats?: TagScoreStats): TagThresholds {
+  const override = TAG_THRESHOLD_OVERRIDES[tag] ?? {};
+  const thresholds: TagThresholds = { ...DEFAULT_TAG_THRESHOLDS, ...override };
+  if (!stats || stats.sampleCount < 10) {
+    return thresholds;
+  }
+
+  const lowSim = (thresholds.lowSim + stats.p25) / 2;
+  const highSim = (thresholds.highSim + stats.p75) / 2;
+  thresholds.lowSim = clamp(lowSim, thresholds.lowSim - 0.05, thresholds.lowSim + 0.05);
+  thresholds.highSim = clamp(highSim, thresholds.highSim - 0.05, thresholds.highSim + 0.05);
+  thresholds.highMargin = clamp(
+    thresholds.highMargin + (stats.p75 - stats.p50 < 0.02 ? 0.01 : 0),
+    0.03,
+    0.08
+  );
+  thresholds.highStrict = Math.max(thresholds.highStrict, thresholds.highSim + 0.02);
+
+  if (thresholds.lowSim >= thresholds.highSim - 0.02) {
+    thresholds.lowSim = clamp(thresholds.highSim - 0.02, 0.5, thresholds.highSim - 0.01);
+  }
+
+  return thresholds;
 }
 
 function normalizeVector(vector: number[]) {
@@ -153,6 +222,82 @@ function dot(a: number[], b: number[]) {
     sum += (a[i] ?? 0) * (b[i] ?? 0);
   }
   return sum;
+}
+
+function clamp(value: number, min: number, max: number) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+
+function sumInto(acc: number[], v: number[]) {
+  const n = Math.max(acc.length, v.length);
+  for (let i = 0; i < n; i += 1) {
+    acc[i] = (acc[i] ?? 0) + (v[i] ?? 0);
+  }
+  return acc;
+}
+
+function buildCentroid(samples: number[][], dimensions: number) {
+  if (!samples.length) return Array.from({ length: dimensions }, () => 0);
+  const sum = Array.from({ length: dimensions }, () => 0);
+  samples.forEach((vector) => sumInto(sum, vector));
+  return normalizeVector(sum);
+}
+
+function quantile(sorted: number[], q: number) {
+  if (!sorted.length) return 0;
+  const clamped = clamp(q, 0, 1);
+  const index = Math.floor((sorted.length - 1) * clamped);
+  return sorted[index] ?? sorted[sorted.length - 1] ?? 0;
+}
+
+function computeTagStats(samples: number[][], centroid: number[]): TagScoreStats {
+  if (!samples.length) {
+    return { mean: 0, min: 0, max: 0, p25: 0, p50: 0, p75: 0, sampleCount: 0 };
+  }
+  const scores = samples.map((vector) => dot(vector, centroid)).sort((a, b) => a - b);
+  const total = scores.reduce((acc, value) => acc + value, 0);
+  return {
+    mean: total / scores.length,
+    min: scores[0] ?? 0,
+    max: scores[scores.length - 1] ?? 0,
+    p25: quantile(scores, 0.25),
+    p50: quantile(scores, 0.5),
+    p75: quantile(scores, 0.75),
+    sampleCount: scores.length
+  };
+}
+
+function topKMeanScore(vector: number[], samples: number[][], k: number) {
+  if (!samples.length) return -1;
+  const top: number[] = [];
+  let minIndex = -1;
+  let minValue = Number.POSITIVE_INFINITY;
+  for (const sample of samples) {
+    const score = dot(vector, sample);
+    if (top.length < k) {
+      top.push(score);
+      if (score < minValue) {
+        minValue = score;
+        minIndex = top.length - 1;
+      }
+      continue;
+    }
+    if (score <= minValue) continue;
+    top[minIndex] = score;
+    minValue = top[0] ?? score;
+    minIndex = 0;
+    for (let i = 1; i < top.length; i += 1) {
+      const value = top[i] ?? score;
+      if (value < minValue) {
+        minValue = value;
+        minIndex = i;
+      }
+    }
+  }
+  const sum = top.reduce((acc, value) => acc + value, 0);
+  return sum / top.length;
 }
 
 function parseTagSamples(value: Prisma.JsonValue, dimensions: number) {
@@ -360,6 +505,24 @@ async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promis
   return [...primary, ...supplemental].map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
 }
 
+async function loadNegativeSamples(params: RoutingRefreshParams): Promise<TagSample[]> {
+  const since = new Date(Date.now() - params.windowDays * 24 * 60 * 60 * 1000);
+  const candidates = await prisma.tweetInsight.findMany({
+    where: {
+      createdAt: { gte: since },
+      OR: [{ verdict: 'ignore' }, { importance: { lte: ROUTE_NEGATIVE_IMPORTANCE_MAX } }]
+    },
+    select: {
+      tweetId: true,
+      tweet: { select: { text: true } }
+    },
+    orderBy: { createdAt: 'desc' },
+    take: ROUTE_EMBEDDING_NEG_SAMPLE
+  });
+
+  return candidates.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+}
+
 async function buildTagEmbeddingCacheData(params: RoutingRefreshParams) {
   if (!embeddingsEnabled()) {
     logger.warn('Embeddings disabled, skip tag routing cache build');
@@ -396,7 +559,27 @@ async function buildTagEmbeddingCacheData(params: RoutingRefreshParams) {
     tagSamples[tag] = vectors;
   }
 
-  const availableTags = Object.keys(tagSamples);
+  const negativeCandidates = await loadNegativeSamples(params);
+  if (negativeCandidates.length) {
+    const embeddings = await ensureTweetEmbeddings(negativeCandidates);
+    const vectors = negativeCandidates
+      .map((candidate) => embeddings.get(candidate.tweetId))
+      .filter((vector): vector is number[] => Array.isArray(vector) && vector.length === dimensions)
+      .map((vector) => normalizeVector(vector));
+    tagSampleCounts[ROUTING_NEGATIVE_KEY] = vectors.length;
+    if (vectors.length >= ROUTE_EMBEDDING_NEG_MIN_SAMPLE) {
+      tagSamples[ROUTING_NEGATIVE_KEY] = vectors;
+    } else {
+      logger.warn('Routing negative sample insufficient, skip negative prototype', {
+        count: vectors.length,
+        min: ROUTE_EMBEDDING_NEG_MIN_SAMPLE
+      });
+    }
+  } else {
+    tagSampleCounts[ROUTING_NEGATIVE_KEY] = 0;
+  }
+
+  const availableTags = Object.keys(tagSamples).filter((tag) => tag !== ROUTING_NEGATIVE_KEY);
   if (!availableTags.length) {
     logger.warn('No routing tag samples available');
     return null;
@@ -404,6 +587,7 @@ async function buildTagEmbeddingCacheData(params: RoutingRefreshParams) {
 
   logger.info('Routing tag samples prepared', {
     tags: availableTags.length,
+    negativeSamples: tagSampleCounts[ROUTING_NEGATIVE_KEY] ?? 0,
     windowDays: params.windowDays,
     samplePerTag: params.samplePerTag,
     model,
@@ -456,8 +640,29 @@ async function persistRoutingTagCache(data: {
     windowDays: record.sourceWindowDays,
     samplePerTag: record.samplePerTag,
     tagSamples: data.tagSamples,
-    tagSampleCounts: data.tagSampleCounts
+    tagSampleCounts: data.tagSampleCounts,
+    tagCentroids: {},
+    tagStats: {},
+    tagThresholds: {},
+    negativeCentroid: null,
+    negativeSampleCount: 0
   };
+
+  const negativeSamples = data.tagSamples[ROUTING_NEGATIVE_KEY] ?? [];
+  routingTagCache.negativeSampleCount = negativeSamples.length;
+  routingTagCache.negativeCentroid = negativeSamples.length
+    ? buildCentroid(negativeSamples, record.dimensions)
+    : null;
+
+  Object.entries(data.tagSamples).forEach(([tag, samples]) => {
+    if (tag === ROUTING_NEGATIVE_KEY) return;
+    if (!samples.length) return;
+    const centroid = buildCentroid(samples, record.dimensions);
+    const stats = computeTagStats(samples, centroid);
+    routingTagCache!.tagCentroids[tag] = centroid;
+    routingTagCache!.tagStats[tag] = stats;
+    routingTagCache!.tagThresholds[tag] = resolveTagThresholds(tag, stats);
+  });
 
   return routingTagCache;
 }
@@ -472,7 +677,10 @@ export async function refreshRoutingEmbeddingCache(reason = 'manual', options?: 
     return { updated: false, reason: 'insufficient-samples', ...params };
   }
   const cache = await persistRoutingTagCache(data);
-  const totalSamples = Object.values(cache.tagSampleCounts).reduce((acc, value) => acc + value, 0);
+  const totalSamples = Object.entries(cache.tagSampleCounts).reduce(
+    (acc, [tag, value]) => (tag === ROUTING_NEGATIVE_KEY ? acc : acc + value),
+    0
+  );
   logger.info('Routing tag cache refreshed', {
     reason,
     tags: Object.keys(cache.tagSamples).length,
@@ -556,8 +764,29 @@ async function loadRoutingTagCache() {
     windowDays: record.sourceWindowDays,
     samplePerTag: record.samplePerTag,
     tagSamples,
-    tagSampleCounts
+    tagSampleCounts,
+    tagCentroids: {},
+    tagStats: {},
+    tagThresholds: {},
+    negativeCentroid: null,
+    negativeSampleCount: 0
   };
+
+  const negativeSamples = tagSamples[ROUTING_NEGATIVE_KEY] ?? [];
+  routingTagCache.negativeSampleCount = negativeSamples.length;
+  routingTagCache.negativeCentroid = negativeSamples.length
+    ? buildCentroid(negativeSamples, record.dimensions)
+    : null;
+
+  Object.entries(tagSamples).forEach(([tag, samples]) => {
+    if (tag === ROUTING_NEGATIVE_KEY) return;
+    if (!samples.length) return;
+    const centroid = buildCentroid(samples, record.dimensions);
+    const stats = computeTagStats(samples, centroid);
+    routingTagCache.tagCentroids[tag] = centroid;
+    routingTagCache.tagStats[tag] = stats;
+    routingTagCache.tagThresholds[tag] = resolveTagThresholds(tag, stats);
+  });
 
   return routingTagCache;
 }
@@ -586,6 +815,7 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
   }
 
   const embeddings = await ensureTweetEmbeddings(tweets.map((tweet) => ({ tweetId: tweet.tweetId, text: tweet.text })));
+  const tagList = Object.keys(cache.tagSamples).filter((tag) => tag !== ROUTING_NEGATIVE_KEY);
 
   const analyzeByTag = new Map<string, Tweet[]>();
   const ignored: Array<{ tweet: Tweet; reason: string }> = [];
@@ -614,20 +844,16 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
     let bestScore = -1;
     let secondScore = -1;
 
-    for (const tag of Object.keys(cache.tagSamples)) {
+    for (const tag of tagList) {
       const samples = cache.tagSamples[tag] ?? [];
       if (!samples.length) continue;
-      let max = -1;
-      for (const sample of samples) {
-        const score = dot(normalized, sample);
-        if (score > max) max = score;
-      }
-      if (max > bestScore) {
+      const score = topKMeanScore(normalized, samples, ROUTE_TAG_SCORE_TOP_K);
+      if (score > bestScore) {
         secondScore = bestScore;
-        bestScore = max;
+        bestScore = score;
         bestTag = tag;
-      } else if (max > secondScore) {
-        secondScore = max;
+      } else if (score > secondScore) {
+        secondScore = score;
       }
     }
 
@@ -638,24 +864,37 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
       return;
     }
 
-    if (bestScore <= ROUTE_CLASSIFY_LOW_SIM) {
-      ignored.push({ tweet, reason: 'embed-low' });
-      bumpReason('embed-low');
+    const thresholds = cache.tagThresholds[bestTag] ?? DEFAULT_TAG_THRESHOLDS;
+    const negativeScore = cache.negativeCentroid ? dot(normalized, cache.negativeCentroid) : undefined;
+    const negativeGap = negativeScore !== undefined ? bestScore - negativeScore : undefined;
+
+    const isLowScore = bestScore <= thresholds.lowSim;
+    const isNegativeLow = negativeGap !== undefined && negativeGap < thresholds.negGapLow;
+    if (isLowScore || isNegativeLow) {
+      const reason = isLowScore ? 'embed-low' : 'embed-negative';
+      ignored.push({ tweet, reason });
+      bumpReason(reason);
       const margin = secondScore >= 0 ? bestScore - secondScore : undefined;
       decisions.set(tweet.id, {
         status: 'ignored',
         tag: bestTag,
         score: bestScore,
         margin,
-        reason: 'embed-low'
+        negativeScore,
+        negativeGap,
+        reason
       });
       return;
     }
 
     const hasRunnerUp = secondScore >= 0;
     const margin = hasRunnerUp ? bestScore - secondScore : 0;
-    if (bestScore >= ROUTE_CLASSIFY_HIGH_SIM && margin >= ROUTE_CLASSIFY_HIGH_MARGIN) {
-      const importance = bestScore >= ROUTE_CLASSIFY_HIGH_STRICT ? 5 : 4;
+    if (
+      bestScore >= thresholds.highSim &&
+      margin >= thresholds.highMargin &&
+      (negativeGap === undefined || negativeGap >= thresholds.negGapHigh)
+    ) {
+      const importance = bestScore >= thresholds.highStrict ? 5 : 4;
       autoHigh.push({
         tweet,
         reason: 'embed-high',
@@ -669,6 +908,8 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
         tag: bestTag,
         score: bestScore,
         margin,
+        negativeScore,
+        negativeGap,
         reason: 'embed-high',
         importance
       });
@@ -682,6 +923,8 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
       tag: bestTag,
       score: bestScore,
       margin: hasRunnerUp ? margin : undefined,
+      negativeScore,
+      negativeGap,
       reason: 'embed-analyze'
     });
   });
