@@ -83,10 +83,11 @@ export async function handleClassifyTweetsDispatchJob(job: QueuedJob<'classify-t
     startedAt: new Date(startedAt).toISOString()
   });
   try {
-    const result = await dispatchLlmClassificationJobs({
-      tagMin: payload.tagMin,
-      source: payload.source ?? 'queue'
-    });
+    const options = { source: payload.source ?? 'queue' } as { source: string; tagMin?: number };
+    if (payload.tagMin !== undefined) {
+      options.tagMin = payload.tagMin;
+    }
+    const result = await dispatchLlmClassificationJobs(options);
     const completedAt = Date.now();
     logger.info('Classification dispatch completed', {
       trigger: payload.source ?? 'queue',

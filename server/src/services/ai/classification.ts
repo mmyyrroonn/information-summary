@@ -331,15 +331,14 @@ export async function dispatchLlmClassificationJobs(options?: DispatchOptions): 
       if (updated.count === 0) {
         continue;
       }
-      await enqueueJob(
-        'classify-tweets-llm',
-        {
-          tweetIds,
-          tag: tag ?? undefined,
-          source: options?.source ?? 'dispatch'
-        },
-        { dedupe: false }
-      );
+      const payload: { tweetIds: string[]; tag?: string; source?: string } = {
+        tweetIds,
+        source: options?.source ?? 'dispatch'
+      };
+      if (tag) {
+        payload.tag = tag;
+      }
+      await enqueueJob('classify-tweets-llm', payload, { dedupe: false });
       queuedJobs += 1;
       queuedTweets += tweetIds.length;
     }
@@ -444,36 +443,39 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
     const tweet = analyzeById.get(tweetId);
     if (!tweet) return;
     if (decision.status === 'ignored') {
-      routingRecords.push({
+      const record: RoutingRecord = {
         tweet,
         status: RoutingStatus.IGNORED,
         tag: decision.tag ?? null,
-        score: decision.score,
-        margin: decision.margin,
         reason: decision.reason
-      });
+      };
+      if (decision.score !== undefined) record.score = decision.score;
+      if (decision.margin !== undefined) record.margin = decision.margin;
+      routingRecords.push(record);
       return;
     }
     if (decision.status === 'auto-high') {
-      routingRecords.push({
+      const record: RoutingRecord = {
         tweet,
         status: RoutingStatus.AUTO_HIGH,
         tag: decision.tag ?? null,
-        score: decision.score,
-        margin: decision.margin,
-        reason: decision.reason,
-        importance: decision.importance
-      });
+        reason: decision.reason
+      };
+      if (decision.score !== undefined) record.score = decision.score;
+      if (decision.margin !== undefined) record.margin = decision.margin;
+      if (decision.importance !== undefined) record.importance = decision.importance;
+      routingRecords.push(record);
       return;
     }
-    routingRecords.push({
+    const record: RoutingRecord = {
       tweet,
       status: RoutingStatus.ROUTED,
       tag: decision.tag ?? null,
-      score: decision.score,
-      margin: decision.margin,
       reason: decision.reason
-    });
+    };
+    if (decision.score !== undefined) record.score = decision.score;
+    if (decision.margin !== undefined) record.margin = decision.margin;
+    routingRecords.push(record);
   });
   const analyzeGroups = Array.from(tagResult.analyzeByTag.entries());
   const analyzeTweets = analyzeGroups.reduce<Tweet[]>((acc, [, batch]) => {
@@ -553,7 +555,7 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
 }
 
 function buildLlmBatchesFromGroups(analyzeGroups: Array<[string, Tweet[]]>) {
-  const allowedTagSet = new Set(CLASSIFY_ALLOWED_TAGS);
+  const allowedTagSet = new Set<string>(CLASSIFY_ALLOWED_TAGS);
   const sortedGroups = analyzeGroups
     .map(([tag, group]) => ({
       tag: allowedTagSet.has(tag) ? tag : undefined,
@@ -561,7 +563,13 @@ function buildLlmBatchesFromGroups(analyzeGroups: Array<[string, Tweet[]]>) {
     }))
     .sort((a, b) => (a.tag ?? '').localeCompare(b.tag ?? ''));
   const tagBatches = sortedGroups.flatMap((group) =>
-    chunk(group.tweets, CLASSIFY_BATCH_SIZE).map((batch) => ({ tag: group.tag, tweets: batch }))
+    chunk(group.tweets, CLASSIFY_BATCH_SIZE).map((batch) => {
+      const item: LlmBatch = { tweets: batch };
+      if (group.tag) {
+        item.tag = group.tag;
+      }
+      return item;
+    })
   );
   const batches = CLASSIFY_MAX_BATCHES > 0 ? tagBatches.slice(0, CLASSIFY_MAX_BATCHES) : tagBatches;
   const targetTweets = batches.reduce<Tweet[]>((acc, batch) => {
@@ -574,9 +582,15 @@ function buildLlmBatchesFromGroups(analyzeGroups: Array<[string, Tweet[]]>) {
 function buildLlmBatchesForTag(tweets: Tweet[], tagHint?: string): LlmBatch[] {
   const normalizedHint =
     typeof tagHint === 'string' ? normalizeTagAlias(tagHint.trim().toLowerCase()) : '';
-  const allowedTagSet = new Set(CLASSIFY_ALLOWED_TAGS);
+  const allowedTagSet = new Set<string>(CLASSIFY_ALLOWED_TAGS);
   const tag = normalizedHint && allowedTagSet.has(normalizedHint) ? normalizedHint : undefined;
-  return chunk(tweets, CLASSIFY_BATCH_SIZE).map((batch) => ({ tag, tweets: batch }));
+  return chunk(tweets, CLASSIFY_BATCH_SIZE).map((batch) => {
+    const item: LlmBatch = { tweets: batch };
+    if (tag) {
+      item.tag = tag;
+    }
+    return item;
+  });
 }
 
 async function runTweetClassification(tweets: Tweet[], context: Record<string, unknown> = {}) {
@@ -815,8 +829,8 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
   const allowedTweetIds = batch.map((tweet) => tweet.tweetId);
   const normalizedHint =
     typeof tagHint === 'string' ? normalizeTagAlias(tagHint.trim().toLowerCase()) : '';
-  const hasHint =
-    normalizedHint && normalizedHint !== TAG_FALLBACK_KEY && CLASSIFY_ALLOWED_TAGS.includes(normalizedHint);
+  const allowedTags = CLASSIFY_ALLOWED_TAGS as readonly string[];
+  const hasHint = normalizedHint && normalizedHint !== TAG_FALLBACK_KEY && allowedTags.includes(normalizedHint);
   const tagProfileHints = hasHint ? buildTagPromptHints(normalizedHint) : [];
   const outputSchema =
     '{"items":[{"tweetId":"id","verdict":"ignore|watch","summary":"<=50字","importance":1-5,"tags":["tag"]}]}';
@@ -945,7 +959,7 @@ function normalizeTags(tags: string[] | undefined) {
   if (!Array.isArray(tags)) {
     return [];
   }
-  const allowed = new Set(CLASSIFY_ALLOWED_TAGS);
+  const allowed = new Set<string>(CLASSIFY_ALLOWED_TAGS);
   const cleaned = tags
     .map((tag) => (typeof tag === 'string' ? normalizeTagAlias(tag.trim().toLowerCase()) : ''))
     .filter((tag) => Boolean(tag))

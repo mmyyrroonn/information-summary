@@ -462,7 +462,8 @@ function resolveTagCandidates(tag: string) {
 async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promise<TagSample[]> {
   const since = new Date(Date.now() - params.windowDays * 24 * 60 * 60 * 1000);
   const tagCandidates = resolveTagCandidates(tag);
-  const primary = await prisma.tweetInsight.findMany({
+  type TagSampleRecord = { tweetId: string; tweet: { text: string } };
+  const primary = (await prisma.tweetInsight.findMany({
     where: {
       createdAt: { gte: since },
       importance: { gte: HIGH_PRIORITY_IMPORTANCE },
@@ -475,7 +476,7 @@ async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promis
     },
     orderBy: { createdAt: 'desc' },
     take: params.samplePerTag
-  });
+  })) as TagSampleRecord[];
 
   if (primary.length >= ROUTE_EMBEDDING_MIN_PRIMARY_SAMPLE) {
     return primary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
@@ -486,21 +487,26 @@ async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promis
     return primary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
   }
 
-  const supplemental = await prisma.tweetInsight.findMany({
-    where: {
-      createdAt: { gte: since },
-      importance: 3,
-      verdict: { not: 'ignore' },
-      tags: { hasSome: tagCandidates },
-      tweetId: primary.length ? { notIn: primary.map((item) => item.tweetId) } : undefined
-    },
+  const supplemental = (await prisma.tweetInsight.findMany({
+    where: (() => {
+      const where: Prisma.TweetInsightWhereInput = {
+        createdAt: { gte: since },
+        importance: 3,
+        verdict: { not: 'ignore' },
+        tags: { hasSome: tagCandidates }
+      };
+      if (primary.length) {
+        where.tweetId = { notIn: primary.map((item) => item.tweetId) };
+      }
+      return where;
+    })(),
     select: {
       tweetId: true,
       tweet: { select: { text: true } }
     },
     orderBy: { createdAt: 'desc' },
     take: supplementalLimit
-  });
+  })) as TagSampleRecord[];
 
   return [...primary, ...supplemental].map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
 }
@@ -633,7 +639,7 @@ async function persistRoutingTagCache(data: {
     }
   });
 
-  routingTagCache = {
+  const cache: TagCacheRecord = {
     updatedAtMs: record.updatedAt.getTime(),
     model: record.model,
     dimensions: record.dimensions,
@@ -647,10 +653,11 @@ async function persistRoutingTagCache(data: {
     negativeCentroid: null,
     negativeSampleCount: 0
   };
+  routingTagCache = cache;
 
   const negativeSamples = data.tagSamples[ROUTING_NEGATIVE_KEY] ?? [];
-  routingTagCache.negativeSampleCount = negativeSamples.length;
-  routingTagCache.negativeCentroid = negativeSamples.length
+  cache.negativeSampleCount = negativeSamples.length;
+  cache.negativeCentroid = negativeSamples.length
     ? buildCentroid(negativeSamples, record.dimensions)
     : null;
 
@@ -659,12 +666,12 @@ async function persistRoutingTagCache(data: {
     if (!samples.length) return;
     const centroid = buildCentroid(samples, record.dimensions);
     const stats = computeTagStats(samples, centroid);
-    routingTagCache!.tagCentroids[tag] = centroid;
-    routingTagCache!.tagStats[tag] = stats;
-    routingTagCache!.tagThresholds[tag] = resolveTagThresholds(tag, stats);
+    cache.tagCentroids[tag] = centroid;
+    cache.tagStats[tag] = stats;
+    cache.tagThresholds[tag] = resolveTagThresholds(tag, stats);
   });
 
-  return routingTagCache;
+  return cache;
 }
 
 export async function refreshRoutingEmbeddingCache(reason = 'manual', options?: RoutingRefreshOptions) {
@@ -757,7 +764,7 @@ async function loadRoutingTagCache() {
     return persistRoutingTagCache(data);
   }
 
-  routingTagCache = {
+  const cache: TagCacheRecord = {
     updatedAtMs,
     model: record.model,
     dimensions: record.dimensions,
@@ -771,10 +778,11 @@ async function loadRoutingTagCache() {
     negativeCentroid: null,
     negativeSampleCount: 0
   };
+  routingTagCache = cache;
 
   const negativeSamples = tagSamples[ROUTING_NEGATIVE_KEY] ?? [];
-  routingTagCache.negativeSampleCount = negativeSamples.length;
-  routingTagCache.negativeCentroid = negativeSamples.length
+  cache.negativeSampleCount = negativeSamples.length;
+  cache.negativeCentroid = negativeSamples.length
     ? buildCentroid(negativeSamples, record.dimensions)
     : null;
 
@@ -783,12 +791,12 @@ async function loadRoutingTagCache() {
     if (!samples.length) return;
     const centroid = buildCentroid(samples, record.dimensions);
     const stats = computeTagStats(samples, centroid);
-    routingTagCache.tagCentroids[tag] = centroid;
-    routingTagCache.tagStats[tag] = stats;
-    routingTagCache.tagThresholds[tag] = resolveTagThresholds(tag, stats);
+    cache.tagCentroids[tag] = centroid;
+    cache.tagStats[tag] = stats;
+    cache.tagThresholds[tag] = resolveTagThresholds(tag, stats);
   });
 
-  return routingTagCache;
+  return cache;
 }
 
 export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult> {
@@ -875,15 +883,11 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
       ignored.push({ tweet, reason });
       bumpReason(reason);
       const margin = secondScore >= 0 ? bestScore - secondScore : undefined;
-      decisions.set(tweet.id, {
-        status: 'ignored',
-        tag: bestTag,
-        score: bestScore,
-        margin,
-        negativeScore,
-        negativeGap,
-        reason
-      });
+      const decision: TagRoutingDecision = { status: 'ignored', tag: bestTag, score: bestScore, reason };
+      if (margin !== undefined) decision.margin = margin;
+      if (negativeScore !== undefined) decision.negativeScore = negativeScore;
+      if (negativeGap !== undefined) decision.negativeGap = negativeGap;
+      decisions.set(tweet.id, decision);
       return;
     }
 
@@ -903,30 +907,27 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
         importance
       });
       bumpReason(importance === 5 ? 'embed-high-5' : 'embed-high-4');
-      decisions.set(tweet.id, {
+      const decision: TagRoutingDecision = {
         status: 'auto-high',
         tag: bestTag,
         score: bestScore,
         margin,
-        negativeScore,
-        negativeGap,
         reason: 'embed-high',
         importance
-      });
+      };
+      if (negativeScore !== undefined) decision.negativeScore = negativeScore;
+      if (negativeGap !== undefined) decision.negativeGap = negativeGap;
+      decisions.set(tweet.id, decision);
       return;
     }
 
     addAnalyze(bestTag, tweet);
     bumpReason('embed-analyze');
-    decisions.set(tweet.id, {
-      status: 'analyze',
-      tag: bestTag,
-      score: bestScore,
-      margin: hasRunnerUp ? margin : undefined,
-      negativeScore,
-      negativeGap,
-      reason: 'embed-analyze'
-    });
+    const decision: TagRoutingDecision = { status: 'analyze', tag: bestTag, score: bestScore, reason: 'embed-analyze' };
+    if (hasRunnerUp) decision.margin = margin;
+    if (negativeScore !== undefined) decision.negativeScore = negativeScore;
+    if (negativeGap !== undefined) decision.negativeGap = negativeGap;
+    decisions.set(tweet.id, decision);
   });
 
   return { analyzeByTag, ignored, autoHigh, decisions, reasonCounts };
