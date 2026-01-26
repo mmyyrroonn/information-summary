@@ -13,9 +13,9 @@ import type {
 const typeOptions = [
   { value: '', label: '全部类型' },
   { value: 'fetch-subscriptions', label: '抓取推文' },
-  { value: 'classify-tweets', label: 'AI 分类' },
-  { value: 'classify-tweets-dispatch', label: 'AI 分发' },
-  { value: 'classify-tweets-llm', label: 'AI 分类 (LLM)' },
+  { value: 'classify-tweets', label: '规则筛选' },
+  { value: 'classify-tweets-dispatch', label: '特征提取分类' },
+  { value: 'classify-tweets-llm', label: 'LLM 评估' },
   { value: 'embedding-cache-refresh', label: 'Embedding 缓存刷新' },
   { value: 'embedding-cache-refresh-tag', label: 'Embedding 缓存刷新 (单类)' },
   { value: 'report-profile', label: 'Profile 日报' }
@@ -1184,11 +1184,11 @@ function renderType(type: string) {
     case 'fetch-subscriptions':
       return '抓取推文';
     case 'classify-tweets':
-      return 'AI 分类';
+      return '规则筛选';
     case 'classify-tweets-dispatch':
-      return 'AI 分发';
+      return '特征提取分类';
     case 'classify-tweets-llm':
-      return 'AI 分类 (LLM)';
+      return 'LLM 评估';
     case 'report-profile':
       return 'Profile 日报';
     default:
