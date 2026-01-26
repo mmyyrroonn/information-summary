@@ -2,11 +2,11 @@ import type { Report } from '@prisma/client';
 import { logger } from '../logger';
 import { config } from '../config';
 import { fetchAllSubscriptions } from '../services/ingestService';
-import { classifyTweets, generateReportForProfile, sendReportAndNotify } from '../services/aiService';
+import { classifyTweets, classifyTweetsByIdsWithTag, generateReportForProfile, sendReportAndNotify } from '../services/aiService';
 import { publishReportToGithub } from '../services/githubPublishService';
 import { getOrCreateDefaultReportProfile, getReportProfile } from '../services/reportProfileService';
 import { withAiProcessingLock } from '../services/lockService';
-import { JobPayloadMap, QueuedJob } from './jobQueue';
+import { enqueueJob, JobPayloadMap, QueuedJob } from './jobQueue';
 
 export async function handleFetchSubscriptionsJob(job: QueuedJob<'fetch-subscriptions'>) {
   const payload = (job.payload ?? {}) as JobPayloadMap['fetch-subscriptions'];
@@ -45,15 +45,61 @@ export async function handleClassifyTweetsJob(job: QueuedJob<'classify-tweets'>)
   });
   try {
     const result = await classifyTweets({ lockHolderId: `job:${job.id}` });
+    const enqueueResults = await Promise.all(
+      result.llmPlans.map((plan) =>
+        enqueueJob(
+          'classify-tweets-llm',
+          {
+            tweetIds: plan.tweetIds,
+            tag: plan.tag,
+            source: payload.source ?? 'queue'
+          },
+          { dedupe: false }
+        )
+      )
+    );
+    const enqueuedJobs = enqueueResults.filter((entry) => entry.created).length;
     const completedAt = Date.now();
     logger.info('Classification completed', {
       trigger: payload.source ?? 'queue',
       completedAt: new Date(completedAt).toISOString(),
       durationMs: completedAt - startedAt,
-      ...result
+      pending: result.pending,
+      limited: result.limited,
+      autoInsights: result.autoInsights,
+      queuedTweets: result.queuedTweets,
+      queuedJobs: result.llmPlans.length,
+      enqueuedJobs
     });
   } catch (error) {
     logger.error('Classification job failed', error);
+    throw error;
+  }
+}
+
+export async function handleClassifyTweetsLlmJob(job: QueuedJob<'classify-tweets-llm'>) {
+  const payload = (job.payload ?? {}) as JobPayloadMap['classify-tweets-llm'];
+  const startedAt = Date.now();
+  logger.info('Starting LLM classification job', {
+    trigger: payload.source ?? 'queue',
+    batchSize: payload.tweetIds?.length ?? 0,
+    tag: payload.tag ?? null,
+    startedAt: new Date(startedAt).toISOString()
+  });
+  try {
+    const result = await classifyTweetsByIdsWithTag(payload.tweetIds ?? [], payload.tag, {
+      lockHolderId: `job:${job.id}`
+    });
+    const completedAt = Date.now();
+    logger.info('LLM classification completed', {
+      trigger: payload.source ?? 'queue',
+      completedAt: new Date(completedAt).toISOString(),
+      durationMs: completedAt - startedAt,
+      tag: payload.tag ?? null,
+      ...result
+    });
+  } catch (error) {
+    logger.error('LLM classification job failed', error);
     throw error;
   }
 }
@@ -216,6 +262,9 @@ export async function handleJob(job: QueuedJob) {
       break;
     case 'classify-tweets':
       await handleClassifyTweetsJob(job as QueuedJob<'classify-tweets'>);
+      break;
+    case 'classify-tweets-llm':
+      await handleClassifyTweetsLlmJob(job as QueuedJob<'classify-tweets-llm'>);
       break;
     case 'report-pipeline':
       await handleReportPipelineJob(job as QueuedJob<'report-pipeline'>);

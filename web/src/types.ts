@@ -26,7 +26,7 @@ export interface ClassificationJobResponse {
   job?: BackgroundJobSummary;
   created?: boolean;
   skipped?: boolean;
-  reason?: 'none-pending' | 'below-threshold';
+  reason?: 'none-pending' | 'below-threshold' | 'llm-inflight';
   pending: number;
   threshold?: number;
 }
@@ -35,10 +35,9 @@ export interface RoutingEmbeddingRefreshResult {
   updated: boolean;
   reason?: 'embeddings-disabled' | 'insufficient-samples';
   windowDays: number;
-  positiveSample: number;
-  negativeSample: number;
-  positives?: number;
-  negatives?: number;
+  samplePerTag: number;
+  totalSamples?: number;
+  tagSampleCounts?: Record<string, number>;
   model?: string;
   dimensions?: number;
   updatedAt?: string;

@@ -1,5 +1,30 @@
 export const TAG_FALLBACK_KEY = 'other';
 
+export const CLASSIFY_ALLOWED_TAGS = [
+  'macro',
+  'policy',
+  'security',
+  'funding',
+  'yield',
+  'token',
+  'airdrop',
+  'trading',
+  'onchain',
+  'tech',
+  'exchange',
+  'narrative',
+  TAG_FALLBACK_KEY
+] as const;
+
+const TAG_ALIASES: Record<string, string> = {
+  market: 'macro',
+  others: TAG_FALLBACK_KEY
+};
+
+export function normalizeTagAlias(tag: string) {
+  return TAG_ALIASES[tag] ?? tag;
+}
+
 export const TAG_DISPLAY_NAMES: Record<string, string> = {
   policy: '政策 / 合规',
   macro: '宏观 / 行情',
@@ -30,7 +55,13 @@ export function truncateText(text: string, maxLength = 160) {
   if (compact.length <= maxLength) {
     return compact;
   }
-  return `${compact.slice(0, maxLength - 1)}…`;
+  // Truncate by code points to avoid splitting surrogate pairs.
+  const chars = Array.from(compact);
+  if (chars.length <= maxLength) {
+    return compact;
+  }
+  const sliceLength = Math.max(0, maxLength - 1);
+  return `${chars.slice(0, sliceLength).join('')}…`;
 }
 
 export function delay(ms: number) {

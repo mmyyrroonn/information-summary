@@ -8,7 +8,9 @@ import { getOrCreateDefaultReportProfile } from '../services/reportProfileServic
 import { refreshRoutingEmbeddingCache } from '../services/aiService';
 
 const router = Router();
-const jobTypeSchema = z.enum(['fetch-subscriptions', 'classify-tweets', 'report-pipeline', 'report-profile'] as const);
+const jobTypeSchema = z.enum(
+  ['fetch-subscriptions', 'classify-tweets', 'classify-tweets-llm', 'report-pipeline', 'report-profile'] as const
+);
 
 router.post('/fetch', async (req, res, next) => {
   try {
@@ -140,19 +142,15 @@ router.post('/embedding-cache/refresh', async (_req, res, next) => {
     const body = z
       .object({
         windowDays: z.coerce.number().int().positive().optional(),
-        positiveSample: z.coerce.number().int().positive().optional(),
-        negativeSample: z.coerce.number().int().positive().optional()
+        samplePerTag: z.coerce.number().int().positive().optional()
       })
       .parse(_req.body ?? {});
-    const options: { windowDays?: number; positiveSample?: number; negativeSample?: number } = {};
+    const options: { windowDays?: number; samplePerTag?: number } = {};
     if (typeof body.windowDays === 'number') {
       options.windowDays = body.windowDays;
     }
-    if (typeof body.positiveSample === 'number') {
-      options.positiveSample = body.positiveSample;
-    }
-    if (typeof body.negativeSample === 'number') {
-      options.negativeSample = body.negativeSample;
+    if (typeof body.samplePerTag === 'number') {
+      options.samplePerTag = body.samplePerTag;
     }
     const result = await refreshRoutingEmbeddingCache('manual', options);
     res.status(result.updated ? 200 : 202).json(result);

@@ -7,38 +7,92 @@ import { chunk } from '../../utils/chunk';
 import { withAiProcessingLock } from '../lockService';
 import { TweetBatchFailedError, TweetBatchFailureMeta, TweetBatchFailureReason } from '../../errors';
 import { runStructuredCompletion } from './openaiClient';
-import { applyEmbeddingRouting, applyRuleBasedRouting } from './routing';
+import { applyRuleBasedRouting, applyTagRouting } from './routing';
 import {
+  CLASSIFY_ALLOWED_TAGS,
   TAG_FALLBACK_KEY,
   delay,
   getErrorMessage,
   isContentRiskMessage,
+  normalizeTagAlias,
   runWithConcurrency,
   truncateText
 } from './shared';
 
-const CLASSIFY_ALLOWED_TAGS = [
-  'macro',
-  'policy',
-  'security',
-  'funding',
-  'yield',
-  'token',
-  'airdrop',
-  'trading',
-  'onchain',
-  'tech',
-  'exchange',
-  'narrative',
-  'other'
-];
-
 const CLASSIFY_BATCH_SIZE = 10;
 const CLASSIFY_MAX_BATCHES = 100;
 const CLASSIFY_MAX_TWEETS = 1000;
+const CLASSIFY_LLM_JOB_SIZE = 50;
 const CLASSIFY_CONCURRENCY = Math.max(1, config.CLASSIFY_CONCURRENCY ?? 4);
 const CLASSIFY_MAX_RETRIES = 3;
 const CLASSIFY_RETRY_DELAY_MS = 1500;
+const TAG_ROUTING_HINTS: Record<string, string> = {
+  policy: '聚焦监管/合规/政策落地与影响范围，必须提取关键政策条款/时间点。',
+  macro: '聚焦宏观数据/利率/流动性/宏观事件，必须带数字和时间。',
+  security: '聚焦漏洞/攻击/被盗/修复/暂停等安全事件，提取损失规模/影响范围。',
+  funding: '聚焦融资/并购/回购/解锁/销毁等资金事件，提取金额/轮次/估值。',
+  yield: '聚焦收益率/APY/APR/借贷利率/期限/门槛/池子信息。',
+  token: '聚焦代币供给/流通/解锁/回购/销毁等变化，提取关键数字。',
+  airdrop: '聚焦空投规则/门槛/时间/分配比例，信息不清则降档。',
+  trading: '聚焦交易机会/价位/催化与风险，若 actionable 必须给 entry/stop/target。',
+  onchain: '聚焦链上数据/资金流/TVL/地址/txhash，提取数值与证据。',
+  tech: '聚焦主网/升级/硬分叉/性能指标/版本/兼容性。',
+  exchange: '聚焦交易所公告/上新/下线/监管合规与用户影响。',
+  narrative: '聚焦叙事/主题/赛道催化，必须有新进展或数据支撑。'
+};
+const TAG_PROMPT_PROFILES: Record<
+  string,
+  { focus: string; mustInclude: string[]; avoid?: string[] }
+> = {
+  policy: {
+    focus: '政策/合规/监管事件必须写清监管机构、条款要点、生效时间与影响对象。',
+    mustInclude: ['机构/文件名', '生效时间或窗口', '影响对象/范围']
+  },
+  macro: {
+    focus: '宏观/行情必须给出数据值、时间点与预期方向。',
+    mustInclude: ['数据或指标值', '时间/周期', '影响方向']
+  },
+  security: {
+    focus: '安全事件需包含漏洞类型、影响范围、损失/风险与处置状态。',
+    mustInclude: ['漏洞/攻击类型', '影响范围/资产', '处置状态或风险提示']
+  },
+  funding: {
+    focus: '融资/并购/回购需包含金额、轮次/估值、参与方与用途。',
+    mustInclude: ['金额/估值', '轮次或交易结构', '参与方/投资方']
+  },
+  yield: {
+    focus: '收益类必须给出 APY/APR/费率、期限/门槛、池子/链与获取路径。',
+    mustInclude: ['收益数字', '期限/门槛', '池子/链/项目']
+  },
+  token: {
+    focus: '代币供给/流通/解锁/回购/销毁需要数量、时间与影响逻辑。',
+    mustInclude: ['数量/比例', '时间/解锁窗口', '影响逻辑']
+  },
+  airdrop: {
+    focus: '空投必须给出门槛、时间窗口与分配规则。',
+    mustInclude: ['门槛/条件', '时间窗口', '分配规则']
+  },
+  trading: {
+    focus: '交易机会需包含催化、关键价位与风险控制。',
+    mustInclude: ['催化/触发', 'entry/stop/target', '风险点']
+  },
+  onchain: {
+    focus: '链上数据需要地址/链/txhash/资金流向与关键数字。',
+    mustInclude: ['链/地址/txhash', '资金流向', '关键数字']
+  },
+  tech: {
+    focus: '技术升级需写明版本、内容、时间与兼容/影响。',
+    mustInclude: ['版本/升级点', '时间', '影响/兼容性']
+  },
+  exchange: {
+    focus: '交易所公告需写明平台、动作类型、时间与用户影响。',
+    mustInclude: ['平台名称', '上新/下线/规则', '时间/用户影响']
+  },
+  narrative: {
+    focus: '叙事/赛道需包含新进展与数据或事件支撑。',
+    mustInclude: ['新进展', '数据/事件支撑']
+  }
+};
 
 interface TweetInsightPayload {
   tweetId: string;
@@ -53,6 +107,24 @@ interface ClassificationOptions {
   lockHolderId?: string;
 }
 
+interface LlmBatch {
+  tag?: string;
+  tweets: Tweet[];
+}
+
+interface LlmJobPlan {
+  tag?: string;
+  tweetIds: string[];
+}
+
+interface ClassificationPlan {
+  pending: number;
+  limited: boolean;
+  autoInsights: number;
+  queuedTweets: number;
+  llmPlans: LlmJobPlan[];
+}
+
 const CLASSIFY_ALLOWED_VERDICTS = ['ignore', 'watch', 'actionable'] as const;
 
 export async function countPendingTweets() {
@@ -64,7 +136,7 @@ export async function countPendingTweets() {
   });
 }
 
-export async function classifyTweets(options?: ClassificationOptions) {
+export async function classifyTweets(options?: ClassificationOptions): Promise<ClassificationPlan> {
   return withAiProcessingLock(options?.lockHolderId ?? `classify:${randomUUID()}`, async () => {
     const tweets = await prisma.tweet.findMany({
       where: {
@@ -78,10 +150,34 @@ export async function classifyTweets(options?: ClassificationOptions) {
 
     if (!tweets.length) {
       logger.info('No pending tweets found, skipping classification run');
-      return { processed: 0, insights: 0 };
+      return {
+        pending: 0,
+        limited: false,
+        autoInsights: 0,
+        queuedTweets: 0,
+        llmPlans: []
+      };
     }
 
-    return runTweetClassification(tweets, { mode: 'pending' });
+    const routing = await routeTweetsForClassification(tweets, { mode: 'pending' });
+    const llmPlans = buildLlmJobPlans(routing.batches);
+    const queuedTweets = llmPlans.reduce((sum, plan) => sum + plan.tweetIds.length, 0);
+
+    logger.info('Classification routing completed', {
+      pending: tweets.length,
+      limited: routing.limited,
+      autoInsights: routing.autoInsights,
+      queuedTweets,
+      queuedJobs: llmPlans.length
+    });
+
+    return {
+      pending: tweets.length,
+      limited: routing.limited,
+      autoInsights: routing.autoInsights,
+      queuedTweets,
+      llmPlans
+    };
   });
 }
 
@@ -114,6 +210,41 @@ export async function classifyTweetsByIds(tweetIds: string[], options?: Classifi
   });
 }
 
+export async function classifyTweetsByIdsWithTag(
+  tweetIds: string[],
+  tagHint?: string,
+  options?: ClassificationOptions
+) {
+  if (!tweetIds.length) {
+    return { processed: 0, insights: 0 };
+  }
+
+  return withAiProcessingLock(options?.lockHolderId ?? `llm:${randomUUID()}`, async () => {
+    const tweets = await prisma.tweet.findMany({
+      where: {
+        id: { in: tweetIds },
+        insights: null,
+        abandonedAt: null
+      },
+      orderBy: { tweetedAt: 'desc' }
+    });
+
+    logger.info('Loaded tagged tweets for LLM classification', {
+      requested: tweetIds.length,
+      pending: tweets.length,
+      tag: tagHint ?? null
+    });
+
+    if (!tweets.length) {
+      logger.info('No eligible tweets found for tagged LLM classification');
+      return { processed: 0, insights: 0 };
+    }
+
+    const batches = buildLlmBatchesForTag(tweets, tagHint);
+    return runLlmClassificationBatches(batches, { mode: 'llm-tag', tag: tagHint ?? null }, { autoInsights: 0 });
+  });
+}
+
 async function abandonTweetBatch(
   tweets: Tweet[],
   reason: TweetBatchFailureReason,
@@ -141,34 +272,51 @@ async function abandonTweetBatch(
   });
 }
 
-async function runTweetClassification(tweets: Tweet[], context: Record<string, unknown> = {}) {
+type RoutingOutcome = {
+  batches: LlmBatch[];
+  autoInsights: number;
+  limited: boolean;
+  autoHigh: number;
+};
+
+async function routeTweetsForClassification(tweets: Tweet[], context: Record<string, unknown> = {}): Promise<RoutingOutcome> {
   const limitedTweets = tweets.slice(0, CLASSIFY_MAX_TWEETS);
   const ruleResult = applyRuleBasedRouting(limitedTweets);
-  const embeddingResult = await applyEmbeddingRouting(ruleResult.analyze);
-  const ignoredCombined = [...ruleResult.ignored, ...embeddingResult.ignored];
+  const tagResult = await applyTagRouting(ruleResult.analyze);
+  const ignoredCombined = [...ruleResult.ignored, ...tagResult.ignored];
+  const autoHigh = tagResult.autoHigh;
   const mergedReasons = new Map<string, number>();
   for (const [key, value] of ruleResult.reasonCounts.entries()) {
     mergedReasons.set(key, (mergedReasons.get(key) ?? 0) + value);
   }
-  for (const [key, value] of embeddingResult.reasonCounts.entries()) {
+  for (const [key, value] of tagResult.reasonCounts.entries()) {
     mergedReasons.set(key, (mergedReasons.get(key) ?? 0) + value);
   }
+  const analyzeGroups = Array.from(tagResult.analyzeByTag.entries());
+  const analyzeTweets = analyzeGroups.reduce<Tweet[]>((acc, [, batch]) => {
+    acc.push(...batch);
+    return acc;
+  }, []);
   const reasonCounts = Object.fromEntries(mergedReasons);
+  const { batches, targetTweets } = buildLlmBatchesFromGroups(analyzeGroups);
   logger.info('Routing applied before AI', {
     pending: tweets.length,
     limited: tweets.length > limitedTweets.length,
     ruleAnalyze: ruleResult.analyze.length,
     ruleIgnored: ruleResult.ignored.length,
-    embedAnalyze: embeddingResult.analyze.length,
-    embedIgnored: embeddingResult.ignored.length,
+    routeAnalyze: analyzeTweets.length,
+    routeIgnored: tagResult.ignored.length,
+    routeAutoHigh: autoHigh.length,
+    llmQueued: targetTweets.length,
     reasons: reasonCounts,
     ...context
   });
 
   let autoInsights = 0;
-  if (ignoredCombined.length) {
+  if (ignoredCombined.length || autoHigh.length) {
     const now = new Date();
     const ignoredIds = ignoredCombined.map((entry) => entry.tweet.id);
+    const highIds = autoHigh.map((entry) => entry.tweet.id);
     await prisma.$transaction([
       ...ignoredCombined.map((entry) =>
         prisma.tweetInsight.upsert({
@@ -189,43 +337,143 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
           }
         })
       ),
+      ...autoHigh.map((entry) =>
+        prisma.tweetInsight.upsert({
+          where: { tweetId: entry.tweet.tweetId },
+          update: {
+            verdict: 'watch',
+            summary: truncateText(entry.tweet.text, 120),
+            importance: entry.importance,
+            tags: [entry.tag],
+            suggestions: null
+          },
+          create: {
+            tweetId: entry.tweet.tweetId,
+            verdict: 'watch',
+            summary: truncateText(entry.tweet.text, 120),
+            importance: entry.importance,
+            tags: [entry.tag]
+          }
+        })
+      ),
       prisma.tweet.updateMany({
-        where: { id: { in: ignoredIds } },
+        where: { id: { in: [...ignoredIds, ...highIds] } },
         data: { processedAt: now }
       })
     ]);
-    autoInsights = ignoredCombined.length;
+    autoInsights = ignoredCombined.length + autoHigh.length;
   }
 
-  if (!embeddingResult.analyze.length) {
+  return {
+    batches,
+    autoInsights,
+    limited: tweets.length > limitedTweets.length,
+    autoHigh: autoHigh.length
+  };
+}
+
+function buildLlmBatchesFromGroups(analyzeGroups: Array<[string, Tweet[]]>) {
+  const allowedTagSet = new Set(CLASSIFY_ALLOWED_TAGS);
+  const sortedGroups = analyzeGroups
+    .map(([tag, group]) => ({
+      tag: allowedTagSet.has(tag) ? tag : undefined,
+      tweets: group
+    }))
+    .sort((a, b) => (a.tag ?? '').localeCompare(b.tag ?? ''));
+  const tagBatches = sortedGroups.flatMap((group) =>
+    chunk(group.tweets, CLASSIFY_BATCH_SIZE).map((batch) => ({ tag: group.tag, tweets: batch }))
+  );
+  const batches = CLASSIFY_MAX_BATCHES > 0 ? tagBatches.slice(0, CLASSIFY_MAX_BATCHES) : tagBatches;
+  const targetTweets = batches.reduce<Tweet[]>((acc, batch) => {
+    acc.push(...batch.tweets);
+    return acc;
+  }, []);
+  return { batches, targetTweets };
+}
+
+function buildLlmBatchesForTag(tweets: Tweet[], tagHint?: string): LlmBatch[] {
+  const normalizedHint =
+    typeof tagHint === 'string' ? normalizeTagAlias(tagHint.trim().toLowerCase()) : '';
+  const allowedTagSet = new Set(CLASSIFY_ALLOWED_TAGS);
+  const tag = normalizedHint && allowedTagSet.has(normalizedHint) ? normalizedHint : undefined;
+  return chunk(tweets, CLASSIFY_BATCH_SIZE).map((batch) => ({ tag, tweets: batch }));
+}
+
+function buildLlmJobPlans(batches: LlmBatch[]): LlmJobPlan[] {
+  if (!batches.length) return [];
+  const orderedTags: Array<string | undefined> = [];
+  const grouped = new Map<string, Tweet[]>();
+  batches.forEach((batch) => {
+    const key = batch.tag ?? '';
+    if (!grouped.has(key)) {
+      orderedTags.push(batch.tag);
+      grouped.set(key, []);
+    }
+    grouped.get(key)?.push(...batch.tweets);
+  });
+  const plans: LlmJobPlan[] = [];
+  orderedTags.forEach((tag) => {
+    const key = tag ?? '';
+    const tweets = grouped.get(key) ?? [];
+    if (!tweets.length) return;
+    chunk(tweets, CLASSIFY_LLM_JOB_SIZE).forEach((batch) => {
+      plans.push({
+        tag,
+        tweetIds: batch.map((tweet) => tweet.id)
+      });
+    });
+  });
+  return plans;
+}
+
+async function runTweetClassification(tweets: Tweet[], context: Record<string, unknown> = {}) {
+  const routing = await routeTweetsForClassification(tweets, context);
+  if (!routing.batches.length) {
     logger.info('All tweets filtered by routing', {
-      processed: limitedTweets.length,
-      insights: autoInsights,
+      processed: routing.autoInsights,
+      insights: routing.autoInsights,
       ...context
     });
-    return { processed: limitedTweets.length, insights: autoInsights };
+    return { processed: routing.autoInsights, insights: routing.autoInsights };
   }
 
+  return runLlmClassificationBatches(
+    routing.batches,
+    {
+      pending: tweets.length,
+      limited: routing.limited,
+      autoHigh: routing.autoHigh,
+      ...context
+    },
+    { autoInsights: routing.autoInsights }
+  );
+}
+
+async function runLlmClassificationBatches(
+  batches: LlmBatch[],
+  context: Record<string, unknown> = {},
+  options?: { autoInsights?: number }
+) {
+  const autoInsights = options?.autoInsights ?? 0;
+  if (!batches.length) {
+    return { processed: autoInsights, insights: autoInsights };
+  }
+
+  const targetTweets = batches.reduce<Tweet[]>((acc, batch) => {
+    acc.push(...batch.tweets);
+    return acc;
+  }, []);
+  const tweetMap = new Map(targetTweets.map((tweet) => [tweet.tweetId, tweet]));
   const aiRun = await prisma.aiRun.create({
     data: { kind: AiRunKind.TWEET_CLASSIFY, status: AiRunStatus.RUNNING }
   });
 
   try {
-    const chunkedTweets = chunk(embeddingResult.analyze, CLASSIFY_BATCH_SIZE);
-    const batches =
-      CLASSIFY_MAX_BATCHES > 0 ? chunkedTweets.slice(0, CLASSIFY_MAX_BATCHES) : chunkedTweets;
-    const targetTweets = batches.reduce<Tweet[]>((acc, batch) => {
-      acc.push(...batch);
-      return acc;
-    }, []);
-    const tweetMap = new Map(targetTweets.map((tweet) => [tweet.tweetId, tweet]));
     let totalInsights = autoInsights;
     logger.info('Tweet classification run started', {
       aiRunId: aiRun.id,
       batches: batches.length,
       processing: targetTweets.length,
-      pending: tweets.length,
-      limited: tweets.length > limitedTweets.length,
       autoIgnored: autoInsights,
       ...context
     });
@@ -234,15 +482,17 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
       logger.info('Submitting batch for AI classification', {
         aiRunId: aiRun.id,
         batchIndex: batchIndex + 1,
-        batchSize: batch.length
+        batchSize: batch.tweets.length,
+        tag: batch.tag ?? null
       });
       let batchInsights: TweetInsightPayload[] = [];
       try {
-        batchInsights = await runTweetBatchWithRetry(batch, batchIndex);
+        batchInsights = await runTweetBatchWithRetry(batch.tweets, batchIndex, batch.tag);
         logger.info('AI classification batch completed', {
           aiRunId: aiRun.id,
           batchIndex: batchIndex + 1,
-          insights: batchInsights.length
+          insights: batchInsights.length,
+          tag: batch.tag ?? null
         });
       } catch (error) {
         if (error instanceof TweetBatchFailedError) {
@@ -251,9 +501,10 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
             batchIndex: batchIndex + 1,
             reason: error.reason,
             attempts: error.attempts,
-            lastError: error.lastErrorMessage
+            lastError: error.lastErrorMessage,
+            tag: batch.tag ?? null
           });
-          await abandonTweetBatch(batch, error.reason, {
+          await abandonTweetBatch(batch.tweets, error.reason, {
             aiRunId: aiRun.id,
             batchIndex: batchIndex + 1
           });
@@ -320,8 +571,8 @@ async function runTweetClassification(tweets: Tweet[], context: Record<string, u
   }
 }
 
-async function runTweetBatch(batch: Tweet[]): Promise<TweetInsightPayload[]> {
-  const prompt = buildBatchPrompt(batch);
+async function runTweetBatch(batch: Tweet[], tag?: string): Promise<TweetInsightPayload[]> {
+  const prompt = buildBatchPrompt(batch, tag);
   const parsed = await runStructuredCompletion<{ items?: TweetInsightPayload[] }>(
     {
       model: 'deepseek-chat',
@@ -340,13 +591,13 @@ async function runTweetBatch(batch: Tweet[]): Promise<TweetInsightPayload[]> {
   return normalizeBatchInsights(parsed.items ?? [], batch);
 }
 
-async function runTweetBatchWithRetry(batch: Tweet[], batchIndex: number) {
+async function runTweetBatchWithRetry(batch: Tweet[], batchIndex: number, tag?: string) {
   let attempt = 0;
   let lastFailure: { reason: TweetBatchFailureReason; message: string } | null = null;
   while (attempt < CLASSIFY_MAX_RETRIES) {
     attempt += 1;
     try {
-      return await runTweetBatch(batch);
+      return await runTweetBatch(batch, tag);
     } catch (error) {
       const failure = classifyBatchError(error);
       lastFailure = failure;
@@ -354,7 +605,8 @@ async function runTweetBatchWithRetry(batch: Tweet[], batchIndex: number) {
         batchIndex: batchIndex + 1,
         attempt,
         reason: failure.reason,
-        error: failure.message
+        error: failure.message,
+        tag: tag ?? null
       };
       if (!failure.retryable || attempt >= CLASSIFY_MAX_RETRIES) {
         logger.error('AI classification batch failed', payload);
@@ -387,8 +639,31 @@ function classifyBatchError(error: unknown): {
   return { reason: 'max-retries', message, retryable: true };
 }
 
-function buildBatchPrompt(batch: Tweet[]) {
+function buildTagPromptHints(tag: string) {
+  const profile = TAG_PROMPT_PROFILES[tag];
+  if (!profile) return [];
+  const hints = [`标签聚焦：${profile.focus}`];
+  if (profile.mustInclude.length) {
+    hints.push(`该标签必含要素：${profile.mustInclude.join(' / ')}`);
+  }
+  if (profile.avoid?.length) {
+    hints.push(`该标签尽量避免：${profile.avoid.join(' / ')}`);
+  }
+  return hints;
+}
+
+function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
   const allowedTweetIds = batch.map((tweet) => tweet.tweetId);
+  const normalizedHint =
+    typeof tagHint === 'string' ? normalizeTagAlias(tagHint.trim().toLowerCase()) : '';
+  const hasHint =
+    normalizedHint && normalizedHint !== TAG_FALLBACK_KEY && CLASSIFY_ALLOWED_TAGS.includes(normalizedHint);
+  const routingHint = hasHint
+    ? `当前批次推文通过 embedding 粗分为「${normalizedHint}」，除非明显不匹配，否则优先使用该 tag。${
+        TAG_ROUTING_HINTS[normalizedHint] ?? ''
+      }`
+    : '';
+  const tagProfileHints = hasHint ? buildTagPromptHints(normalizedHint) : [];
   const importanceHint =
     '重要度请保守：4-5 只用于“可立即行动/重大资金/安全/政策/宏观行情信号”的极少数；不确定就降一档。';
   const importanceRubric = [
@@ -439,6 +714,8 @@ function buildBatchPrompt(batch: Tweet[]) {
       '去重：如果只是复述旧闻且无新增数字/进展/来源=>importance<=2 且 ignore。',
       '任何“传闻/可能/听说”且无来源=>最多 watch 且 importance<=3。',
       `tags 只能来自 allowedTags；若无法归类，请使用 ${TAG_FALLBACK_KEY}。`,
+      ...(routingHint ? [`路由提示：${routingHint}`] : []),
+      ...tagProfileHints,
       '涉及融资/估值/回购/解锁/激励规模等资金事件：tags 应包含 funding/token/airdrop 中最贴切者。',
       '涉及央行/监管/合规：tags 必须包含 policy。',
       '涉及漏洞/攻击/盗币/安全修复：tags 必须包含 security。',
@@ -459,7 +736,7 @@ function buildBatchPrompt(batch: Tweet[]) {
       }
     ],
     importanceHint,
-    allowedTags: [...CLASSIFY_ALLOWED_TAGS, TAG_FALLBACK_KEY],
+    allowedTags: [...CLASSIFY_ALLOWED_TAGS],
     allowedTweetIds,
     tweets: batch.map((tweet) => ({
       tweetId: tweet.tweetId,
@@ -568,7 +845,7 @@ function normalizeTags(tags: string[] | undefined) {
   }
   const allowed = new Set(CLASSIFY_ALLOWED_TAGS);
   const cleaned = tags
-    .map((tag) => (typeof tag === 'string' ? tag.trim().toLowerCase() : ''))
+    .map((tag) => (typeof tag === 'string' ? normalizeTagAlias(tag.trim().toLowerCase()) : ''))
     .filter((tag) => Boolean(tag))
     .map((tag) => (allowed.has(tag) ? tag : TAG_FALLBACK_KEY));
   const unique: string[] = [];

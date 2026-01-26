@@ -6,7 +6,9 @@ import { sendTestTelegramMessage } from '../services/notificationService';
 
 const router = Router();
 
-const jobTypeSchema = z.enum(['fetch-subscriptions', 'classify-tweets', 'report-pipeline', 'report-profile'] as const);
+const jobTypeSchema = z.enum(
+  ['fetch-subscriptions', 'classify-tweets', 'classify-tweets-llm', 'report-pipeline', 'report-profile'] as const
+);
 
 router.get('/jobs', async (req, res, next) => {
   try {

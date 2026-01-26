@@ -3,18 +3,27 @@ import { prisma } from '../../db';
 import { config } from '../../config';
 import { logger } from '../../logger';
 import { chunk } from '../../utils/chunk';
-import { createEmbeddings, embeddingsEnabled } from '../embeddingService';
-import { HIGH_PRIORITY_IMPORTANCE, truncateText } from './shared';
+import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from '../embeddingService';
+import {
+  CLASSIFY_ALLOWED_TAGS,
+  HIGH_PRIORITY_IMPORTANCE,
+  TAG_FALLBACK_KEY,
+  truncateText,
+  normalizeTagAlias
+} from './shared';
 
 const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
-const ROUTING_CACHE_ID = 'routing-cache';
+const ROUTING_TAG_CACHE_ID = 'routing-tag-cache';
 const ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS = 120;
-const ROUTE_EMBEDDING_POS_SAMPLE = 180;
-const ROUTE_EMBEDDING_NEG_SAMPLE = 360;
+const ROUTE_EMBEDDING_SAMPLE_PER_TAG = 200;
 const ROUTE_EMBEDDING_MIN_SAMPLE = 40;
-const ROUTE_EMBEDDING_DROP_SIM = 0.88;
-const ROUTE_EMBEDDING_DROP_MARGIN = 0.04;
+const ROUTE_EMBEDDING_MIN_PRIMARY_SAMPLE = 100;
+const ROUTE_CLASSIFY_HIGH_SIM = 0.86;
+const ROUTE_CLASSIFY_HIGH_STRICT = 0.9;
+const ROUTE_CLASSIFY_HIGH_MARGIN = 0.04;
+const ROUTE_CLASSIFY_LOW_SIM = 0.72;
+const ROUTING_UNASSIGNED_TAG = '__unrouted__';
 const RULE_MIN_LEN = 80;
 const RULE_LONG_LEN = 160;
 const RULE_LONG_MIN_NUMBER_TOKENS = 3;
@@ -63,29 +72,43 @@ const RULE_HIGH_SIGNAL_KEYWORDS = [
 ];
 const RULE_HIGH_SIGNAL_NEEDLES = RULE_HIGH_SIGNAL_KEYWORDS.map((keyword) => keyword.toLowerCase());
 
-type RoutingSampleRow = { tweetId: string; textB64: string | null };
-
-type RoutingCache = {
-  updatedAtMs: number;
-  model: string;
-  dimensions: number;
-  positives: number[][];
-  negatives: number[][];
-};
+const ROUTING_TAGS = CLASSIFY_ALLOWED_TAGS.filter((tag) => tag !== TAG_FALLBACK_KEY);
 
 type RoutingRefreshOptions = {
   windowDays?: number;
-  positiveSample?: number;
-  negativeSample?: number;
+  samplePerTag?: number;
 };
 
 type RoutingRefreshParams = {
   windowDays: number;
-  positiveSample: number;
-  negativeSample: number;
+  samplePerTag: number;
 };
 
-let routingCache: RoutingCache | null = null;
+type TagCacheRecord = {
+  updatedAtMs: number;
+  model: string;
+  dimensions: number;
+  windowDays: number;
+  samplePerTag: number;
+  tagSamples: Record<string, number[][]>;
+  tagSampleCounts: Record<string, number>;
+};
+
+type TagRoutingResult = {
+  analyzeByTag: Map<string, Tweet[]>;
+  ignored: Array<{ tweet: Tweet; reason: string }>;
+  autoHigh: Array<{ tweet: Tweet; reason: string; tag: string; score: number; importance: number }>;
+  reasonCounts: Map<string, number>;
+};
+
+type EmbeddingCandidate = { tweetId: string; text: string };
+
+type TagSample = {
+  tweetId: string;
+  text: string;
+};
+
+let routingTagCache: TagCacheRecord | null = null;
 
 function toPositiveInt(value: number | undefined, fallback: number) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
@@ -96,8 +119,7 @@ function toPositiveInt(value: number | undefined, fallback: number) {
 function normalizeRoutingRefreshOptions(options?: RoutingRefreshOptions): RoutingRefreshParams {
   return {
     windowDays: toPositiveInt(options?.windowDays, ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS),
-    positiveSample: toPositiveInt(options?.positiveSample, ROUTE_EMBEDDING_POS_SAMPLE),
-    negativeSample: toPositiveInt(options?.negativeSample, ROUTE_EMBEDDING_NEG_SAMPLE)
+    samplePerTag: toPositiveInt(options?.samplePerTag, ROUTE_EMBEDDING_SAMPLE_PER_TAG)
   };
 }
 
@@ -123,16 +145,37 @@ function dot(a: number[], b: number[]) {
   return sum;
 }
 
-function parseVectorMatrix(value: Prisma.JsonValue, dimensions: number) {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((entry) => {
-      if (!Array.isArray(entry)) return null;
-      const vector = entry.map((item) => (typeof item === 'number' && Number.isFinite(item) ? item : 0));
-      if (dimensions > 0 && vector.length !== dimensions) return null;
-      return vector;
-    })
-    .filter((entry): entry is number[] => Array.isArray(entry));
+function parseTagSamples(value: Prisma.JsonValue, dimensions: number) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const record = value as Record<string, unknown>;
+  const parsed: Record<string, number[][]> = {};
+  Object.entries(record).forEach(([tag, entry]) => {
+    if (!Array.isArray(entry)) return;
+    const vectors = entry
+      .map((vector) => {
+        if (!Array.isArray(vector)) return null;
+        const cleaned = vector.map((item) => (typeof item === 'number' && Number.isFinite(item) ? item : 0));
+        if (dimensions > 0 && cleaned.length !== dimensions) return null;
+        return normalizeVector(cleaned);
+      })
+      .filter((item): item is number[] => Array.isArray(item));
+    if (vectors.length) {
+      parsed[tag] = vectors;
+    }
+  });
+  return parsed;
+}
+
+function parseTagSampleCounts(value: Prisma.JsonValue) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const record = value as Record<string, unknown>;
+  const parsed: Record<string, number> = {};
+  Object.entries(record).forEach(([tag, count]) => {
+    if (typeof count === 'number' && Number.isFinite(count)) {
+      parsed[tag] = Math.max(0, Math.floor(count));
+    }
+  });
+  return parsed;
 }
 
 function normalizeTweetText(text: string) {
@@ -159,147 +202,254 @@ function hasTicker(text: string) {
   return /\$[a-z]{2,6}\b/i.test(text);
 }
 
-function buildRoutingEmbeddingText(tweet: Tweet) {
-  const cleaned = normalizeTweetText(tweet.text);
+function buildTweetEmbeddingText(raw: string) {
+  const cleaned = normalizeTweetText(raw);
   return truncateText(cleaned, EMBEDDING_TEXT_MAX_LENGTH);
 }
 
-function decodeBase64Text(value: string | null) {
-  if (!value) return '';
-  return Buffer.from(value, 'base64').toString('utf8');
-}
+async function ensureTweetEmbeddings(candidates: EmbeddingCandidate[]) {
+  const unique = new Map<string, EmbeddingCandidate>();
+  candidates.forEach((candidate) => {
+    if (!candidate.tweetId) return;
+    unique.set(candidate.tweetId, candidate);
+  });
+  const items = Array.from(unique.values());
+  if (!items.length) return new Map<string, number[]>();
+  if (!embeddingsEnabled()) return new Map<string, number[]>();
 
-async function embedTexts(texts: string[]) {
-  if (!texts.length) return [];
-  const batches = chunk(texts, EMBEDDING_BATCH_SIZE);
-  const results: number[][] = [];
+  const model = config.EMBEDDING_MODEL;
+  const dimensions = config.EMBEDDING_DIMENSIONS;
+  const now = new Date();
+  const textPayload = items.map((item) => {
+    const text = buildTweetEmbeddingText(item.text);
+    return {
+      tweetId: item.tweetId,
+      text,
+      textHash: hashEmbeddingText(text)
+    };
+  });
+
+  const existing = await prisma.tweetEmbedding.findMany({
+    where: { tweetId: { in: textPayload.map((item) => item.tweetId) } }
+  });
+  const existingById = new Map(existing.map((item) => [item.tweetId, item]));
+  const freshEmbeddings = new Map<string, number[]>();
+  const missing: Array<{ tweetId: string; text: string; textHash: string }> = [];
+
+  textPayload.forEach((item) => {
+    const record = existingById.get(item.tweetId);
+    const hasVector = Array.isArray(record?.embedding) && record.embedding.length === dimensions;
+    const isFresh =
+      hasVector &&
+      record?.model === model &&
+      record?.dimensions === dimensions &&
+      record?.textHash === item.textHash;
+    if (isFresh && record?.embedding) {
+      freshEmbeddings.set(item.tweetId, record.embedding);
+    } else {
+      missing.push(item);
+    }
+  });
+
+  if (!missing.length) {
+    return freshEmbeddings;
+  }
+
+  const batches = chunk(missing, EMBEDDING_BATCH_SIZE);
   for (const batch of batches) {
-    const vectors = await createEmbeddings(batch);
+    const vectors = await createEmbeddings(batch.map((item) => item.text));
     if (vectors.length !== batch.length) {
       throw new Error(`Embedding batch size mismatch: expected ${batch.length}, got ${vectors.length}`);
     }
-    results.push(...vectors);
+    await prisma.$transaction(
+      batch.map((item, index) =>
+        prisma.tweetEmbedding.upsert({
+          where: { tweetId: item.tweetId },
+          update: {
+            embedding: vectors[index] ?? [],
+            model,
+            dimensions,
+            textHash: item.textHash,
+            embeddedAt: now
+          },
+          create: {
+            tweetId: item.tweetId,
+            embedding: vectors[index] ?? [],
+            model,
+            dimensions,
+            textHash: item.textHash,
+            embeddedAt: now
+          }
+        })
+      )
+    );
+    batch.forEach((item, index) => {
+      freshEmbeddings.set(item.tweetId, vectors[index] ?? []);
+    });
   }
-  return results;
+
+  return freshEmbeddings;
 }
 
-async function loadRoutingSamples(limit: number, whereSql: Prisma.Sql, since: Date) {
-  const limitClause = limit > 0 ? Prisma.sql`LIMIT ${limit}` : Prisma.empty;
-  const rows = await prisma.$queryRaw<RoutingSampleRow[]>`
-    SELECT
-      t."tweetId" as "tweetId",
-      encode(convert_to(t."text", 'SQL_ASCII'), 'base64') as "textB64"
-    FROM "TweetInsight" ti
-    JOIN "Tweet" t ON t."tweetId" = ti."tweetId"
-    WHERE t."tweetedAt" >= ${since}
-      AND ${whereSql}
-    ORDER BY t."tweetedAt" DESC
-    ${limitClause}
-  `;
-  return rows;
+function resolveTagCandidates(tag: string) {
+  const normalized = normalizeTagAlias(tag);
+  const candidates = new Set<string>();
+  candidates.add(normalized);
+  if (normalized === 'macro') {
+    candidates.add('market');
+  }
+  if (normalized === TAG_FALLBACK_KEY) {
+    candidates.add('others');
+  }
+  return Array.from(candidates);
 }
 
-async function buildRoutingEmbeddingCacheData(params: RoutingRefreshParams) {
+async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promise<TagSample[]> {
+  const since = new Date(Date.now() - params.windowDays * 24 * 60 * 60 * 1000);
+  const tagCandidates = resolveTagCandidates(tag);
+  const primary = await prisma.tweetInsight.findMany({
+    where: {
+      createdAt: { gte: since },
+      importance: { gte: HIGH_PRIORITY_IMPORTANCE },
+      verdict: { not: 'ignore' },
+      tags: { hasSome: tagCandidates }
+    },
+    select: {
+      tweetId: true,
+      tweet: { select: { text: true } }
+    },
+    orderBy: { createdAt: 'desc' },
+    take: params.samplePerTag
+  });
+
+  if (primary.length >= ROUTE_EMBEDDING_MIN_PRIMARY_SAMPLE) {
+    return primary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+  }
+
+  const supplementalLimit = params.samplePerTag - primary.length;
+  if (supplementalLimit <= 0) {
+    return primary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+  }
+
+  const supplemental = await prisma.tweetInsight.findMany({
+    where: {
+      createdAt: { gte: since },
+      importance: 3,
+      verdict: { not: 'ignore' },
+      tags: { hasSome: tagCandidates },
+      tweetId: primary.length ? { notIn: primary.map((item) => item.tweetId) } : undefined
+    },
+    select: {
+      tweetId: true,
+      tweet: { select: { text: true } }
+    },
+    orderBy: { createdAt: 'desc' },
+    take: supplementalLimit
+  });
+
+  return [...primary, ...supplemental].map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+}
+
+async function buildTagEmbeddingCacheData(params: RoutingRefreshParams) {
   if (!embeddingsEnabled()) {
-    logger.warn('Embeddings disabled, skip routing cache build');
+    logger.warn('Embeddings disabled, skip tag routing cache build');
     return null;
   }
   const model = config.EMBEDDING_MODEL;
   const dimensions = config.EMBEDDING_DIMENSIONS;
-  const since = new Date(Date.now() - params.windowDays * 24 * 60 * 60 * 1000);
-  const [positiveRows, negativeRows] = await Promise.all([
-    loadRoutingSamples(
-      params.positiveSample,
-      Prisma.sql`ti."importance" >= ${HIGH_PRIORITY_IMPORTANCE}`,
-      since
-    ),
-    loadRoutingSamples(
-      params.negativeSample,
-      Prisma.sql`(ti."importance" IS NOT NULL AND ti."importance" <= 2) OR ti."verdict" = 'ignore'`,
-      since
-    )
-  ]);
+  const tagSamples: Record<string, number[][]> = {};
+  const tagSampleCounts: Record<string, number> = {};
 
-  const positiveTexts = positiveRows
-    .map((row) => truncateText(normalizeTweetText(decodeBase64Text(row.textB64)), EMBEDDING_TEXT_MAX_LENGTH))
-    .filter((text) => text.length > 0);
-  const negativeTexts = negativeRows
-    .map((row) => truncateText(normalizeTweetText(decodeBase64Text(row.textB64)), EMBEDDING_TEXT_MAX_LENGTH))
-    .filter((text) => text.length > 0);
+  for (const tag of ROUTING_TAGS) {
+    const candidates = await loadTagSamples(tag, params);
+    if (!candidates.length) {
+      tagSampleCounts[tag] = 0;
+      continue;
+    }
 
-  if (positiveTexts.length < ROUTE_EMBEDDING_MIN_SAMPLE || negativeTexts.length < ROUTE_EMBEDDING_MIN_SAMPLE) {
-    logger.warn('Routing embedding samples insufficient, skip routing', {
-      positive: positiveTexts.length,
-      negative: negativeTexts.length,
-      windowDays: params.windowDays,
-      positiveSample: params.positiveSample,
-      negativeSample: params.negativeSample
-    });
+    const embeddings = await ensureTweetEmbeddings(candidates);
+    const vectors = candidates
+      .map((candidate) => embeddings.get(candidate.tweetId))
+      .filter((vector): vector is number[] => Array.isArray(vector) && vector.length === dimensions)
+      .map((vector) => normalizeVector(vector));
+
+    tagSampleCounts[tag] = vectors.length;
+    if (vectors.length < ROUTE_EMBEDDING_MIN_SAMPLE) {
+      logger.warn('Routing tag sample insufficient, skip tag', {
+        tag,
+        count: vectors.length,
+        min: ROUTE_EMBEDDING_MIN_SAMPLE
+      });
+      continue;
+    }
+
+    tagSamples[tag] = vectors;
+  }
+
+  const availableTags = Object.keys(tagSamples);
+  if (!availableTags.length) {
+    logger.warn('No routing tag samples available');
     return null;
   }
 
-  logger.info('Building routing embedding samples', {
-    positives: positiveTexts.length,
-    negatives: negativeTexts.length,
+  logger.info('Routing tag samples prepared', {
+    tags: availableTags.length,
     windowDays: params.windowDays,
-    positiveSample: params.positiveSample,
-    negativeSample: params.negativeSample,
+    samplePerTag: params.samplePerTag,
     model,
     dimensions
   });
 
-  const [positiveVectors, negativeVectors] = await Promise.all([
-    embedTexts(positiveTexts),
-    embedTexts(negativeTexts)
-  ]);
-
   return {
     model,
     dimensions,
-    positives: positiveVectors.map((vector) => normalizeVector(vector)),
-    negatives: negativeVectors.map((vector) => normalizeVector(vector))
+    tagSamples,
+    tagSampleCounts,
+    samplePerTag: params.samplePerTag,
+    sourceWindowDays: params.windowDays
   };
 }
 
-async function persistRoutingEmbeddingCache(data: {
+async function persistRoutingTagCache(data: {
   model: string;
   dimensions: number;
-  positives: number[][];
-  negatives: number[][];
+  tagSamples: Record<string, number[][]>;
+  tagSampleCounts: Record<string, number>;
+  samplePerTag: number;
   sourceWindowDays: number;
 }) {
-  const record = await prisma.routingEmbeddingCache.upsert({
-    where: { id: ROUTING_CACHE_ID },
+  const record = await prisma.routingTagEmbeddingCache.upsert({
+    where: { id: ROUTING_TAG_CACHE_ID },
     update: {
       model: data.model,
       dimensions: data.dimensions,
-      positives: data.positives,
-      negatives: data.negatives,
-      positiveCount: data.positives.length,
-      negativeCount: data.negatives.length,
+      tagSamples: data.tagSamples,
+      tagSampleCounts: data.tagSampleCounts,
+      samplePerTag: data.samplePerTag,
       sourceWindowDays: data.sourceWindowDays
     },
     create: {
-      id: ROUTING_CACHE_ID,
+      id: ROUTING_TAG_CACHE_ID,
       model: data.model,
       dimensions: data.dimensions,
-      positives: data.positives,
-      negatives: data.negatives,
-      positiveCount: data.positives.length,
-      negativeCount: data.negatives.length,
+      tagSamples: data.tagSamples,
+      tagSampleCounts: data.tagSampleCounts,
+      samplePerTag: data.samplePerTag,
       sourceWindowDays: data.sourceWindowDays
     }
   });
 
-  routingCache = {
+  routingTagCache = {
     updatedAtMs: record.updatedAt.getTime(),
     model: record.model,
     dimensions: record.dimensions,
-    positives: data.positives,
-    negatives: data.negatives
+    windowDays: record.sourceWindowDays,
+    samplePerTag: record.samplePerTag,
+    tagSamples: data.tagSamples,
+    tagSampleCounts: data.tagSampleCounts
   };
 
-  return routingCache;
+  return routingTagCache;
 }
 
 export async function refreshRoutingEmbeddingCache(reason = 'manual', options?: RoutingRefreshOptions) {
@@ -307,163 +457,194 @@ export async function refreshRoutingEmbeddingCache(reason = 'manual', options?: 
   if (!embeddingsEnabled()) {
     return { updated: false, reason: 'embeddings-disabled', ...params };
   }
-  const data = await buildRoutingEmbeddingCacheData(params);
+  const data = await buildTagEmbeddingCacheData(params);
   if (!data) {
     return { updated: false, reason: 'insufficient-samples', ...params };
   }
-  const cache = await persistRoutingEmbeddingCache({ ...data, sourceWindowDays: params.windowDays });
-  logger.info('Routing embedding cache refreshed', {
+  const cache = await persistRoutingTagCache(data);
+  const totalSamples = Object.values(cache.tagSampleCounts).reduce((acc, value) => acc + value, 0);
+  logger.info('Routing tag cache refreshed', {
     reason,
-    positives: cache.positives.length,
-    negatives: cache.negatives.length,
+    tags: Object.keys(cache.tagSamples).length,
+    totalSamples,
     model: cache.model,
     dimensions: cache.dimensions,
-    windowDays: params.windowDays,
-    positiveSample: params.positiveSample,
-    negativeSample: params.negativeSample
+    windowDays: cache.windowDays,
+    samplePerTag: cache.samplePerTag
   });
   return {
     updated: true,
-    positives: cache.positives.length,
-    negatives: cache.negatives.length,
     model: cache.model,
     dimensions: cache.dimensions,
     updatedAt: new Date(cache.updatedAtMs).toISOString(),
+    tagSampleCounts: cache.tagSampleCounts,
+    totalSamples,
     ...params
   };
 }
 
-async function loadRoutingEmbeddingCache() {
+async function loadRoutingTagCache() {
   if (!embeddingsEnabled()) return null;
-  const record = await prisma.routingEmbeddingCache.findUnique({ where: { id: ROUTING_CACHE_ID } });
+  const record = await prisma.routingTagEmbeddingCache.findUnique({ where: { id: ROUTING_TAG_CACHE_ID } });
   if (!record) {
-    logger.info('Routing embedding cache missing, building');
+    logger.info('Routing tag cache missing, building');
     const params = normalizeRoutingRefreshOptions();
-    const data = await buildRoutingEmbeddingCacheData(params);
+    const data = await buildTagEmbeddingCacheData(params);
     if (!data) return null;
-    return persistRoutingEmbeddingCache({ ...data, sourceWindowDays: params.windowDays });
+    return persistRoutingTagCache(data);
   }
 
   const updatedAtMs = record.updatedAt.getTime();
   if (
-    routingCache &&
-    routingCache.updatedAtMs === updatedAtMs &&
-    routingCache.model === record.model &&
-    routingCache.dimensions === record.dimensions
+    routingTagCache &&
+    routingTagCache.updatedAtMs === updatedAtMs &&
+    routingTagCache.model === record.model &&
+    routingTagCache.dimensions === record.dimensions
   ) {
-    return routingCache;
+    return routingTagCache;
   }
 
   if (record.model !== config.EMBEDDING_MODEL || record.dimensions !== config.EMBEDDING_DIMENSIONS) {
-    logger.warn('Routing embedding cache model mismatch, rebuilding', {
+    logger.warn('Routing tag cache model mismatch, rebuilding', {
       storedModel: record.model,
       storedDimensions: record.dimensions,
       currentModel: config.EMBEDDING_MODEL,
       currentDimensions: config.EMBEDDING_DIMENSIONS
     });
     const params = normalizeRoutingRefreshOptions();
-    const data = await buildRoutingEmbeddingCacheData(params);
+    const data = await buildTagEmbeddingCacheData(params);
     if (!data) return null;
-    return persistRoutingEmbeddingCache({ ...data, sourceWindowDays: params.windowDays });
+    return persistRoutingTagCache(data);
   }
 
-  const positives = parseVectorMatrix(record.positives, record.dimensions);
-  const negatives = parseVectorMatrix(record.negatives, record.dimensions);
-  if (positives.length < ROUTE_EMBEDDING_MIN_SAMPLE || negatives.length < ROUTE_EMBEDDING_MIN_SAMPLE) {
-    logger.warn('Routing embedding cache insufficient, rebuilding', {
-      positives: positives.length,
-      negatives: negatives.length
+  const params = normalizeRoutingRefreshOptions();
+  if (record.sourceWindowDays !== params.windowDays || record.samplePerTag !== params.samplePerTag) {
+    logger.info('Routing tag cache params mismatch, rebuilding', {
+      storedWindowDays: record.sourceWindowDays,
+      storedSamplePerTag: record.samplePerTag,
+      currentWindowDays: params.windowDays,
+      currentSamplePerTag: params.samplePerTag
     });
-    const params = normalizeRoutingRefreshOptions();
-    const data = await buildRoutingEmbeddingCacheData(params);
+    const data = await buildTagEmbeddingCacheData(params);
     if (!data) return null;
-    return persistRoutingEmbeddingCache({ ...data, sourceWindowDays: params.windowDays });
+    return persistRoutingTagCache(data);
   }
 
-  routingCache = {
+  const tagSamples = parseTagSamples(record.tagSamples, record.dimensions);
+  const tagSampleCounts = parseTagSampleCounts(record.tagSampleCounts);
+  if (!Object.keys(tagSamples).length) {
+    logger.warn('Routing tag cache empty, rebuilding');
+    const data = await buildTagEmbeddingCacheData(params);
+    if (!data) return null;
+    return persistRoutingTagCache(data);
+  }
+
+  routingTagCache = {
     updatedAtMs,
     model: record.model,
     dimensions: record.dimensions,
-    positives,
-    negatives
+    windowDays: record.sourceWindowDays,
+    samplePerTag: record.samplePerTag,
+    tagSamples,
+    tagSampleCounts
   };
 
-  return routingCache;
+  return routingTagCache;
 }
 
-export async function applyEmbeddingRouting(tweets: Tweet[]) {
+export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult> {
+  const reasonCounts = new Map<string, number>();
   if (!tweets.length) {
-    return { analyze: [], ignored: [], reasonCounts: new Map<string, number>() };
+    return { analyzeByTag: new Map(), ignored: [], autoHigh: [], reasonCounts };
   }
   if (!embeddingsEnabled()) {
-    return { analyze: tweets, ignored: [], reasonCounts: new Map<string, number>() };
+    reasonCounts.set('embed-disabled', tweets.length);
+    return { analyzeByTag: new Map([[ROUTING_UNASSIGNED_TAG, tweets]]), ignored: [], autoHigh: [], reasonCounts };
   }
 
-  try {
-    const cache = await loadRoutingEmbeddingCache();
-    if (!cache) {
-      return { analyze: tweets, ignored: [], reasonCounts: new Map<string, number>() };
+  const cache = await loadRoutingTagCache();
+  if (!cache || !Object.keys(cache.tagSamples).length) {
+    reasonCounts.set('embed-no-cache', tweets.length);
+    return { analyzeByTag: new Map([[ROUTING_UNASSIGNED_TAG, tweets]]), ignored: [], autoHigh: [], reasonCounts };
+  }
+
+  const embeddings = await ensureTweetEmbeddings(tweets.map((tweet) => ({ tweetId: tweet.tweetId, text: tweet.text })));
+
+  const analyzeByTag = new Map<string, Tweet[]>();
+  const ignored: Array<{ tweet: Tweet; reason: string }> = [];
+  const autoHigh: Array<{ tweet: Tweet; reason: string; tag: string; score: number; importance: number }> = [];
+
+  const bumpReason = (reason: string) => {
+    reasonCounts.set(reason, (reasonCounts.get(reason) ?? 0) + 1);
+  };
+
+  const addAnalyze = (tag: string, tweet: Tweet) => {
+    const list = analyzeByTag.get(tag) ?? [];
+    list.push(tweet);
+    analyzeByTag.set(tag, list);
+  };
+
+  tweets.forEach((tweet) => {
+    const vector = embeddings.get(tweet.tweetId);
+    if (!vector || vector.length !== cache.dimensions) {
+      addAnalyze(ROUTING_UNASSIGNED_TAG, tweet);
+      bumpReason('embed-missing');
+      return;
+    }
+    const normalized = normalizeVector(vector);
+    let bestTag = '';
+    let bestScore = -1;
+    let secondScore = -1;
+
+    for (const tag of Object.keys(cache.tagSamples)) {
+      const samples = cache.tagSamples[tag] ?? [];
+      if (!samples.length) continue;
+      let max = -1;
+      for (const sample of samples) {
+        const score = dot(normalized, sample);
+        if (score > max) max = score;
+      }
+      if (max > bestScore) {
+        secondScore = bestScore;
+        bestScore = max;
+        bestTag = tag;
+      } else if (max > secondScore) {
+        secondScore = max;
+      }
     }
 
-    const texts = tweets.map((tweet) => buildRoutingEmbeddingText(tweet));
-    const vectors = await embedTexts(texts);
-    if (vectors.length !== tweets.length) {
-      logger.warn('Routing embedding size mismatch, skip routing', {
-        expected: tweets.length,
-        actual: vectors.length
+    if (!bestTag) {
+      addAnalyze(ROUTING_UNASSIGNED_TAG, tweet);
+      bumpReason('embed-unrouted');
+      return;
+    }
+
+    if (bestScore <= ROUTE_CLASSIFY_LOW_SIM) {
+      ignored.push({ tweet, reason: 'embed-low' });
+      bumpReason('embed-low');
+      return;
+    }
+
+    const hasRunnerUp = secondScore >= 0;
+    const margin = hasRunnerUp ? bestScore - secondScore : 0;
+    if (bestScore >= ROUTE_CLASSIFY_HIGH_SIM && margin >= ROUTE_CLASSIFY_HIGH_MARGIN) {
+      const importance = bestScore >= ROUTE_CLASSIFY_HIGH_STRICT ? 5 : 4;
+      autoHigh.push({
+        tweet,
+        reason: 'embed-high',
+        tag: bestTag,
+        score: bestScore,
+        importance
       });
-      return { analyze: tweets, ignored: [], reasonCounts: new Map<string, number>() };
+      bumpReason(importance === 5 ? 'embed-high-5' : 'embed-high-4');
+      return;
     }
 
-    const reasonCounts = new Map<string, number>();
-    const analyze: Tweet[] = [];
-    const ignored: Array<{ tweet: Tweet; reason: string }> = [];
+    addAnalyze(bestTag, tweet);
+    bumpReason('embed-analyze');
+  });
 
-    const bumpReason = (reason: string) => {
-      reasonCounts.set(reason, (reasonCounts.get(reason) ?? 0) + 1);
-    };
-
-    vectors.forEach((vector, index) => {
-      const normalized = normalizeVector(vector);
-      let maxPos = -1;
-      for (const sample of cache.positives) {
-        const score = dot(normalized, sample);
-        if (score > maxPos) maxPos = score;
-      }
-      let maxNeg = -1;
-      for (const sample of cache.negatives) {
-        const score = dot(normalized, sample);
-        if (score > maxNeg) maxNeg = score;
-      }
-
-      const tweet = tweets[index];
-      if (!tweet) {
-        return;
-      }
-      if (maxNeg >= ROUTE_EMBEDDING_DROP_SIM && maxNeg - maxPos >= ROUTE_EMBEDDING_DROP_MARGIN) {
-        ignored.push({ tweet, reason: 'embed-drop' });
-        bumpReason('embed-drop');
-        return;
-      }
-
-      analyze.push(tweet);
-      bumpReason('embed-keep');
-    });
-
-    logger.info('Embedding routing completed', {
-      candidates: tweets.length,
-      analyze: analyze.length,
-      ignored: ignored.length,
-      reasons: Object.fromEntries(reasonCounts)
-    });
-
-    return { analyze, ignored, reasonCounts };
-  } catch (error) {
-    logger.warn('Embedding routing failed, fallback to full analysis', {
-      error: error instanceof Error ? error.message : String(error)
-    });
-    return { analyze: tweets, ignored: [], reasonCounts: new Map<string, number>() };
-  }
+  return { analyzeByTag, ignored, autoHigh, reasonCounts };
 }
 
 export function applyRuleBasedRouting(tweets: Tweet[]) {

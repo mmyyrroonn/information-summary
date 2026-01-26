@@ -15,6 +15,7 @@ const typeOptions = [
   { value: '', label: '全部类型' },
   { value: 'fetch-subscriptions', label: '抓取推文' },
   { value: 'classify-tweets', label: 'AI 分类' },
+  { value: 'classify-tweets-llm', label: 'AI 分类 (LLM)' },
   { value: 'report-pipeline', label: '生成日报' },
   { value: 'report-profile', label: 'Profile 日报' }
 ] as const;
@@ -70,8 +71,7 @@ type ProfileRunOptions = {
 
 type RoutingRefreshDraft = {
   windowDays: string;
-  positiveSample: string;
-  negativeSample: string;
+  samplePerTag: string;
 };
 
 type WorkflowTask = 'fetch' | 'analyze';
@@ -164,10 +164,8 @@ function formatRoutingRefreshResult(result: RoutingEmbeddingRefreshResult) {
         : '样本不足，未刷新';
   const details = [
     `窗口 ${result.windowDays} 天`,
-    `目标 ${result.positiveSample}/${result.negativeSample}`,
-    result.updated && typeof result.positives === 'number' && typeof result.negatives === 'number'
-      ? `实际 ${result.positives}/${result.negatives}`
-      : null,
+    `每类 ${result.samplePerTag}`,
+    result.updated && typeof result.totalSamples === 'number' ? `总样本 ${result.totalSamples}` : null,
     result.model && result.dimensions ? `${result.model} · ${result.dimensions}D` : result.model ?? null,
     result.updatedAt ? `更新时间 ${new Date(result.updatedAt).toLocaleString()}` : null
   ]
@@ -281,8 +279,7 @@ export function DevJobsPage() {
   const [routingRefreshing, setRoutingRefreshing] = useState(false);
   const [routingRefreshDraft, setRoutingRefreshDraft] = useState<RoutingRefreshDraft>({
     windowDays: '',
-    positiveSample: '',
-    negativeSample: ''
+    samplePerTag: ''
   });
   const [profiles, setProfiles] = useState<ReportProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(false);
@@ -448,7 +445,9 @@ export function DevJobsPage() {
       const text =
         reason === 'below-threshold'
           ? `待处理推文 ${pending}${threshold ? `/${threshold}` : ''}，尚未达到阈值`
-          : '当前没有待处理推文';
+          : reason === 'llm-inflight'
+            ? '已有 LLM 分类任务在执行中'
+            : '当前没有待处理推文';
       return <p className="job-status muted">{text}</p>;
     }
     const job = state.job;
@@ -496,7 +495,9 @@ export function DevJobsPage() {
         const message =
           result.reason === 'below-threshold'
             ? `待处理推文 ${result.pending}${result.threshold ? `/${result.threshold}` : ''}，暂不触发`
-            : '当前没有待处理推文';
+            : result.reason === 'llm-inflight'
+              ? '已有 LLM 分类任务在执行中，暂不触发'
+              : '当前没有待处理推文';
         setWorkflowMessage(message);
         setWorkflowJobs((prev) => ({
           ...prev,
@@ -534,30 +535,21 @@ export function DevJobsPage() {
       setRoutingRefreshMessage(windowDays.error);
       return;
     }
-    const positiveSample = parseOptionalPositiveInt(routingRefreshDraft.positiveSample, '正样本数量');
-    if (positiveSample.error) {
-      setRoutingRefreshMessage(positiveSample.error);
-      return;
-    }
-    const negativeSample = parseOptionalPositiveInt(routingRefreshDraft.negativeSample, '负样本数量');
-    if (negativeSample.error) {
-      setRoutingRefreshMessage(negativeSample.error);
+    const samplePerTag = parseOptionalPositiveInt(routingRefreshDraft.samplePerTag, '每类样本数');
+    if (samplePerTag.error) {
+      setRoutingRefreshMessage(samplePerTag.error);
       return;
     }
 
     const payload: {
       windowDays?: number;
-      positiveSample?: number;
-      negativeSample?: number;
+      samplePerTag?: number;
     } = {};
     if (typeof windowDays.value === 'number') {
       payload.windowDays = windowDays.value;
     }
-    if (typeof positiveSample.value === 'number') {
-      payload.positiveSample = positiveSample.value;
-    }
-    if (typeof negativeSample.value === 'number') {
-      payload.negativeSample = negativeSample.value;
+    if (typeof samplePerTag.value === 'number') {
+      payload.samplePerTag = samplePerTag.value;
     }
 
     setRoutingRefreshing(true);
@@ -1161,7 +1153,7 @@ export function DevJobsPage() {
       </div>
       {routingRefreshMessage && <p className="status">{routingRefreshMessage}</p>}
       <div className="dev-notify">
-        <p className="hint">留空使用默认：窗口 120 天 / 正样本 180 / 负样本 360</p>
+        <p className="hint">留空使用默认：窗口 120 天 / 每类 200</p>
         <div className="config-grid">
           <label>
             样本窗口（天）
@@ -1174,23 +1166,13 @@ export function DevJobsPage() {
             />
           </label>
           <label>
-            正样本数量
+            每类样本数（K）
             <input
               type="number"
               min={1}
-              placeholder="默认 180"
-              value={routingRefreshDraft.positiveSample}
-              onChange={(e) => setRoutingRefreshDraft((prev) => ({ ...prev, positiveSample: e.target.value }))}
-            />
-          </label>
-          <label>
-            负样本数量
-            <input
-              type="number"
-              min={1}
-              placeholder="默认 360"
-              value={routingRefreshDraft.negativeSample}
-              onChange={(e) => setRoutingRefreshDraft((prev) => ({ ...prev, negativeSample: e.target.value }))}
+              placeholder="默认 200"
+              value={routingRefreshDraft.samplePerTag}
+              onChange={(e) => setRoutingRefreshDraft((prev) => ({ ...prev, samplePerTag: e.target.value }))}
             />
           </label>
           <button type="button" onClick={handleRoutingCacheRefresh} disabled={routingRefreshing}>
@@ -1316,6 +1298,8 @@ function renderType(type: string) {
       return '抓取推文';
     case 'classify-tweets':
       return 'AI 分类';
+    case 'classify-tweets-llm':
+      return 'AI 分类 (LLM)';
     case 'report-pipeline':
       return '日报管线';
     case 'report-profile':

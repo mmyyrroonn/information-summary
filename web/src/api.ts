@@ -73,8 +73,7 @@ interface ApiClient {
   runAnalyzeTask: () => Promise<ClassificationJobResponse>;
   refreshRoutingEmbeddingCache: (payload?: {
     windowDays?: number;
-    positiveSample?: number;
-    negativeSample?: number;
+    samplePerTag?: number;
   }) => Promise<RoutingEmbeddingRefreshResult>;
   runReportTask: (payload: { notify: boolean; profileId?: string; windowEnd?: string }) => Promise<JobEnqueueResponse>;
   getNotificationConfig: () => Promise<NotificationConfig>;

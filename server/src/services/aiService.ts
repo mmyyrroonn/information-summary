@@ -1,4 +1,4 @@
-export { countPendingTweets, classifyTweets, classifyTweetsByIds } from './ai/classification';
+export { countPendingTweets, classifyTweets, classifyTweetsByIds, classifyTweetsByIdsWithTag } from './ai/classification';
 export { refreshRoutingEmbeddingCache } from './ai/routing';
 export {
   buildHighScoreSummaryMarkdown,
