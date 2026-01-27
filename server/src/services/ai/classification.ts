@@ -26,6 +26,7 @@ const CLASSIFY_MAX_TWEETS = 1000;
 const CLASSIFY_LLM_JOB_SIZE = 50;
 const CLASSIFY_CONCURRENCY = Math.max(1, config.CLASSIFY_CONCURRENCY ?? 4);
 const CLASSIFY_TAG_MIN_TWEETS = Math.max(1, config.CLASSIFY_TAG_MIN_TWEETS ?? 10);
+const CLASSIFY_TAG_MAX_WAIT_HOURS = Math.max(0, config.CLASSIFY_TAG_MAX_WAIT_HOURS ?? 2);
 const CLASSIFY_MAX_RETRIES = 3;
 const CLASSIFY_RETRY_DELAY_MS = 1500;
 const TAG_PROMPT_PROFILES: Record<
@@ -287,6 +288,7 @@ export async function classifyTweetsByIdsWithTag(
 
 export async function dispatchLlmClassificationJobs(options?: DispatchOptions): Promise<DispatchResult> {
   const minPerTag = Math.max(1, options?.tagMin ?? CLASSIFY_TAG_MIN_TWEETS);
+  const maxWaitMs = CLASSIFY_TAG_MAX_WAIT_HOURS * 60 * 60 * 1000;
   const baseWhere = {
     insights: null,
     abandonedAt: null,
@@ -296,10 +298,19 @@ export async function dispatchLlmClassificationJobs(options?: DispatchOptions): 
   const grouped = await prisma.tweet.groupBy({
     by: ['routingTag'],
     where: baseWhere,
-    _count: { _all: true }
+    _count: { _all: true },
+    _min: { routedAt: true }
   });
 
-  const eligible = grouped.filter((entry) => (entry._count?._all ?? 0) >= minPerTag);
+  const nowMs = Date.now();
+  const eligible = grouped.filter((entry) => {
+    const count = entry._count?._all ?? 0;
+    if (count >= minPerTag) return true;
+    if (!maxWaitMs) return false;
+    const oldestRoutedAt = entry._min?.routedAt;
+    if (!oldestRoutedAt) return false;
+    return nowMs - oldestRoutedAt.getTime() >= maxWaitMs;
+  });
   let queuedJobs = 0;
   let queuedTweets = 0;
   const queuedAt = new Date();

@@ -29,6 +29,7 @@ const envSchema = z.object({
   FETCH_COOLDOWN_HOURS: z.coerce.number().default(12),
   CLASSIFY_MIN_TWEETS: z.coerce.number().default(10),
   CLASSIFY_TAG_MIN_TWEETS: z.coerce.number().default(10),
+  CLASSIFY_TAG_MAX_WAIT_HOURS: z.coerce.number().default(2),
   CLASSIFY_CONCURRENCY: z.coerce.number().default(6),
   REPORT_TIMEZONE: z.string().default('Asia/Shanghai'),
   BASE_WEB_URL: z.string().default('http://localhost:5173'),

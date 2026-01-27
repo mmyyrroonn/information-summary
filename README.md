@@ -49,6 +49,8 @@
 | `FETCH_BATCH_SIZE` | 每个抓取周期处理的订阅数量，默认 5 个，方便分散压力 |
 | `FETCH_COOLDOWN_HOURS` | 单个订阅的抓取冷却时间（小时），默认 12 小时内最多抓取两次 |
 | `CLASSIFY_MIN_TWEETS` | 自动触发 AI 筛选所需的最少待处理推文数量 |
+| `CLASSIFY_TAG_MIN_TWEETS` | LLM 分类按标签触发的最少待处理数量 |
+| `CLASSIFY_TAG_MAX_WAIT_HOURS` | LLM 分类按标签最多等待时间（小时），超过即使数量不足也会触发 |
 | `REPORT_TIMEZONE` | 统计/展示使用的时区 |
 | `BASE_WEB_URL` | 生成报告时引用的 Web 端地址 |
 | `GITHUB_PAGES_REPO_PATH` | GitHub Pages 仓库本地路径（用于推送日报 Markdown） |
