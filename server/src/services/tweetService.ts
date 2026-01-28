@@ -6,10 +6,15 @@ export interface ListTweetsOptions {
   pageSize: number;
   sort: 'newest' | 'oldest' | 'priority';
   routing?: 'default' | 'ignored' | 'all';
+  routingTag?: string;
+  routingScoreMin?: number;
+  routingScoreMax?: number;
   subscriptionId?: string;
   startTime?: Date;
   endTime?: Date;
   search?: string;
+  importanceMin?: number;
+  importanceMax?: number;
 }
 
 function buildSearchFilter(raw?: string): Prisma.TweetWhereInput | null {
@@ -61,6 +66,18 @@ export async function listTweets(options: ListTweetsOptions) {
   } else if (options.routing === 'default') {
     where.routingStatus = { not: 'IGNORED' };
   }
+  if (options.routingTag) {
+    where.routingTag = options.routingTag;
+  }
+  if (typeof options.routingScoreMin === 'number' || typeof options.routingScoreMax === 'number') {
+    where.routingScore = {};
+    if (typeof options.routingScoreMin === 'number') {
+      where.routingScore.gte = options.routingScoreMin;
+    }
+    if (typeof options.routingScoreMax === 'number') {
+      where.routingScore.lte = options.routingScoreMax;
+    }
+  }
   if (searchStartTime || searchEndTime) {
     where.tweetedAt = {};
     if (searchStartTime) {
@@ -74,6 +91,21 @@ export async function listTweets(options: ListTweetsOptions) {
   if (searchFilter) {
     const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
     where.AND = [...existingAnd, searchFilter];
+  }
+  if (typeof options.importanceMin === 'number' || typeof options.importanceMax === 'number') {
+    const insightsFilter: Prisma.TweetInsightWhereInput = {};
+    if (typeof options.importanceMin === 'number' || typeof options.importanceMax === 'number') {
+      insightsFilter.importance = {};
+      if (typeof options.importanceMin === 'number') {
+        insightsFilter.importance.gte = options.importanceMin;
+      }
+      if (typeof options.importanceMax === 'number') {
+        insightsFilter.importance.lte = options.importanceMax;
+      }
+    }
+    const existingInsights =
+      where.insights && 'is' in where.insights && where.insights.is ? where.insights.is : undefined;
+    where.insights = { is: { ...(existingInsights ?? {}), ...insightsFilter } };
   }
 
   const orderBy: Prisma.Enumerable<Prisma.TweetOrderByWithRelationInput> =

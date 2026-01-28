@@ -47,18 +47,37 @@ router.get('/', async (req, res, next) => {
         order: z.enum(['asc', 'desc']).optional(),
         sort: z.enum(['newest', 'oldest', 'priority']).optional(),
         routing: z.enum(['default', 'ignored', 'all']).optional(),
+        routingTag: z.string().min(1).optional(),
+        routingScoreMin: z.coerce.number().finite().optional(),
+        routingScoreMax: z.coerce.number().finite().optional(),
         subscriptionId: z.string().uuid().optional(),
         startTime: z.coerce.date().optional(),
         endTime: z.coerce.date().optional(),
-        q: z.string().optional()
+        q: z.string().optional(),
+        importanceMin: z.coerce.number().int().min(1).max(5).optional(),
+        importanceMax: z.coerce.number().int().min(1).max(5).optional()
       })
       .transform((values) => ({
         ...values,
         sort: values.sort ?? (values.order === 'asc' ? 'oldest' : 'newest')
       }))
+      .refine((values) => !values.startTime || !values.endTime || values.startTime <= values.endTime, {
+        path: ['endTime'],
+        message: '开始时间必须早于结束时间'
+      })
       .refine(
-        (values) => !values.startTime || !values.endTime || values.startTime <= values.endTime,
-        { path: ['endTime'], message: '开始时间必须早于结束时间' }
+        (values) =>
+          values.routingScoreMin === undefined ||
+          values.routingScoreMax === undefined ||
+          values.routingScoreMin <= values.routingScoreMax,
+        { path: ['routingScoreMax'], message: '相似度最小值必须小于最大值' }
+      )
+      .refine(
+        (values) =>
+          values.importanceMin === undefined ||
+          values.importanceMax === undefined ||
+          values.importanceMin <= values.importanceMax,
+        { path: ['importanceMax'], message: '评分最小值必须小于最大值' }
       );
     const query = querySchema.parse(req.query);
     const tweets = await listTweets({
@@ -66,10 +85,15 @@ router.get('/', async (req, res, next) => {
       pageSize: query.pageSize,
       sort: query.sort ?? 'newest',
       ...(query.routing ? { routing: query.routing } : {}),
+      ...(query.routingTag ? { routingTag: query.routingTag } : {}),
+      ...(typeof query.routingScoreMin === 'number' ? { routingScoreMin: query.routingScoreMin } : {}),
+      ...(typeof query.routingScoreMax === 'number' ? { routingScoreMax: query.routingScoreMax } : {}),
       ...(query.subscriptionId ? { subscriptionId: query.subscriptionId } : {}),
       ...(query.startTime ? { startTime: query.startTime } : {}),
       ...(query.endTime ? { endTime: query.endTime } : {}),
-      ...(query.q ? { search: query.q } : {})
+      ...(query.q ? { search: query.q } : {}),
+      ...(typeof query.importanceMin === 'number' ? { importanceMin: query.importanceMin } : {}),
+      ...(typeof query.importanceMax === 'number' ? { importanceMax: query.importanceMax } : {})
     });
     res.json(tweets);
   } catch (error) {

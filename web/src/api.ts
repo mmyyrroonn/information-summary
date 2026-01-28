@@ -97,10 +97,15 @@ interface ApiClient {
     pageSize?: number;
     sort?: 'newest' | 'oldest' | 'priority';
     routing?: 'default' | 'ignored' | 'all';
+    routingTag?: string;
+    routingScoreMin?: number;
+    routingScoreMax?: number;
     subscriptionId?: string;
     startTime?: string;
     endTime?: string;
     q?: string;
+    importanceMin?: number;
+    importanceMax?: number;
   }) => Promise<TweetListResponse>;
   analyzeTweets: (tweetIds: string[]) => Promise<{ processed: number; insights: number }>;
   getTweetStats: (params?: {
@@ -255,6 +260,15 @@ export const api: ApiClient = {
     if (params.routing) {
       search.set('routing', params.routing);
     }
+    if (params.routingTag) {
+      search.set('routingTag', params.routingTag);
+    }
+    if (typeof params.routingScoreMin === 'number') {
+      search.set('routingScoreMin', String(params.routingScoreMin));
+    }
+    if (typeof params.routingScoreMax === 'number') {
+      search.set('routingScoreMax', String(params.routingScoreMax));
+    }
     if (params.subscriptionId) {
       search.set('subscriptionId', params.subscriptionId);
     }
@@ -266,6 +280,12 @@ export const api: ApiClient = {
     }
     if (params.q) {
       search.set('q', params.q);
+    }
+    if (typeof params.importanceMin === 'number') {
+      search.set('importanceMin', String(params.importanceMin));
+    }
+    if (typeof params.importanceMax === 'number') {
+      search.set('importanceMax', String(params.importanceMax));
     }
     const query = search.toString();
     const path = query ? `/tweets?${query}` : '/tweets';

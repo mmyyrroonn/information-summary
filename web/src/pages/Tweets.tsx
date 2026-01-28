@@ -108,14 +108,20 @@ function buildRoutingLine(tweet: TweetRecord) {
 
 export function TweetsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [routingTags, setRoutingTags] = useState<Array<{ tag: string; label: string }>>([]);
   const [tweets, setTweets] = useState<TweetRecord[]>([]);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<'newest' | 'oldest' | 'priority'>('newest');
   const [routingView, setRoutingView] = useState<'default' | 'ignored'>('default');
+  const [routingTag, setRoutingTag] = useState('');
+  const [routingScoreMin, setRoutingScoreMin] = useState('');
+  const [routingScoreMax, setRoutingScoreMax] = useState('');
   const [subscriptionId, setSubscriptionId] = useState<string | undefined>(undefined);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [search, setSearch] = useState('');
+  const [importanceMin, setImportanceMin] = useState('');
+  const [importanceMax, setImportanceMax] = useState('');
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -124,11 +130,25 @@ export function TweetsPage() {
 
   useEffect(() => {
     loadSubscriptions();
+    loadRoutingTags();
   }, []);
 
   useEffect(() => {
     loadTweets();
-  }, [page, sort, subscriptionId, startTime, endTime, search, routingView]);
+  }, [
+    page,
+    sort,
+    subscriptionId,
+    startTime,
+    endTime,
+    search,
+    routingView,
+    routingTag,
+    routingScoreMin,
+    routingScoreMax,
+    importanceMin,
+    importanceMax
+  ]);
 
   async function loadSubscriptions() {
     try {
@@ -136,6 +156,15 @@ export function TweetsPage() {
       setSubscriptions(subs);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '加载订阅失败');
+    }
+  }
+
+  async function loadRoutingTags() {
+    try {
+      const result = await api.listRoutingTags();
+      setRoutingTags(result.tags);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : '加载路由标签失败');
     }
   }
 
@@ -150,6 +179,12 @@ export function TweetsPage() {
     return date.toISOString();
   }
 
+  function parseNumber(value: string) {
+    if (!value) return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
   async function loadTweets() {
     setLoading(true);
     try {
@@ -158,10 +193,15 @@ export function TweetsPage() {
         pageSize: PAGE_SIZE,
         sort,
         routing: routingView,
+        routingTag: routingTag || undefined,
+        routingScoreMin: parseNumber(routingScoreMin),
+        routingScoreMax: parseNumber(routingScoreMax),
         subscriptionId,
         startTime: toIso(startTime),
         endTime: toIso(endTime),
-        q: search.trim() || undefined
+        q: search.trim() || undefined,
+        importanceMin: parseNumber(importanceMin),
+        importanceMax: parseNumber(importanceMax)
       });
       setTweets(response.items);
       setTotal(response.total);
@@ -194,12 +234,20 @@ export function TweetsPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pendingCount = tweets.filter((tweet) => !tweet.insights && !tweet.abandonedAt).length;
   const hasTimeFilter = Boolean(startTime || endTime);
+  const hasRoutingScoreFilter = Boolean(routingScoreMin || routingScoreMax);
+  const hasImportanceFilter = Boolean(importanceMin || importanceMax);
   const timeLabel = hasTimeFilter
     ? `${formatDateTime(startTime) || '最早'} ~ ${formatDateTime(endTime) || '现在'}`
     : search.trim()
       ? '近 24 小时'
       : '不限';
   const routingLabel = routingView === 'ignored' ? '规则过滤' : '默认';
+  const routingTagOptions = routingTags.length
+    ? routingTags
+    : Object.entries(TAG_LABELS).map(([tag, label]) => ({ tag, label }));
+  const routingTagLabel = routingTag
+    ? routingTagOptions.find((option) => option.tag === routingTag)?.label ?? formatTagLabel(routingTag)
+    : '';
 
   function clearTimeRange() {
     if (!hasTimeFilter) {
@@ -207,6 +255,24 @@ export function TweetsPage() {
     }
     setStartTime('');
     setEndTime('');
+    setPage(1);
+  }
+
+  function clearRoutingScoreRange() {
+    if (!hasRoutingScoreFilter) {
+      return;
+    }
+    setRoutingScoreMin('');
+    setRoutingScoreMax('');
+    setPage(1);
+  }
+
+  function clearImportanceRange() {
+    if (!hasImportanceFilter) {
+      return;
+    }
+    setImportanceMin('');
+    setImportanceMax('');
     setPage(1);
   }
 
@@ -288,6 +354,24 @@ export function TweetsPage() {
             </select>
           </label>
 
+          <label>
+            <span>Embedding 标签</span>
+            <select
+              value={routingTag}
+              onChange={(e) => {
+                setRoutingTag(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">全部标签</option>
+              {routingTagOptions.map((tag) => (
+                <option key={tag.tag} value={tag.tag}>
+                  {tag.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <div className="tweet-range">
             <span>时间范围</span>
             <div className="tweet-range-inputs">
@@ -314,6 +398,76 @@ export function TweetsPage() {
             </div>
             <p className="hint">未设时间范围时，搜索默认近 24 小时。</p>
           </div>
+
+          <div className="tweet-range">
+            <span>相似度范围</span>
+            <div className="tweet-range-inputs">
+              <input
+                type="number"
+                min="-1"
+                max="1"
+                step="0.01"
+                value={routingScoreMin}
+                placeholder="最小"
+                onChange={(e) => {
+                  setRoutingScoreMin(e.target.value);
+                  setPage(1);
+                }}
+              />
+              <span className="tweet-range-sep">至</span>
+              <input
+                type="number"
+                min="-1"
+                max="1"
+                step="0.01"
+                value={routingScoreMax}
+                placeholder="最大"
+                onChange={(e) => {
+                  setRoutingScoreMax(e.target.value);
+                  setPage(1);
+                }}
+              />
+              <button type="button" className="ghost" onClick={clearRoutingScoreRange} disabled={!hasRoutingScoreFilter}>
+                清除
+              </button>
+            </div>
+            <p className="hint">用于查看 embedding 相似度区间内的推文。</p>
+          </div>
+
+          <div className="tweet-range">
+            <span>LLM 评分</span>
+            <div className="tweet-range-inputs">
+              <input
+                type="number"
+                min="1"
+                max="5"
+                step="1"
+                value={importanceMin}
+                placeholder="最小"
+                onChange={(e) => {
+                  setImportanceMin(e.target.value);
+                  setPage(1);
+                }}
+              />
+              <span className="tweet-range-sep">至</span>
+              <input
+                type="number"
+                min="1"
+                max="5"
+                step="1"
+                value={importanceMax}
+                placeholder="最大"
+                onChange={(e) => {
+                  setImportanceMax(e.target.value);
+                  setPage(1);
+                }}
+              />
+              <button type="button" className="ghost" onClick={clearImportanceRange} disabled={!hasImportanceFilter}>
+                清除
+              </button>
+            </div>
+            <p className="hint">根据 AI 优先级评分过滤（1-5）。</p>
+          </div>
         </div>
 
         <div className="tweet-summary-row">
@@ -323,6 +477,17 @@ export function TweetsPage() {
           <span>时间范围：{timeLabel}</span>
           <span>模式：{routingLabel}</span>
           {search.trim() ? <span>关键词：{search.trim()}</span> : null}
+          {routingTag ? <span>Embedding 标签：{routingTagLabel}</span> : null}
+          {hasRoutingScoreFilter ? (
+            <span>
+              相似度：{routingScoreMin || '最小'} ~ {routingScoreMax || '最大'}
+            </span>
+          ) : null}
+          {hasImportanceFilter ? (
+            <span>
+              LLM 评分：{importanceMin || '最小'} ~ {importanceMax || '最大'}
+            </span>
+          ) : null}
         </div>
 
         <div className="tweet-list">
