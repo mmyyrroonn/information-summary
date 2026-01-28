@@ -776,11 +776,40 @@ button.ghost {
 
 @media (max-width: 900px) {
   .reports-panel {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
   .dev-profiles {
     grid-template-columns: 1fr;
+  }
+
+  .reports-list {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .report-row {
+    min-width: 260px;
+    padding: 0.7rem 0.85rem;
+    scroll-snap-align: start;
+  }
+
+  .report-actions {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .report-actions button {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .report-status {
+    font-size: 0.8rem;
   }
 }
 
@@ -799,11 +828,11 @@ button.ghost {
 }
 
 .tweet-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.9rem;
   margin-bottom: 1rem;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .tweet-summary-row {
@@ -826,7 +855,10 @@ button.ghost {
   gap: 0.3rem;
   font-weight: 600;
   color: #0f172a;
-  min-width: 200px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0.8rem;
+  padding: 0.75rem 0.9rem;
 }
 
 .tweet-range {
@@ -835,14 +867,24 @@ button.ghost {
   gap: 0.35rem;
   font-weight: 600;
   color: #0f172a;
-  flex: 1;
-  min-width: 280px;
+  grid-column: 1 / -1;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0.8rem;
+  padding: 0.75rem 0.9rem;
 }
 
 .tweet-range-inputs {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tweet-filters input,
+.tweet-filters select {
+  width: 100%;
+  min-width: 0;
 }
 
 .tweet-range-inputs input {
