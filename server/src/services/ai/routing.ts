@@ -33,6 +33,7 @@ const ROUTING_UNASSIGNED_TAG = '__unrouted__';
 const ROUTING_NEGATIVE_KEY = '__low_quality__';
 const RULE_MIN_LEN = 80;
 const RULE_LONG_LEN = 160;
+const RULE_MED_LEN = 120;
 const RULE_LONG_MIN_NUMBER_TOKENS = 3;
 const RULE_TICKER_MIN_NUMBER_TOKENS = 2;
 const RULE_LOW_VALUE_LANGS = new Set(['zxx', 'und', 'qme', 'qst', 'qam', 'qct', 'qht']);
@@ -45,6 +46,28 @@ const RULE_HIGH_SIGNAL_KEYWORDS = [
   'etf',
   'blackrock',
   'grayscale',
+  'announce',
+  'announced',
+  'launch',
+  'launched',
+  'release',
+  'released',
+  'partnership',
+  'partner',
+  'merge',
+  'merger',
+  'acquire',
+  'acquires',
+  'acquisition',
+  'proposal',
+  'vote',
+  'approval',
+  'rejection',
+  'listing',
+  'delist',
+  'upgrade',
+  'update',
+  'patch',
   '监管',
   '合规',
   '加息',
@@ -64,7 +87,6 @@ const RULE_HIGH_SIGNAL_KEYWORDS = [
   'series',
   '估值',
   '并购',
-  'acquisition',
   '回购',
   'buyback',
   '解锁',
@@ -75,7 +97,21 @@ const RULE_HIGH_SIGNAL_KEYWORDS = [
   'mainnet',
   '升级',
   'hard fork',
-  'testnet'
+  'testnet',
+  '宣布',
+  '发布',
+  '上线',
+  '下线',
+  '合作',
+  '伙伴',
+  '合并',
+  '提案',
+  '投票',
+  '通过',
+  '否决',
+  '下架',
+  '更新',
+  '修补'
 ];
 const RULE_HIGH_SIGNAL_NEEDLES = RULE_HIGH_SIGNAL_KEYWORDS.map((keyword) => keyword.toLowerCase());
 
@@ -1119,6 +1155,7 @@ export function applyRuleBasedRouting(tweets: Tweet[]) {
     const shouldAnalyze =
       highSignal ||
       (amountUnit && timeUnit) ||
+      len >= RULE_MED_LEN ||
       (len >= RULE_LONG_LEN && numberTokens >= RULE_LONG_MIN_NUMBER_TOKENS) ||
       (ticker && numberTokens >= RULE_TICKER_MIN_NUMBER_TOKENS);
 
