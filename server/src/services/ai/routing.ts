@@ -25,10 +25,10 @@ const ROUTE_NEGATIVE_IMPORTANCE_MAX = 1;
 const ROUTE_CLASSIFY_HIGH_SIM = 0.86;
 const ROUTE_CLASSIFY_HIGH_STRICT = 0.9;
 const ROUTE_CLASSIFY_HIGH_MARGIN = 0.04;
-const ROUTE_CLASSIFY_LOW_SIM = 0.72;
+const ROUTE_CLASSIFY_LOW_SIM = 0.68;
 const ROUTE_CLASSIFY_NEG_GAP_LOW = 0.05;
 const ROUTE_CLASSIFY_NEG_GAP_HIGH = 0.08;
-const ROUTE_TAG_SCORE_TOP_K = 5;
+const ROUTE_TAG_SCORE_TOP_K = 1;
 const ROUTING_UNASSIGNED_TAG = '__unrouted__';
 const ROUTING_NEGATIVE_KEY = '__low_quality__';
 const RULE_MIN_LEN = 80;
@@ -631,25 +631,8 @@ async function buildTagEmbeddingCacheData(params: RoutingRefreshParams) {
     tagSamples[tag] = vectors;
   }
 
-  const negativeCandidates = await loadNegativeSamples(params);
-  if (negativeCandidates.length) {
-    const embeddings = await ensureTweetEmbeddings(negativeCandidates);
-    const vectors = negativeCandidates
-      .map((candidate) => embeddings.get(candidate.tweetId))
-      .filter((vector): vector is number[] => Array.isArray(vector) && vector.length === dimensions)
-      .map((vector) => normalizeVector(vector));
-    tagSampleCounts[ROUTING_NEGATIVE_KEY] = vectors.length;
-    if (vectors.length >= ROUTE_EMBEDDING_NEG_MIN_SAMPLE) {
-      tagSamples[ROUTING_NEGATIVE_KEY] = vectors;
-    } else {
-      logger.warn('Routing negative sample insufficient, skip negative prototype', {
-        count: vectors.length,
-        min: ROUTE_EMBEDDING_NEG_MIN_SAMPLE
-      });
-    }
-  } else {
-    tagSampleCounts[ROUTING_NEGATIVE_KEY] = 0;
-  }
+  // Negative samples currently disabled: keep counts at zero.
+  tagSampleCounts[ROUTING_NEGATIVE_KEY] = 0;
 
   const availableTags = Object.keys(tagSamples).filter((tag) => tag !== ROUTING_NEGATIVE_KEY);
   if (!availableTags.length) {
@@ -659,7 +642,7 @@ async function buildTagEmbeddingCacheData(params: RoutingRefreshParams) {
 
   logger.info('Routing tag samples prepared', {
     tags: availableTags.length,
-    negativeSamples: tagSampleCounts[ROUTING_NEGATIVE_KEY] ?? 0,
+    negativeSamples: 0,
     windowDays: params.windowDays,
     samplePerTag: params.samplePerTag,
     model,
@@ -721,11 +704,8 @@ async function persistRoutingTagCache(data: {
   };
   routingTagCache = cache;
 
-  const negativeSamples = data.tagSamples[ROUTING_NEGATIVE_KEY] ?? [];
-  cache.negativeSampleCount = negativeSamples.length;
-  cache.negativeCentroid = negativeSamples.length
-    ? buildCentroid(negativeSamples, record.dimensions)
-    : null;
+  cache.negativeSampleCount = 0;
+  cache.negativeCentroid = null;
 
   Object.entries(data.tagSamples).forEach(([tag, samples]) => {
     if (tag === ROUTING_NEGATIVE_KEY) return;
@@ -748,10 +728,7 @@ export async function getRoutingEmbeddingCacheSummary(): Promise<RoutingEmbeddin
   }
   const tagSampleCounts = parseTagSampleCounts(record.tagSampleCounts);
   const tagSamples = parseTagSamples(record.tagSamples, record.dimensions);
-  const negativeSamples = tagSamples[ROUTING_NEGATIVE_KEY] ?? [];
-  const negativeCentroid = negativeSamples.length
-    ? buildCentroid(negativeSamples, record.dimensions)
-    : null;
+  const negativeCentroid = null;
   const tagMetrics: Record<string, RoutingEmbeddingTagMetric> = {};
   Object.entries(tagSampleCounts).forEach(([tag, sampleCount]) => {
     if (tag === ROUTING_NEGATIVE_KEY) {
@@ -770,7 +747,7 @@ export async function getRoutingEmbeddingCacheSummary(): Promise<RoutingEmbeddin
     }
     const centroid = buildCentroid(samples, record.dimensions);
     const stats = computeTagStats(samples, centroid);
-    const negativeSim = negativeCentroid ? dot(centroid, negativeCentroid) : null;
+    const negativeSim = null;
     tagMetrics[tag] = {
       sampleCount,
       meanSim: stats.mean,
@@ -792,7 +769,7 @@ export async function getRoutingEmbeddingCacheSummary(): Promise<RoutingEmbeddin
     tagSampleCounts,
     tagMetrics,
     totalSamples,
-    negativeSampleCount: tagSampleCounts[ROUTING_NEGATIVE_KEY] ?? 0
+    negativeSampleCount: 0
   };
 }
 
@@ -1072,8 +1049,8 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
     }
 
     const thresholds = cache.tagThresholds[bestTag] ?? DEFAULT_TAG_THRESHOLDS;
-    const negativeScore = cache.negativeCentroid ? dot(normalized, cache.negativeCentroid) : undefined;
-    const negativeGap = negativeScore !== undefined ? bestScore - negativeScore : undefined;
+    const negativeScore = undefined;
+    const negativeGap = undefined;
 
     const isLowScore = bestScore <= thresholds.lowSim;
     const isNegativeLow = negativeGap !== undefined && negativeGap < thresholds.negGapLow;
