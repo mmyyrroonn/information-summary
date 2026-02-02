@@ -12,6 +12,7 @@ export {
 } from './ai/routing';
 export {
   buildHighScoreSummaryMarkdown,
+  generateSocialDigestFromReport,
   generateReport,
   generateReportForProfile,
   sendHighScoreReport,

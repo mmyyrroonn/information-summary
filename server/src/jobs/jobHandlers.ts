@@ -1,4 +1,4 @@
-import { RoutingStatus, type Report } from '@prisma/client';
+import { Prisma, RoutingStatus, type Report } from '@prisma/client';
 import { logger } from '../logger';
 import { config } from '../config';
 import { prisma } from '../db';
@@ -8,6 +8,7 @@ import {
   classifyTweetsByIdsWithTag,
   dispatchLlmClassificationJobs,
   generateReportForProfile,
+  generateSocialDigestFromReport,
   refreshRoutingEmbeddingCache,
   refreshRoutingEmbeddingCacheForTag,
   sendReportAndNotify
@@ -263,6 +264,45 @@ export async function handleReportProfileJob(job: QueuedJob<'report-profile'>) {
   );
 }
 
+export async function handleSocialDigestJob(job: QueuedJob<'social-digest'>) {
+  const payload = (job.payload ?? {}) as JobPayloadMap['social-digest'];
+  const reportId = payload.reportId;
+  if (!reportId) {
+    logger.warn('Social digest job skipped: missing reportId', { jobId: job.id });
+    return;
+  }
+
+  const report = await prisma.report.findUnique({
+    where: { id: reportId }
+  });
+  if (!report) {
+    throw new Error('Report not found for social digest');
+  }
+
+  const result = await withAiProcessingLock(
+    `job:${job.id}`,
+    () =>
+      generateSocialDigestFromReport(report, {
+        ...(payload.prompt !== undefined ? { prompt: payload.prompt } : {}),
+        ...(typeof payload.maxItems === 'number' ? { maxItems: payload.maxItems } : {}),
+        ...(typeof payload.includeTweetText === 'boolean' ? { includeTweetText: payload.includeTweetText } : {})
+      }),
+    { scope: 'report' }
+  );
+
+  const updatedPayload = {
+    ...payload,
+    result
+  };
+
+  await prisma.backgroundJob.update({
+    where: { id: job.id },
+    data: {
+      payload: updatedPayload as unknown as Prisma.InputJsonValue
+    }
+  });
+}
+
 export async function handleJob(job: QueuedJob) {
   switch (job.type) {
     case 'fetch-subscriptions':
@@ -285,6 +325,9 @@ export async function handleJob(job: QueuedJob) {
       break;
     case 'report-profile':
       await handleReportProfileJob(job as QueuedJob<'report-profile'>);
+      break;
+    case 'social-digest':
+      await handleSocialDigestJob(job as QueuedJob<'social-digest'>);
       break;
     default:
       logger.warn('Unknown job type encountered', { jobId: job.id, type: job.type });

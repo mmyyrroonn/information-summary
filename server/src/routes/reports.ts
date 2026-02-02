@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { listReports, getReport } from '../services/reportService';
 import { sendHighScoreReport, sendReportAndNotify } from '../services/aiService';
 import { publishReportToGithub } from '../services/githubPublishService';
+import { enqueueJob } from '../jobs/jobQueue';
+import { serializeJob } from '../services/jobService';
 
 const router = Router();
 
@@ -82,6 +84,42 @@ router.post('/:id/publish', async (req, res, next) => {
       publishedAt: result.publishedAt,
       url: result.url,
       indexUrl: result.indexUrl
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/social', async (req, res, next) => {
+  try {
+    const body = z
+      .object({
+        prompt: z.string().optional(),
+        maxItems: z.coerce.number().int().min(5).max(200).optional(),
+        includeTweetText: z.boolean().optional()
+      })
+      .parse(req.body ?? {});
+    const report = await getReport(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    const payload: { reportId: string; prompt?: string; maxItems?: number; includeTweetText?: boolean } = {
+      reportId: report.id
+    };
+    if (body.prompt !== undefined) {
+      payload.prompt = body.prompt;
+    }
+    if (typeof body.maxItems === 'number') {
+      payload.maxItems = body.maxItems;
+    }
+    if (typeof body.includeTweetText === 'boolean') {
+      payload.includeTweetText = body.includeTweetText;
+    }
+    const { job, created } = await enqueueJob('social-digest', payload, { dedupe: false });
+    res.status(created ? 202 : 200).json({
+      created,
+      job: serializeJob(job),
+      message: created ? 'Social digest job enqueued' : 'Social digest job already running'
     });
   } catch (error) {
     next(error);

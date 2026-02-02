@@ -759,6 +759,67 @@ button.ghost {
   gap: 0.35rem 0.5rem;
 }
 
+.social-digest {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.social-digest-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.social-digest-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.social-digest-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.social-digest-label textarea {
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5f5;
+  padding: 0.65rem 0.75rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.social-digest-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.social-digest-toggle input {
+  width: 16px;
+  height: 16px;
+}
+
+.social-digest-output {
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
 .cluster-member {
   font-size: 0.85rem;
   color: #2563eb;

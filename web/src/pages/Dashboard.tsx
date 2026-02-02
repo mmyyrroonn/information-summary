@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { api } from '../api';
-import type { ReportDetail, ReportSummary } from '../types';
+import type { BackgroundJobSummary, ReportDetail, ReportSummary, SocialDigestResult } from '../types';
 
 marked.setOptions({
   gfm: true,
@@ -68,6 +68,14 @@ export function DashboardPage() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusLink, setStatusLink] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [socialDigest, setSocialDigest] = useState<SocialDigestResult | null>(null);
+  const [socialPrompt, setSocialPrompt] = useState('');
+  const [socialStatus, setSocialStatus] = useState<string | null>(null);
+  const [socialBusy, setSocialBusy] = useState(false);
+  const [socialJob, setSocialJob] = useState<BackgroundJobSummary | null>(null);
+  const [socialIncludeText, setSocialIncludeText] = useState(false);
+  const socialPollerRef = useRef<number | null>(null);
+  const aliveRef = useRef(true);
   const reportHtml = useMemo(() => {
     if (!selectedReport?.content) {
       return '';
@@ -81,7 +89,12 @@ export function DashboardPage() {
   const clusteredOutline = useMemo(() => asClusteredOutline(selectedReport?.outline), [selectedReport?.outline]);
 
   useEffect(() => {
+    aliveRef.current = true;
     refreshReports();
+    return () => {
+      aliveRef.current = false;
+      stopSocialPolling();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -104,6 +117,10 @@ export function DashboardPage() {
     try {
       const data = await api.getReport(id);
       setSelectedReport(data);
+      setSocialDigest(null);
+      setSocialStatus(null);
+      setSocialJob(null);
+      stopSocialPolling();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '读取日报失败');
       setStatusLink(null);
@@ -153,6 +170,112 @@ export function DashboardPage() {
     } finally {
       setBusy(null);
     }
+  }
+
+  function stopSocialPolling() {
+    if (socialPollerRef.current) {
+      window.clearTimeout(socialPollerRef.current);
+      socialPollerRef.current = null;
+    }
+  }
+
+  function extractSocialResult(job: BackgroundJobSummary): SocialDigestResult | null {
+    const payload = job.payload as {
+      result?: SocialDigestResult;
+    } | null;
+    if (!payload || typeof payload !== 'object') return null;
+    const result = payload.result;
+    if (!result || typeof result !== 'object') return null;
+    if (typeof result.content !== 'string') return null;
+    return result;
+  }
+
+  function formatSocialJobStatus(job?: BackgroundJobSummary | null) {
+    if (!job) return null;
+    if (job.status === 'PENDING') return '排队中...';
+    if (job.status === 'RUNNING') return '生成中...';
+    if (job.status === 'COMPLETED') return '生成完成';
+    if (job.status === 'FAILED') {
+      return job.lastError ? `失败：${job.lastError}` : '生成失败';
+    }
+    return null;
+  }
+
+  function startSocialPolling(jobId: string) {
+    stopSocialPolling();
+    const poll = async () => {
+      try {
+        const job = await api.getJob(jobId);
+        if (!aliveRef.current) return;
+        setSocialJob(job);
+        setSocialStatus(formatSocialJobStatus(job));
+        if (job.status === 'COMPLETED') {
+          const result = extractSocialResult(job);
+          if (result) {
+            setSocialDigest(result);
+          } else {
+            setSocialStatus('任务完成但未返回内容');
+          }
+          setSocialBusy(false);
+          stopSocialPolling();
+          return;
+        }
+        if (job.status === 'FAILED') {
+          setSocialBusy(false);
+          stopSocialPolling();
+          return;
+        }
+        socialPollerRef.current = window.setTimeout(poll, 3000);
+      } catch (error) {
+        if (!aliveRef.current) return;
+        setSocialStatus(error instanceof Error ? error.message : '任务状态查询失败');
+        setSocialBusy(false);
+        stopSocialPolling();
+      }
+    };
+    void poll();
+  }
+
+  async function handleGenerateSocialDigest() {
+    if (!selectedReport) return;
+    stopSocialPolling();
+    setSocialJob(null);
+    setSocialBusy(true);
+    setSocialStatus(null);
+    try {
+      const response = await api.generateSocialDigest(selectedReport.id, {
+        ...(socialPrompt.trim() ? { prompt: socialPrompt.trim() } : {}),
+        ...(socialIncludeText ? { includeTweetText: true } : {})
+      });
+      setSocialDigest(null);
+      setSocialJob(response.job);
+      setSocialStatus('已加入队列');
+      startSocialPolling(response.job.id);
+    } catch (error) {
+      setSocialStatus(error instanceof Error ? error.message : '社媒文案生成失败');
+      setSocialBusy(false);
+    }
+  }
+
+  async function handleCopySocialDigest() {
+    if (!socialDigest?.content) return;
+    try {
+      await navigator.clipboard.writeText(socialDigest.content);
+      setSocialStatus('已复制到剪贴板');
+    } catch (error) {
+      setSocialStatus(error instanceof Error ? error.message : '复制失败');
+    }
+  }
+
+  function handleDownloadSocialDigest() {
+    if (!socialDigest?.content) return;
+    const blob = new Blob([socialDigest.content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `social-digest-${selectedReport?.id ?? 'report'}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -297,6 +420,54 @@ export function DashboardPage() {
             ) : (
               <p className="empty">选择左侧的日报查看详情</p>
             )}
+            {selectedReport ? (
+              <div className="social-digest">
+                <div className="social-digest-head">
+                  <h3>社媒文案</h3>
+                  <div className="social-digest-actions">
+                    <button type="button" onClick={handleGenerateSocialDigest} disabled={socialBusy}>
+                      {socialBusy ? '生成中...' : '生成'}
+                    </button>
+                    <button type="button" className="ghost" onClick={handleCopySocialDigest} disabled={!socialDigest?.content}>
+                      复制
+                    </button>
+                    <button type="button" className="ghost" onClick={handleDownloadSocialDigest} disabled={!socialDigest?.content}>
+                      下载
+                    </button>
+                  </div>
+                </div>
+                <label className="social-digest-label">
+                  额外要求（可选）
+                  <textarea
+                    value={socialPrompt}
+                    onChange={(event) => setSocialPrompt(event.target.value)}
+                    rows={3}
+                    placeholder="比如：多一点口语化、强调市场情绪、不要提某主题..."
+                  />
+                </label>
+                <label className="social-digest-toggle">
+                  <input
+                    type="checkbox"
+                    checked={socialIncludeText}
+                    onChange={(event) => setSocialIncludeText(event.target.checked)}
+                  />
+                  附带原文片段（调试用）
+                </label>
+                {socialStatus ? <p className="status">{socialStatus}</p> : null}
+                {socialJob ? <p className="meta">任务ID：{socialJob.id}</p> : null}
+                {socialDigest?.content ? (
+                  <pre className="social-digest-output">{socialDigest.content}</pre>
+                ) : (
+                  <p className="empty">点击生成，使用当前日报作为素材。</p>
+                )}
+                {socialDigest ? (
+                  <p className="meta">
+                    素材 {socialDigest.usedItems}/{socialDigest.totalItems} 条 · 时间范围{' '}
+                    {new Date(socialDigest.periodStart).toLocaleString()} - {new Date(socialDigest.periodEnd).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </article>
         </div>
       </section>

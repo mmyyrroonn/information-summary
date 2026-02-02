@@ -17,7 +17,8 @@ const jobTypeSchema = z.enum(
     'classify-tweets-llm',
     'embedding-cache-refresh',
     'embedding-cache-refresh-tag',
-    'report-profile'
+    'report-profile',
+    'social-digest'
   ] as const
 );
 

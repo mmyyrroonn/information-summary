@@ -87,6 +87,10 @@ interface ApiClient {
   getReport: (id: string) => Promise<ReportDetail>;
   sendReport: (id: string) => Promise<unknown>;
   publishReport: (id: string) => Promise<ReportPublishResult>;
+  generateSocialDigest: (
+    id: string,
+    payload?: { prompt?: string; maxItems?: number; includeTweetText?: boolean }
+  ) => Promise<JobEnqueueResponse>;
   listReportProfiles: () => Promise<ReportProfile[]>;
   createReportProfile: (payload: ReportProfileCreatePayload) => Promise<ReportProfile>;
   updateReportProfile: (id: string, payload: ReportProfileUpdatePayload) => Promise<ReportProfile>;
@@ -235,6 +239,11 @@ export const api: ApiClient = {
   getReport: (id) => request<ReportDetail>(`/reports/${id}`),
   sendReport: (id) => request(`/reports/${id}/send`, { method: 'POST' }),
   publishReport: (id) => request<ReportPublishResult>(`/reports/${id}/publish`, { method: 'POST' }),
+  generateSocialDigest: (id, payload = {}) =>
+    request<JobEnqueueResponse>(`/reports/${id}/social`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
   listReportProfiles: () => request<ReportProfile[]>('/report-profiles'),
   createReportProfile: (payload) =>
     request<ReportProfile>('/report-profiles', { method: 'POST', body: JSON.stringify(payload) }),

@@ -9,7 +9,8 @@ export type BackgroundJobType =
   | 'classify-tweets-llm'
   | 'embedding-cache-refresh'
   | 'embedding-cache-refresh-tag'
-  | 'report-profile';
+  | 'report-profile'
+  | 'social-digest';
 
 export interface JobPayloadMap {
   'fetch-subscriptions': {
@@ -45,6 +46,19 @@ export interface JobPayloadMap {
     notify?: boolean;
     trigger?: string;
     windowEnd?: string;
+  };
+  'social-digest': {
+    reportId: string;
+    prompt?: string;
+    maxItems?: number;
+    includeTweetText?: boolean;
+    result?: {
+      content: string;
+      usedItems: number;
+      totalItems: number;
+      periodStart: string;
+      periodEnd: string;
+    };
   };
 }
 

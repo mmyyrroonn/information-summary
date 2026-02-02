@@ -7,7 +7,7 @@ import { formatDisplayDate, withTz } from '../../utils/time';
 import { sendHighScoreMarkdownToTelegram, sendMarkdownToTelegram } from '../notificationService';
 import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from '../embeddingService';
 import { clusterByEmbedding } from '../clusterService';
-import { runStructuredCompletion } from './openaiClient';
+import { runChatCompletion, runStructuredCompletion } from './openaiClient';
 import {
   HIGH_PRIORITY_IMPORTANCE,
   TAG_DISPLAY_NAMES,
@@ -31,6 +31,9 @@ const REPORT_MIN_IMPORTANCE = Math.max(1, Math.min(5, Math.floor(config.REPORT_M
 const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
 const DEFAULT_REPORT_WINDOW_HOURS = 6;
+const SOCIAL_DIGEST_MAX_ITEMS = 60;
+const SOCIAL_DIGEST_SUMMARY_MAX_LENGTH = 240;
+const SOCIAL_DIGEST_TEXT_MAX_LENGTH = 360;
 
 type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: { include: { subscription: true } } } }>;
 
@@ -68,6 +71,27 @@ interface ReportPayload {
 type ReportSection = NonNullable<ReportPayload['sections']>[number];
 type ReportWindow = { start: Date; end: Date };
 type ReportGroupBy = 'cluster' | 'tag' | 'author';
+type SocialDigestItem = {
+  summary: string;
+  text?: string;
+  tags: string[];
+  importance?: number | null;
+  author?: string;
+};
+
+export interface SocialDigestResult {
+  content: string;
+  usedItems: number;
+  totalItems: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
+export interface SocialDigestOptions {
+  prompt?: string;
+  maxItems?: number;
+  includeTweetText?: boolean;
+}
 
 interface ClusterReportOutline {
   mode: 'clustered';
@@ -751,6 +775,185 @@ function renderClusterReportMarkdown(
   });
 
   return lines.join('\n');
+}
+
+function extractTweetIdsFromOutline(outline: unknown): string[] {
+  if (!outline || typeof outline !== 'object') {
+    return [];
+  }
+  const outlineRecord = outline as Record<string, unknown>;
+  if (outlineRecord.mode === 'clustered') {
+    const sections = Array.isArray(outlineRecord.sections) ? outlineRecord.sections : [];
+    const ids: string[] = [];
+    sections.forEach((section) => {
+      if (!section || typeof section !== 'object') return;
+      const clusters = Array.isArray((section as Record<string, unknown>).clusters)
+        ? ((section as Record<string, unknown>).clusters as unknown[])
+        : [];
+      clusters.forEach((cluster) => {
+        if (!cluster || typeof cluster !== 'object') return;
+        const representative = (cluster as Record<string, unknown>).representative as Record<string, unknown> | undefined;
+        const tweetId = representative?.tweetId;
+        if (typeof tweetId === 'string' && tweetId.trim()) {
+          ids.push(tweetId.trim());
+        }
+      });
+    });
+    return uniqueTweetIds(ids);
+  }
+
+  const sections = Array.isArray(outlineRecord.sections) ? outlineRecord.sections : [];
+  const ids: string[] = [];
+  sections.forEach((section) => {
+    if (!section || typeof section !== 'object') return;
+    const record = section as Record<string, unknown>;
+    const items = Array.isArray(record.items) ? (record.items as unknown[]) : [];
+    items.forEach((item) => {
+      if (!item || typeof item !== 'object') return;
+      const tweetId = (item as Record<string, unknown>).tweetId;
+      if (typeof tweetId === 'string' && tweetId.trim()) {
+        ids.push(tweetId.trim());
+      }
+    });
+    const tweets = Array.isArray(record.tweets) ? (record.tweets as unknown[]) : [];
+    tweets.forEach((entry) => {
+      if (typeof entry !== 'string') return;
+      const match = entry.match(/\d{10,}/g);
+      if (!match) return;
+      match.forEach((value) => ids.push(value));
+    });
+  });
+
+  return uniqueTweetIds(ids);
+}
+
+function uniqueTweetIds(ids: string[]) {
+  const seen = new Set<string>();
+  const output: string[] = [];
+  ids.forEach((id) => {
+    if (!id) return;
+    if (seen.has(id)) return;
+    seen.add(id);
+    output.push(id);
+  });
+  return output;
+}
+
+function buildSocialDigestPrompt(options: {
+  start: string;
+  end: string;
+  timezone: string;
+  items: SocialDigestItem[];
+  extraPrompt?: string;
+}) {
+  const extra = options.extraPrompt?.trim();
+  const hasText = options.items.some((item) => Boolean(item.text));
+  const rules = [
+    '中文输出，口语化、精炼、总结型，可长文。',
+    '不使用营销式话术，不夸大，不编造未提供的信息。',
+    '不要输出链接、tweetId 或来源标注；不加 hashtags。',
+    '句子短，主体可用短段落或短清单（最多 7 条）。',
+    `开头必须明确时间范围：${options.start} - ${options.end}（${options.timezone}）。`,
+    '如果素材不足，用“目前只看到…”说明，不要猜测。'
+  ];
+  if (hasText) {
+    rules.push('text 字段是原文片段，必要时参考，但仍以 summary 为主。');
+  }
+  if (extra) {
+    rules.push(`额外要求：${extra}`);
+  }
+  return [
+    `请根据以下素材撰写一篇社媒日报。`,
+    `时间范围：${options.start} - ${options.end}（${options.timezone}）。`,
+    '要求：',
+    ...rules.map((rule) => `- ${rule}`),
+    '',
+    '素材（仅可基于以下内容）：',
+    JSON.stringify(options.items, null, 2)
+  ].join('\n');
+}
+
+export async function generateSocialDigestFromReport(
+  report: Report,
+  options: SocialDigestOptions = {}
+): Promise<SocialDigestResult> {
+  const tweetIds = extractTweetIdsFromOutline(report.outline as unknown);
+  if (!tweetIds.length) {
+    throw new Error('Report outline missing tweet references');
+  }
+  const maxItems = Math.max(5, Math.min(options.maxItems ?? SOCIAL_DIGEST_MAX_ITEMS, 200));
+  const selectedIds = tweetIds.slice(0, maxItems);
+  const orderMap = new Map(selectedIds.map((id, index) => [id, index]));
+
+  const insights = await prisma.tweetInsight.findMany({
+    where: { tweetId: { in: selectedIds } },
+    include: { tweet: { include: { subscription: true } } }
+  });
+
+  insights.sort((a, b) => (orderMap.get(a.tweetId) ?? 0) - (orderMap.get(b.tweetId) ?? 0));
+
+  const items = insights.map((insight) => {
+    const summary = truncateText(getInsightSummary(insight), SOCIAL_DIGEST_SUMMARY_MAX_LENGTH);
+    const text =
+      options.includeTweetText && insight.tweet.text
+        ? truncateText(insight.tweet.text, SOCIAL_DIGEST_TEXT_MAX_LENGTH)
+        : undefined;
+    return {
+      summary,
+      ...(text ? { text } : {}),
+      tags: insight.tags ?? [],
+      importance: insight.importance ?? null,
+      author: formatAuthorTitle(insight.tweet)
+    };
+  });
+
+  if (!items.length) {
+    throw new Error('No insights available for social digest');
+  }
+
+  const profile = report.profileId
+    ? await prisma.reportProfile.findUnique({
+        where: { id: report.profileId },
+        select: { timezone: true }
+      })
+    : null;
+  const timezone = profile?.timezone?.trim() || config.REPORT_TIMEZONE;
+  const start = formatDisplayDate(report.periodStart, timezone);
+  const end = formatDisplayDate(report.periodEnd, timezone);
+  const promptPayload: {
+    start: string;
+    end: string;
+    timezone: string;
+    items: SocialDigestItem[];
+    extraPrompt?: string;
+  } = { start, end, timezone, items };
+  if (options.prompt !== undefined) {
+    promptPayload.extraPrompt = options.prompt;
+  }
+  const prompt = buildSocialDigestPrompt(promptPayload);
+
+  const content = await runChatCompletion(
+    {
+      model: 'deepseek-chat',
+      temperature: 0.4,
+      messages: [
+        {
+          role: 'system',
+          content: '你是资深内容编辑，擅长将资讯列表写成中文社媒日报。'
+        },
+        { role: 'user', content: prompt }
+      ]
+    },
+    { stage: 'social-digest', reportId: report.id, items: items.length }
+  );
+
+  return {
+    content,
+    usedItems: items.length,
+    totalItems: tweetIds.length,
+    periodStart: report.periodStart.toISOString(),
+    periodEnd: report.periodEnd.toISOString()
+  };
 }
 
 export async function generateReportForProfile(profile: ReportProfile, windowEnd?: Date) {

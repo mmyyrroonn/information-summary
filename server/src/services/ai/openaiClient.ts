@@ -45,6 +45,62 @@ function extractErrorStatus(error: unknown): number | undefined {
   return undefined;
 }
 
+export async function runChatCompletion(
+  request: ChatCompletionRequest,
+  context?: Record<string, unknown>
+): Promise<string> {
+  const openai = ensureClient();
+  let attempt = 0;
+  let lastError: unknown = null;
+  const stage = typeof context?.stage === 'string' ? String(context.stage) : undefined;
+
+  while (attempt < CHAT_COMPLETION_MAX_RETRIES) {
+    attempt += 1;
+    let responsePreview: string | undefined;
+    if (stage) {
+      logger.info('Chat completion attempt started', {
+        attempt,
+        maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
+        timeoutMs: CHAT_COMPLETION_TIMEOUT_MS,
+        ...(context ?? {})
+      });
+    }
+    try {
+      const completion = await openai.chat.completions.create(request, {
+        timeout: CHAT_COMPLETION_TIMEOUT_MS,
+        maxRetries: CHAT_COMPLETION_SDK_MAX_RETRIES
+      });
+      const content = extractCompletionContent(completion);
+      responsePreview = content.slice(0, CHAT_COMPLETION_PREVIEW_LIMIT);
+      return content.trim();
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : 'unknown error';
+      const status = extractErrorStatus(error);
+      const retryInMs = CHAT_COMPLETION_RETRY_DELAY_MS * attempt;
+      const errorPayload: Record<string, unknown> = {
+        attempt,
+        maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
+        ...(context ?? {}),
+        status,
+        error: message,
+        errorType: error instanceof SyntaxError ? 'json-parse' : 'api'
+      };
+      if (responsePreview) {
+        errorPayload.preview = responsePreview;
+      }
+      if (attempt >= CHAT_COMPLETION_MAX_RETRIES) {
+        logger.error('Chat completion failed', errorPayload);
+        break;
+      }
+      logger.warn('Chat completion attempt failed, retrying', { ...errorPayload, retryInMs });
+      await delay(retryInMs);
+    }
+  }
+
+  throw lastError ?? new Error('Chat completion failed');
+}
+
 export async function runStructuredCompletion<T>(
   request: ChatCompletionRequest,
   context?: Record<string, unknown>
