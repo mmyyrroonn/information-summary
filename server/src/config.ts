@@ -12,6 +12,8 @@ const envSchema = z.object({
   DASHSCOPE_BASE_URL: z.string().default('https://dashscope.aliyuncs.com/compatible-mode/v1'),
   EMBEDDING_MODEL: z.string().default('text-embedding-v4'),
   EMBEDDING_DIMENSIONS: z.coerce.number().default(512),
+  ROUTING_CACHE_WINDOW_DAYS_DEFAULT: z.coerce.number().default(120),
+  ROUTING_CACHE_SAMPLE_PER_TAG_DEFAULT: z.coerce.number().default(200),
   REPORT_CLUSTER_THRESHOLD: z.coerce.number().default(0.9),
   REPORT_CLUSTER_MAX: z.coerce.number().default(0),
   REPORT_MIN_IMPORTANCE: z.coerce.number().default(2),

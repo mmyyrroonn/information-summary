@@ -15,8 +15,8 @@ import {
 const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
 const ROUTING_TAG_CACHE_ID = 'routing-tag-cache';
-const ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS = 120;
-const ROUTE_EMBEDDING_SAMPLE_PER_TAG = 200;
+const ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS = config.ROUTING_CACHE_WINDOW_DAYS_DEFAULT;
+const ROUTE_EMBEDDING_SAMPLE_PER_TAG = config.ROUTING_CACHE_SAMPLE_PER_TAG_DEFAULT;
 const ROUTE_EMBEDDING_MIN_SAMPLE = 40;
 const ROUTE_EMBEDDING_MIN_PRIMARY_SAMPLE = 100;
 const ROUTE_EMBEDDING_NEG_SAMPLE = 300;
@@ -114,6 +114,8 @@ const RULE_HIGH_SIGNAL_KEYWORDS = [
   '修补'
 ];
 const RULE_HIGH_SIGNAL_NEEDLES = RULE_HIGH_SIGNAL_KEYWORDS.map((keyword) => keyword.toLowerCase());
+const ROUTE_SAMPLE_POOL_MULTIPLIER = 4;
+const ROUTE_SAMPLE_POOL_MAX = 5000;
 
 const ROUTING_TAGS = CLASSIFY_ALLOWED_TAGS.filter((tag) => tag !== TAG_FALLBACK_KEY);
 type RoutingTag = (typeof ROUTING_TAGS)[number];
@@ -212,6 +214,11 @@ type TagSample = {
   text: string;
 };
 
+type TagSampleRecord = {
+  tweetId: string;
+  tweet: { text: string; lang: string | null };
+};
+
 let routingTagCache: TagCacheRecord | null = null;
 
 const DEFAULT_TAG_THRESHOLDS: TagThresholds = {
@@ -235,6 +242,16 @@ function normalizeRoutingRefreshOptions(options?: RoutingRefreshOptions): Routin
   return {
     windowDays: toPositiveInt(options?.windowDays, ROUTE_EMBEDDING_SAMPLE_WINDOW_DAYS),
     samplePerTag: toPositiveInt(options?.samplePerTag, ROUTE_EMBEDDING_SAMPLE_PER_TAG)
+  };
+}
+
+function normalizeRoutingRefreshOptionsWithFallback(
+  options: RoutingRefreshOptions | undefined,
+  fallback: RoutingRefreshParams
+): RoutingRefreshParams {
+  return {
+    windowDays: toPositiveInt(options?.windowDays, fallback.windowDays),
+    samplePerTag: toPositiveInt(options?.samplePerTag, fallback.samplePerTag)
   };
 }
 
@@ -525,10 +542,105 @@ function resolveTagCandidates(tag: string) {
   return Array.from(candidates);
 }
 
+function shuffleInPlace<T>(items: T[]) {
+  for (let i = items.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = items[i];
+    items[i] = items[j] as T;
+    items[j] = tmp as T;
+  }
+}
+
+function resolveSampleLanguageBucket(lang: string | null | undefined) {
+  const normalized = (lang ?? '').trim().toLowerCase();
+  if (normalized.startsWith('zh')) return 'zh';
+  if (normalized.startsWith('en')) return 'en';
+  return 'other';
+}
+
+function resolveSampleLengthBucket(text: string) {
+  const length = Array.from(text.trim()).length;
+  if (length < 80) return 'short';
+  if (length <= 160) return 'medium';
+  return 'long';
+}
+
+function pickStratifiedRandomSamples(records: TagSampleRecord[], limit: number): TagSampleRecord[] {
+  if (limit <= 0 || !records.length) return [];
+  if (records.length <= limit) return records;
+
+  const buckets = new Map<string, TagSampleRecord[]>();
+  records.forEach((record) => {
+    const bucketKey = `${resolveSampleLanguageBucket(record.tweet.lang)}:${resolveSampleLengthBucket(record.tweet.text)}`;
+    const list = buckets.get(bucketKey);
+    if (list) {
+      list.push(record);
+    } else {
+      buckets.set(bucketKey, [record]);
+    }
+  });
+
+  const bucketEntries = Array.from(buckets.values()).map((items) => ({
+    items: [...items],
+    take: 0,
+    remainderScore: 0
+  }));
+  bucketEntries.forEach((entry) => shuffleInPlace(entry.items));
+
+  const nonEmptyBucketCount = bucketEntries.filter((entry) => entry.items.length > 0).length;
+  let allocated = 0;
+  if (nonEmptyBucketCount > 0 && limit >= nonEmptyBucketCount) {
+    bucketEntries.forEach((entry) => {
+      if (!entry.items.length) return;
+      entry.take = 1;
+      allocated += 1;
+    });
+  }
+
+  let remaining = limit - allocated;
+  while (remaining > 0) {
+    const totalAvailable = bucketEntries.reduce((sum, entry) => sum + Math.max(0, entry.items.length - entry.take), 0);
+    if (totalAvailable <= 0) break;
+
+    let assigned = 0;
+    bucketEntries.forEach((entry) => {
+      const available = entry.items.length - entry.take;
+      if (available <= 0) {
+        entry.remainderScore = 0;
+        return;
+      }
+      const rawExtra = (remaining * available) / totalAvailable;
+      const extra = Math.min(available, Math.floor(rawExtra));
+      if (extra > 0) {
+        entry.take += extra;
+        assigned += extra;
+      }
+      entry.remainderScore = rawExtra - Math.floor(rawExtra);
+    });
+
+    remaining -= assigned;
+    if (remaining <= 0) break;
+    if (assigned === 0) {
+      const next = bucketEntries
+        .filter((entry) => entry.items.length > entry.take)
+        .sort((a, b) => b.remainderScore - a.remainderScore)[0];
+      if (!next) break;
+      next.take += 1;
+      remaining -= 1;
+    }
+  }
+
+  const selected = bucketEntries.flatMap((entry) => entry.items.slice(0, entry.take));
+  if (selected.length <= limit) return selected;
+  shuffleInPlace(selected);
+  return selected.slice(0, limit);
+}
+
 async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promise<TagSample[]> {
   const since = new Date(Date.now() - params.windowDays * 24 * 60 * 60 * 1000);
   const tagCandidates = resolveTagCandidates(tag);
-  type TagSampleRecord = { tweetId: string; tweet: { text: string } };
+  const primaryPoolLimit = Math.min(params.samplePerTag * ROUTE_SAMPLE_POOL_MULTIPLIER, ROUTE_SAMPLE_POOL_MAX);
+
   const primary = (await prisma.tweetInsight.findMany({
     where: {
       createdAt: { gte: since },
@@ -538,19 +650,20 @@ async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promis
     },
     select: {
       tweetId: true,
-      tweet: { select: { text: true } }
+      tweet: { select: { text: true, lang: true } }
     },
     orderBy: { createdAt: 'desc' },
-    take: params.samplePerTag
+    take: primaryPoolLimit
   })) as TagSampleRecord[];
 
-  if (primary.length >= ROUTE_EMBEDDING_MIN_PRIMARY_SAMPLE) {
-    return primary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+  const selectedPrimary = pickStratifiedRandomSamples(primary, params.samplePerTag);
+  if (selectedPrimary.length >= ROUTE_EMBEDDING_MIN_PRIMARY_SAMPLE) {
+    return selectedPrimary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
   }
 
-  const supplementalLimit = params.samplePerTag - primary.length;
+  const supplementalLimit = params.samplePerTag - selectedPrimary.length;
   if (supplementalLimit <= 0) {
-    return primary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+    return selectedPrimary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
   }
 
   const supplemental = (await prisma.tweetInsight.findMany({
@@ -568,13 +681,14 @@ async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promis
     })(),
     select: {
       tweetId: true,
-      tweet: { select: { text: true } }
+      tweet: { select: { text: true, lang: true } }
     },
     orderBy: { createdAt: 'desc' },
-    take: supplementalLimit
+    take: Math.min(supplementalLimit * ROUTE_SAMPLE_POOL_MULTIPLIER, ROUTE_SAMPLE_POOL_MAX)
   })) as TagSampleRecord[];
 
-  return [...primary, ...supplemental].map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+  const selectedSupplemental = pickStratifiedRandomSamples(supplemental, supplementalLimit);
+  return [...selectedPrimary, ...selectedSupplemental].map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
 }
 
 async function loadNegativeSamples(params: RoutingRefreshParams): Promise<TagSample[]> {
@@ -851,7 +965,14 @@ export async function refreshRoutingEmbeddingCacheForTag(tag: string, reason = '
 }
 
 export async function refreshRoutingEmbeddingCache(reason = 'manual', options?: RoutingRefreshOptions) {
-  const params = normalizeRoutingRefreshOptions(options);
+  const record = await prisma.routingTagEmbeddingCache.findUnique({
+    where: { id: ROUTING_TAG_CACHE_ID },
+    select: { sourceWindowDays: true, samplePerTag: true }
+  });
+  const fallbackParams: RoutingRefreshParams = record
+    ? { windowDays: record.sourceWindowDays, samplePerTag: record.samplePerTag }
+    : normalizeRoutingRefreshOptions();
+  const params = normalizeRoutingRefreshOptionsWithFallback(options, fallbackParams);
   if (!embeddingsEnabled()) {
     return { updated: false, reason: 'embeddings-disabled', ...params };
   }
@@ -918,18 +1039,10 @@ async function loadRoutingTagCache() {
     return persistRoutingTagCache(data);
   }
 
-  const params = normalizeRoutingRefreshOptions();
-  if (record.sourceWindowDays !== params.windowDays || record.samplePerTag !== params.samplePerTag) {
-    logger.info('Routing tag cache params mismatch, rebuilding', {
-      storedWindowDays: record.sourceWindowDays,
-      storedSamplePerTag: record.samplePerTag,
-      currentWindowDays: params.windowDays,
-      currentSamplePerTag: params.samplePerTag
-    });
-    const data = await buildTagEmbeddingCacheData(params);
-    if (!data) return null;
-    return persistRoutingTagCache(data);
-  }
+  const params: RoutingRefreshParams = {
+    windowDays: record.sourceWindowDays,
+    samplePerTag: record.samplePerTag
+  };
 
   const tagSamples = parseTagSamples(record.tagSamples, record.dimensions);
   const tagSampleCounts = parseTagSampleCounts(record.tagSampleCounts);

@@ -276,7 +276,7 @@ export function EmbeddingCachePage() {
         <div className="cache-card">
           <h3>全量刷新</h3>
           {refreshMessage && <p className="status">{refreshMessage}</p>}
-          <p className="hint">留空使用默认：窗口 120 天 / 每类 200</p>
+          <p className="hint">留空沿用当前缓存参数（首次构建时使用系统默认值）</p>
           <div className="config-grid">
             <label>
               样本窗口（天）

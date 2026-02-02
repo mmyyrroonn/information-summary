@@ -34,6 +34,8 @@
 | `DASHSCOPE_BASE_URL` | DashScope OpenAI 兼容 baseURL（默认北京地域） |
 | `EMBEDDING_MODEL` | embedding 模型名，默认 `text-embedding-v4` |
 | `EMBEDDING_DIMENSIONS` | embedding 维度，默认 `512` |
+| `ROUTING_CACHE_WINDOW_DAYS_DEFAULT` | 路由缓存首次构建默认窗口天数，默认 `120`（已有缓存时优先沿用库内参数） |
+| `ROUTING_CACHE_SAMPLE_PER_TAG_DEFAULT` | 路由缓存首次构建默认每类样本数，默认 `200`（已有缓存时优先沿用库内参数） |
 | `REPORT_CLUSTER_THRESHOLD` | 聚类相似度阈值（越高越保守），默认 `0.9` |
 | `REPORT_CLUSTER_MAX` | 日报最多展示主题簇数，默认 `0`（不限制） |
 | `REPORT_MIN_IMPORTANCE` | 生成报告时纳入的最低重要度（importance≥x），默认 `2` |
