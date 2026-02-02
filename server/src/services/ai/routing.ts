@@ -8,9 +8,9 @@ import {
   CLASSIFY_ALLOWED_TAGS,
   HIGH_PRIORITY_IMPORTANCE,
   TAG_FALLBACK_KEY,
-  truncateText,
   normalizeTagAlias
 } from './shared';
+import { buildEmbeddingText } from './embeddingText';
 
 const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
@@ -207,11 +207,12 @@ type TagThresholds = {
   negGapHigh: number;
 };
 
-type EmbeddingCandidate = { tweetId: string; text: string };
+type EmbeddingCandidate = { tweetId: string; text: string; lang?: string | null };
 
 type TagSample = {
   tweetId: string;
   text: string;
+  lang?: string | null;
 };
 
 type TagSampleRecord = {
@@ -440,9 +441,8 @@ function hasTicker(text: string) {
   return /\$[a-z]{2,6}\b/i.test(text);
 }
 
-function buildTweetEmbeddingText(raw: string) {
-  const cleaned = normalizeTweetText(raw);
-  return truncateText(cleaned, EMBEDDING_TEXT_MAX_LENGTH);
+function buildTweetEmbeddingText(raw: string, lang?: string | null) {
+  return buildEmbeddingText(raw, EMBEDDING_TEXT_MAX_LENGTH, lang);
 }
 
 async function ensureTweetEmbeddings(candidates: EmbeddingCandidate[]) {
@@ -459,7 +459,7 @@ async function ensureTweetEmbeddings(candidates: EmbeddingCandidate[]) {
   const dimensions = config.EMBEDDING_DIMENSIONS;
   const now = new Date();
   const textPayload = items.map((item) => {
-    const text = buildTweetEmbeddingText(item.text);
+    const text = buildTweetEmbeddingText(item.text, item.lang ?? null);
     return {
       tweetId: item.tweetId,
       text,
@@ -658,12 +658,12 @@ async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promis
 
   const selectedPrimary = pickStratifiedRandomSamples(primary, params.samplePerTag);
   if (selectedPrimary.length >= ROUTE_EMBEDDING_MIN_PRIMARY_SAMPLE) {
-    return selectedPrimary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+    return selectedPrimary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text, lang: item.tweet.lang }));
   }
 
   const supplementalLimit = params.samplePerTag - selectedPrimary.length;
   if (supplementalLimit <= 0) {
-    return selectedPrimary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+    return selectedPrimary.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text, lang: item.tweet.lang }));
   }
 
   const supplemental = (await prisma.tweetInsight.findMany({
@@ -688,7 +688,11 @@ async function loadTagSamples(tag: string, params: RoutingRefreshParams): Promis
   })) as TagSampleRecord[];
 
   const selectedSupplemental = pickStratifiedRandomSamples(supplemental, supplementalLimit);
-  return [...selectedPrimary, ...selectedSupplemental].map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+  return [...selectedPrimary, ...selectedSupplemental].map((item) => ({
+    tweetId: item.tweetId,
+    text: item.tweet.text,
+    lang: item.tweet.lang
+  }));
 }
 
 async function loadNegativeSamples(params: RoutingRefreshParams): Promise<TagSample[]> {
@@ -700,13 +704,13 @@ async function loadNegativeSamples(params: RoutingRefreshParams): Promise<TagSam
     },
     select: {
       tweetId: true,
-      tweet: { select: { text: true } }
+      tweet: { select: { text: true, lang: true } }
     },
     orderBy: { createdAt: 'desc' },
     take: ROUTE_EMBEDDING_NEG_SAMPLE
   });
 
-  return candidates.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text }));
+  return candidates.map((item) => ({ tweetId: item.tweetId, text: item.tweet.text, lang: item.tweet.lang ?? null }));
 }
 
 async function buildTagEmbeddingCacheData(params: RoutingRefreshParams) {
@@ -1111,7 +1115,9 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
     return { analyzeByTag: new Map([[ROUTING_UNASSIGNED_TAG, tweets]]), ignored: [], autoHigh: [], decisions, reasonCounts };
   }
 
-  const embeddings = await ensureTweetEmbeddings(tweets.map((tweet) => ({ tweetId: tweet.tweetId, text: tweet.text })));
+  const embeddings = await ensureTweetEmbeddings(
+    tweets.map((tweet) => ({ tweetId: tweet.tweetId, text: tweet.text, lang: tweet.lang ?? null }))
+  );
   const tagList = Object.keys(cache.tagSamples).filter((tag) => tag !== ROUTING_NEGATIVE_KEY);
 
   const analyzeByTag = new Map<string, Tweet[]>();
