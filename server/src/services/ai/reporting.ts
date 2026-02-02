@@ -849,22 +849,22 @@ function buildSocialDigestPrompt(options: {
   const extra = options.extraPrompt?.trim();
   const hasText = options.items.some((item) => Boolean(item.text));
   const rules = [
-    '中文输出，口语化、精炼、总结型，可长文。',
+    '中文输出，像业内人温和解读的口语表达；允许第一人称；不写“总结/报告”腔，允许长文。',
+    '开头必须有吸引人的一句（疑问/反差/趋势/一句判断均可），同时口语化交代时间范围（如“昨晚/昨天/最近”），但不要写具体日期或时间范围。',
     '不使用营销式话术，不夸大，不编造未提供的信息。',
-    '不要输出链接、tweetId 或来源标注；不加 hashtags。',
-    '句子短，主体可用短段落或短清单（最多 7 条）。',
-    `开头必须明确时间范围：${options.start} - ${options.end}（${options.timezone}）。`,
-    '如果素材不足，用“目前只看到…”说明，不要猜测。'
+    '不要输出链接、tweetId 或来源标注；不加 hashtags；不要引用原文或加引号复述。',
+    '句子短，主体用短段落或短清单（建议 3–9 条，不强制），每条=事实 + 一句解读/影响/疑问。',
+    '如果素材不足，用“目前只看到…”说明，不要猜测；不要结尾总结或 CTA。'
   ];
   if (hasText) {
-    rules.push('text 字段是原文片段，必要时参考，但仍以 summary 为主。');
+    rules.push('text 字段是原文片段，仅用于理解，不要直接引用。');
   }
   if (extra) {
     rules.push(`额外要求：${extra}`);
   }
   return [
-    `请根据以下素材撰写一篇社媒日报。`,
-    `时间范围：${options.start} - ${options.end}（${options.timezone}）。`,
+    `请根据以下素材写一条 X 单条。`,
+    `参考时间范围（仅供背景，不要在正文写具体日期或范围）：${options.start} - ${options.end}（${options.timezone}）。`,
     '要求：',
     ...rules.map((rule) => `- ${rule}`),
     '',
