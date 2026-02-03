@@ -253,6 +253,7 @@ export interface TweetRecord {
   llmQueuedAt?: string | null;
   abandonedAt?: string | null;
   abandonReason?: string | null;
+  embeddingScore?: number | null;
   insights?: TweetInsight | null;
 }
 

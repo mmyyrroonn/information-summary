@@ -100,6 +100,9 @@ function buildRoutingLine(tweet: TweetRecord) {
   if (typeof tweet.routingMargin === 'number') {
     parts.push(`差值 ${tweet.routingMargin.toFixed(2)}`);
   }
+  if (typeof tweet.embeddingScore === 'number') {
+    parts.push(`语义相似度 ${tweet.embeddingScore.toFixed(2)}`);
+  }
   if (tweet.routingReason) {
     parts.push(`原因 ${formatRoutingReason(tweet.routingReason)}`);
   }
@@ -119,7 +122,10 @@ export function TweetsPage() {
   const [subscriptionId, setSubscriptionId] = useState<string | undefined>(undefined);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [embeddingQueryInput, setEmbeddingQueryInput] = useState('');
+  const [embeddingQuery, setEmbeddingQuery] = useState('');
   const [importanceMin, setImportanceMin] = useState('');
   const [importanceMax, setImportanceMax] = useState('');
   const [total, setTotal] = useState(0);
@@ -142,6 +148,7 @@ export function TweetsPage() {
     startTime,
     endTime,
     search,
+    embeddingQuery,
     routingView,
     routingTag,
     routingScoreMin,
@@ -200,6 +207,7 @@ export function TweetsPage() {
         startTime: toIso(startTime),
         endTime: toIso(endTime),
         q: search.trim() || undefined,
+        embeddingQuery: embeddingQuery.trim() || undefined,
         importanceMin: parseNumber(importanceMin),
         importanceMax: parseNumber(importanceMax)
       });
@@ -236,9 +244,10 @@ export function TweetsPage() {
   const hasTimeFilter = Boolean(startTime || endTime);
   const hasRoutingScoreFilter = Boolean(routingScoreMin || routingScoreMax);
   const hasImportanceFilter = Boolean(importanceMin || importanceMax);
+  const hasSearchQuery = Boolean(search.trim() || embeddingQuery.trim());
   const timeLabel = hasTimeFilter
     ? `${formatDateTime(startTime) || '最早'} ~ ${formatDateTime(endTime) || '现在'}`
-    : search.trim()
+    : hasSearchQuery
       ? '近 24 小时'
       : '不限';
   const routingLabel = routingView === 'ignored' ? '规则过滤' : '默认';
@@ -276,6 +285,20 @@ export function TweetsPage() {
     setPage(1);
   }
 
+  function applyKeywordSearch(nextValue = searchInput) {
+    const normalized = nextValue.trim();
+    setSearchInput(normalized);
+    setSearch(normalized);
+    setPage(1);
+  }
+
+  function applyEmbeddingSearch(nextValue = embeddingQueryInput) {
+    const normalized = nextValue.trim();
+    setEmbeddingQueryInput(normalized);
+    setEmbeddingQuery(normalized);
+    setPage(1);
+  }
+
   return (
     <>
       {statusMessage && <p className="status">{statusMessage}</p>}
@@ -308,16 +331,46 @@ export function TweetsPage() {
 
         <div className="tweet-filters">
           <label>
-            <span>内容搜索</span>
-            <input
-              type="text"
-              value={search}
-              placeholder="关键词搜索（默认近24h，逗号=AND，分号=OR）"
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-            />
+            <span>关键词搜索</span>
+            <div className="tweet-search-row">
+              <input
+                type="text"
+                value={searchInput}
+                placeholder="关键词搜索（默认近24h，逗号=AND，分号=OR）"
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyKeywordSearch(e.currentTarget.value);
+                  }
+                }}
+              />
+              <button type="button" onClick={() => applyKeywordSearch()} disabled={loading}>
+                搜索
+              </button>
+            </div>
+          </label>
+
+          <label>
+            <span>Embedding 搜索</span>
+            <div className="tweet-search-row">
+              <input
+                type="text"
+                value={embeddingQueryInput}
+                placeholder="语义搜索（默认近24h）"
+                onChange={(e) => setEmbeddingQueryInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyEmbeddingSearch(e.currentTarget.value);
+                  }
+                }}
+              />
+              <button type="button" onClick={() => applyEmbeddingSearch()} disabled={loading}>
+                搜索
+              </button>
+            </div>
+            <p className="hint">基于向量相似度检索内容。</p>
           </label>
 
           <label>
@@ -396,7 +449,7 @@ export function TweetsPage() {
                 清除
               </button>
             </div>
-            <p className="hint">未设时间范围时，搜索默认近 24 小时。</p>
+            <p className="hint">未设时间范围时，关键词/Embedding 搜索默认近 24 小时。</p>
           </div>
 
           <div className="tweet-range">
@@ -477,6 +530,7 @@ export function TweetsPage() {
           <span>时间范围：{timeLabel}</span>
           <span>模式：{routingLabel}</span>
           {search.trim() ? <span>关键词：{search.trim()}</span> : null}
+          {embeddingQuery.trim() ? <span>Embedding 搜索：{embeddingQuery.trim()}</span> : null}
           {routingTag ? <span>Embedding 标签：{routingTagLabel}</span> : null}
           {hasRoutingScoreFilter ? (
             <span>

@@ -964,6 +964,22 @@ button.ghost {
   padding: 0.75rem 0.9rem;
 }
 
+.tweet-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tweet-search-row input {
+  flex: 1;
+}
+
+.tweet-search-row button {
+  width: auto;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.6rem;
+}
+
 .tweet-range {
   display: flex;
   flex-direction: column;

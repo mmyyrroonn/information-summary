@@ -114,6 +114,7 @@ interface ApiClient {
     startTime?: string;
     endTime?: string;
     q?: string;
+    embeddingQuery?: string;
     importanceMin?: number;
     importanceMax?: number;
   }) => Promise<TweetListResponse>;
@@ -295,6 +296,9 @@ export const api: ApiClient = {
     }
     if (params.q) {
       search.set('q', params.q);
+    }
+    if (params.embeddingQuery) {
+      search.set('embeddingQ', params.embeddingQuery);
     }
     if (typeof params.importanceMin === 'number') {
       search.set('importanceMin', String(params.importanceMin));

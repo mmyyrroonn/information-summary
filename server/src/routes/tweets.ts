@@ -54,6 +54,7 @@ router.get('/', async (req, res, next) => {
         startTime: z.coerce.date().optional(),
         endTime: z.coerce.date().optional(),
         q: z.string().optional(),
+        embeddingQ: z.string().optional(),
         importanceMin: z.coerce.number().int().min(1).max(5).optional(),
         importanceMax: z.coerce.number().int().min(1).max(5).optional()
       })
@@ -92,6 +93,7 @@ router.get('/', async (req, res, next) => {
       ...(query.startTime ? { startTime: query.startTime } : {}),
       ...(query.endTime ? { endTime: query.endTime } : {}),
       ...(query.q ? { search: query.q } : {}),
+      ...(query.embeddingQ ? { embeddingQuery: query.embeddingQ } : {}),
       ...(typeof query.importanceMin === 'number' ? { importanceMin: query.importanceMin } : {}),
       ...(typeof query.importanceMax === 'number' ? { importanceMax: query.importanceMax } : {})
     });
