@@ -82,6 +82,7 @@ type SocialDigestItem = {
   tags: string[];
   importance?: number | null;
   author?: string;
+  tweetUrl?: string;
 };
 
 export interface SocialDigestResult {
@@ -915,7 +916,9 @@ function buildSocialDigestPrompt(options: {
     '中文输出，像业内人温和解读的口语表达；允许第一人称；不写“总结/报告”腔，允许长文。',
     '开头必须有吸引人的一句（疑问/反差/趋势/一句判断均可），同时口语化交代时间范围（如“昨晚/昨天/最近”），但不要写具体日期或时间范围。',
     '不使用营销式话术，不夸大，不编造未提供的信息。',
-    '不要输出链接、tweetId 或来源标注；不加 hashtags；不要引用原文或加引号复述。',
+    '禁止使用泛化措辞（这类/一些/某些/类似/等）；每条必须具体到项目名 + 明确动作或细节。',
+    '提及具体项目/活动/空投/认购时，句末必须标注来源（@作者 或 原文链接）；素材无来源则不要写该点。',
+    '允许链接但仅用于来源标注；不要堆链接；不要引用原文或加引号复述。',
     '主体用短段落或短清单（建议 3–9 条，不强制），每条=事实 + 一句解读/影响/疑问。',
     '如果素材不足，用“目前只看到…”说明，不要猜测；不要结尾总结或 CTA。'
   ];
@@ -966,7 +969,8 @@ export async function generateSocialDigestFromReport(
       ...(text ? { text } : {}),
       tags: insight.tags ?? [],
       importance: insight.importance ?? null,
-      author: formatAuthorTitle(insight.tweet)
+      author: formatAuthorTitle(insight.tweet),
+      tweetUrl: resolveTweetUrl(insight.tweet)
     };
   });
 
