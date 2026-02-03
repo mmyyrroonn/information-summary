@@ -97,7 +97,8 @@ router.post('/:id/social', async (req, res, next) => {
         prompt: z.string().optional(),
         maxItems: z.coerce.number().int().min(5).max(200).optional(),
         includeTweetText: z.boolean().optional(),
-        tags: z.array(z.string().trim().min(1)).max(10).optional()
+        tags: z.array(z.string().trim().min(1)).max(10).optional(),
+        provider: z.enum(['deepseek', 'dashscope', 'auto']).optional()
       })
       .parse(req.body ?? {});
     const report = await getReport(req.params.id);
@@ -110,6 +111,7 @@ router.post('/:id/social', async (req, res, next) => {
       maxItems?: number;
       includeTweetText?: boolean;
       tags?: string[];
+      provider?: 'deepseek' | 'dashscope' | 'auto';
     } = {
       reportId: report.id
     };
@@ -124,6 +126,9 @@ router.post('/:id/social', async (req, res, next) => {
     }
     if (Array.isArray(body.tags) && body.tags.length) {
       payload.tags = body.tags;
+    }
+    if (body.provider) {
+      payload.provider = body.provider;
     }
     const { job, created } = await enqueueJob('social-digest', payload, { dedupe: false });
     res.status(created ? 202 : 200).json({

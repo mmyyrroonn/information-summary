@@ -53,6 +53,7 @@ export interface JobPayloadMap {
     maxItems?: number;
     includeTweetText?: boolean;
     tags?: string[];
+    provider?: 'deepseek' | 'dashscope' | 'auto';
     result?: {
       content: string;
       usedItems: number;

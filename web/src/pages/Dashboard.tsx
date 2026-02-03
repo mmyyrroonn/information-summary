@@ -110,6 +110,7 @@ export function DashboardPage() {
   const [socialJob, setSocialJob] = useState<BackgroundJobSummary | null>(null);
   const [socialIncludeText, setSocialIncludeText] = useState(false);
   const [socialTags, setSocialTags] = useState<string[]>([]);
+  const [socialProvider, setSocialProvider] = useState<'deepseek' | 'dashscope'>('deepseek');
   const socialPollerRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
   const reportHtml = useMemo(() => {
@@ -291,7 +292,8 @@ export function DashboardPage() {
       const response = await api.generateSocialDigest(selectedReport.id, {
         ...(socialPrompt.trim() ? { prompt: socialPrompt.trim() } : {}),
         ...(socialIncludeText ? { includeTweetText: true } : {}),
-        ...(socialTags.length ? { tags: socialTags } : {})
+        ...(socialTags.length ? { tags: socialTags } : {}),
+        provider: socialProvider
       });
       setSocialDigest(null);
       setSocialJob(response.job);
@@ -499,6 +501,13 @@ export function DashboardPage() {
                     rows={3}
                     placeholder="比如：多一点口语化、强调市场情绪、不要提某主题..."
                   />
+                </label>
+                <label className="social-digest-label">
+                  生成引擎
+                  <select value={socialProvider} onChange={(event) => setSocialProvider(event.target.value as 'deepseek' | 'dashscope')}>
+                    <option value="deepseek">DeepSeek（deepseek-chat）</option>
+                    <option value="dashscope">Qwen（qwen3-max）</option>
+                  </select>
                 </label>
                 {reportTags.length ? (
                   <div className="social-digest-label">

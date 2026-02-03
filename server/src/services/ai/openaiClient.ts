@@ -4,9 +4,16 @@ import { logger } from '../../logger';
 import { safeJsonParse } from '../../utils/json';
 import { delay } from './shared';
 
-const client = config.DEEPSEEK_API_KEY
-  ? new OpenAI({ baseURL: 'https://api.deepseek.com', apiKey: config.DEEPSEEK_API_KEY })
-  : null;
+export type ChatProvider = 'deepseek' | 'dashscope';
+
+const clients: Record<ChatProvider, OpenAI | null> = {
+  deepseek: config.DEEPSEEK_API_KEY
+    ? new OpenAI({ baseURL: 'https://api.deepseek.com', apiKey: config.DEEPSEEK_API_KEY })
+    : null,
+  dashscope: config.DASHSCOPE_API_KEY
+    ? new OpenAI({ apiKey: config.DASHSCOPE_API_KEY, baseURL: config.DASHSCOPE_BASE_URL })
+    : null
+};
 
 const CHAT_COMPLETION_MAX_RETRIES = 3;
 const CHAT_COMPLETION_RETRY_DELAY_MS = 2000;
@@ -17,8 +24,12 @@ const CHAT_COMPLETION_SDK_MAX_RETRIES = 0;
 type ChatCompletionRequest = Parameters<OpenAI['chat']['completions']['create']>[0];
 type ChatCompletionResponse = Awaited<ReturnType<OpenAI['chat']['completions']['create']>>;
 
-function ensureClient() {
+function ensureClient(provider: ChatProvider) {
+  const client = clients[provider];
   if (!client) {
+    if (provider === 'dashscope') {
+      throw new Error('DASHSCOPE_API_KEY missing, cannot call AI');
+    }
     throw new Error('DEEPSEEK_API_KEY missing, cannot call AI');
   }
   return client;
@@ -47,12 +58,15 @@ function extractErrorStatus(error: unknown): number | undefined {
 
 export async function runChatCompletion(
   request: ChatCompletionRequest,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown>,
+  options?: { provider?: ChatProvider }
 ): Promise<string> {
-  const openai = ensureClient();
+  const provider = options?.provider ?? 'deepseek';
+  const openai = ensureClient(provider);
   let attempt = 0;
   let lastError: unknown = null;
   const stage = typeof context?.stage === 'string' ? String(context.stage) : undefined;
+  const logContext = { ...(context ?? {}), provider };
 
   while (attempt < CHAT_COMPLETION_MAX_RETRIES) {
     attempt += 1;
@@ -62,7 +76,7 @@ export async function runChatCompletion(
         attempt,
         maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
         timeoutMs: CHAT_COMPLETION_TIMEOUT_MS,
-        ...(context ?? {})
+        ...logContext
       });
     }
     try {
@@ -81,7 +95,7 @@ export async function runChatCompletion(
       const errorPayload: Record<string, unknown> = {
         attempt,
         maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
-        ...(context ?? {}),
+        ...logContext,
         status,
         error: message,
         errorType: error instanceof SyntaxError ? 'json-parse' : 'api'
@@ -103,13 +117,16 @@ export async function runChatCompletion(
 
 export async function runStructuredCompletion<T>(
   request: ChatCompletionRequest,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown>,
+  options?: { provider?: ChatProvider }
 ): Promise<T> {
-  const openai = ensureClient();
+  const provider = options?.provider ?? 'deepseek';
+  const openai = ensureClient(provider);
   let attempt = 0;
   let lastError: unknown = null;
   let forceJsonFormat = !request.response_format;
   const stage = typeof context?.stage === 'string' ? String(context.stage) : undefined;
+  const logContext = { ...(context ?? {}), provider };
 
   while (attempt < CHAT_COMPLETION_MAX_RETRIES) {
     attempt += 1;
@@ -123,7 +140,7 @@ export async function runStructuredCompletion<T>(
         attempt,
         maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
         timeoutMs: CHAT_COMPLETION_TIMEOUT_MS,
-        ...(context ?? {})
+        ...logContext
       });
     }
     try {
@@ -139,7 +156,7 @@ export async function runStructuredCompletion<T>(
         forceJsonFormat = false;
         attempt -= 1;
         logger.warn('Structured completion response_format unsupported, retrying without forced JSON', {
-          ...(context ?? {}),
+          ...logContext,
           error: error instanceof Error ? error.message : 'unknown error'
         });
         continue;
@@ -151,7 +168,7 @@ export async function runStructuredCompletion<T>(
       const errorPayload: Record<string, unknown> = {
         attempt,
         maxAttempts: CHAT_COMPLETION_MAX_RETRIES,
-        ...(context ?? {}),
+        ...logContext,
         status,
         error: message,
         errorType: error instanceof SyntaxError ? 'json-parse' : 'api'

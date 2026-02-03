@@ -89,7 +89,13 @@ interface ApiClient {
   publishReport: (id: string) => Promise<ReportPublishResult>;
   generateSocialDigest: (
     id: string,
-    payload?: { prompt?: string; maxItems?: number; includeTweetText?: boolean; tags?: string[] }
+    payload?: {
+      prompt?: string;
+      maxItems?: number;
+      includeTweetText?: boolean;
+      tags?: string[];
+      provider?: 'deepseek' | 'dashscope' | 'auto';
+    }
   ) => Promise<JobEnqueueResponse>;
   listReportProfiles: () => Promise<ReportProfile[]>;
   createReportProfile: (payload: ReportProfileCreatePayload) => Promise<ReportProfile>;

@@ -8,7 +8,7 @@ import { sendHighScoreMarkdownToTelegram, sendMarkdownToTelegram } from '../noti
 import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from '../embeddingService';
 import { clusterByEmbedding, ClusterCandidate, ClusterResult } from '../clusterService';
 import { buildEmbeddingText } from './embeddingText';
-import { runChatCompletion, runStructuredCompletion } from './openaiClient';
+import { ChatProvider, runChatCompletion, runStructuredCompletion } from './openaiClient';
 import {
   HIGH_PRIORITY_IMPORTANCE,
   TAG_DISPLAY_NAMES,
@@ -98,7 +98,11 @@ export interface SocialDigestOptions {
   maxItems?: number;
   includeTweetText?: boolean;
   tags?: string[];
+  provider?: SocialDigestProvider;
+  model?: string;
 }
+
+type SocialDigestProvider = 'deepseek' | 'dashscope' | 'auto';
 
 interface ClusterReportOutline {
   mode: 'clustered';
@@ -903,6 +907,57 @@ function uniqueTweetIds(ids: string[]) {
   return output;
 }
 
+function resolveSocialDigestProvider(preferred?: SocialDigestProvider): ChatProvider {
+  const hasDeepseek = Boolean(config.DEEPSEEK_API_KEY);
+  const hasDashscope = Boolean(config.DASHSCOPE_API_KEY);
+  const normalized = (value?: string | null) => value?.trim().toLowerCase() ?? '';
+  const preferredKey = normalized(preferred === 'auto' ? '' : preferred);
+  const configKey = normalized(config.SOCIAL_DIGEST_PROVIDER);
+
+  if (preferredKey) {
+    if (preferredKey === 'deepseek') {
+      if (!hasDeepseek) {
+        throw new Error('DEEPSEEK_API_KEY missing, cannot call AI');
+      }
+      return 'deepseek';
+    }
+    if (preferredKey === 'dashscope') {
+      if (!hasDashscope) {
+        throw new Error('DASHSCOPE_API_KEY missing, cannot call AI');
+      }
+      return 'dashscope';
+    }
+  }
+
+  const configPreferred =
+    configKey === 'dashscope' ? 'dashscope' : configKey === 'deepseek' ? 'deepseek' : '';
+  if (configPreferred) {
+    if (configPreferred === 'deepseek' && hasDeepseek) {
+      return 'deepseek';
+    }
+    if (configPreferred === 'dashscope' && hasDashscope) {
+      return 'dashscope';
+    }
+  }
+  if (hasDeepseek) {
+    return 'deepseek';
+  }
+  if (hasDashscope) {
+    return 'dashscope';
+  }
+
+  throw new Error('No chat AI provider configured (DEEPSEEK_API_KEY or DASHSCOPE_API_KEY missing)');
+}
+
+function resolveSocialDigestModel(provider: ChatProvider, override?: string) {
+  const trimmed = override?.trim();
+  if (trimmed) return trimmed;
+  if (provider === 'dashscope') {
+    return config.SOCIAL_DIGEST_DASHSCOPE_MODEL;
+  }
+  return config.SOCIAL_DIGEST_DEEPSEEK_MODEL;
+}
+
 function buildSocialDigestPrompt(options: {
   start: string;
   end: string;
@@ -978,6 +1033,9 @@ export async function generateSocialDigestFromReport(
     throw new Error('No insights available for social digest');
   }
 
+  const provider = resolveSocialDigestProvider(options.provider);
+  const model = resolveSocialDigestModel(provider, options.model);
+
   const selectedTags = normalizeFilterTags(options.tags ?? []);
   const tagGroups = selectedTags.length
     ? selectedTags.map((tag) => ({ tag, items: [] as SocialDigestItem[] }))
@@ -1023,7 +1081,7 @@ export async function generateSocialDigestFromReport(
     const prompt = buildSocialDigestPrompt({ ...promptPayload, items: group.items });
     const groupContent = await runChatCompletion(
       {
-        model: 'deepseek-chat',
+        model,
         temperature: 0.4,
         messages: [
           {
@@ -1033,7 +1091,8 @@ export async function generateSocialDigestFromReport(
           { role: 'user', content: prompt }
         ]
       },
-      { stage: 'social-digest', reportId: report.id, items: group.items.length }
+      { stage: 'social-digest', reportId: report.id, items: group.items.length, provider, model },
+      { provider }
     );
     contentParts.push(groupContent);
     usedItems += group.items.length;

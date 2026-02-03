@@ -286,7 +286,8 @@ export async function handleSocialDigestJob(job: QueuedJob<'social-digest'>) {
         ...(payload.prompt !== undefined ? { prompt: payload.prompt } : {}),
         ...(typeof payload.maxItems === 'number' ? { maxItems: payload.maxItems } : {}),
         ...(typeof payload.includeTweetText === 'boolean' ? { includeTweetText: payload.includeTweetText } : {}),
-        ...(Array.isArray(payload.tags) && payload.tags.length ? { tags: payload.tags } : {})
+        ...(Array.isArray(payload.tags) && payload.tags.length ? { tags: payload.tags } : {}),
+        ...(payload.provider ? { provider: payload.provider } : {})
       }),
     { scope: 'report' }
   );

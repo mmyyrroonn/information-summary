@@ -798,6 +798,13 @@ button.ghost {
   resize: vertical;
 }
 
+.social-digest-label select {
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5f5;
+  padding: 0.55rem 0.75rem;
+  font-family: inherit;
+}
+
 .social-digest-tags {
   display: flex;
   flex-wrap: wrap;
