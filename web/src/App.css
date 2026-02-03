@@ -798,6 +798,41 @@ button.ghost {
   resize: vertical;
 }
 
+.social-digest-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.social-digest-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5f5;
+  padding: 0.25rem 0.6rem;
+  font-weight: 500;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.social-digest-tag input {
+  width: 14px;
+  height: 14px;
+}
+
+.social-digest-tag.active {
+  border-color: #0f172a;
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+.social-digest-hint {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #64748b;
+}
+
 .social-digest-toggle {
   display: flex;
   align-items: center;

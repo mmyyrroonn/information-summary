@@ -96,14 +96,21 @@ router.post('/:id/social', async (req, res, next) => {
       .object({
         prompt: z.string().optional(),
         maxItems: z.coerce.number().int().min(5).max(200).optional(),
-        includeTweetText: z.boolean().optional()
+        includeTweetText: z.boolean().optional(),
+        tags: z.array(z.string().trim().min(1)).max(10).optional()
       })
       .parse(req.body ?? {});
     const report = await getReport(req.params.id);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
-    const payload: { reportId: string; prompt?: string; maxItems?: number; includeTweetText?: boolean } = {
+    const payload: {
+      reportId: string;
+      prompt?: string;
+      maxItems?: number;
+      includeTweetText?: boolean;
+      tags?: string[];
+    } = {
       reportId: report.id
     };
     if (body.prompt !== undefined) {
@@ -114,6 +121,9 @@ router.post('/:id/social', async (req, res, next) => {
     }
     if (typeof body.includeTweetText === 'boolean') {
       payload.includeTweetText = body.includeTweetText;
+    }
+    if (Array.isArray(body.tags) && body.tags.length) {
+      payload.tags = body.tags;
     }
     const { job, created } = await enqueueJob('social-digest', payload, { dedupe: false });
     res.status(created ? 202 : 200).json({

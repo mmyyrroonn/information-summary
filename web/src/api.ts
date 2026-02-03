@@ -89,7 +89,7 @@ interface ApiClient {
   publishReport: (id: string) => Promise<ReportPublishResult>;
   generateSocialDigest: (
     id: string,
-    payload?: { prompt?: string; maxItems?: number; includeTweetText?: boolean }
+    payload?: { prompt?: string; maxItems?: number; includeTweetText?: boolean; tags?: string[] }
   ) => Promise<JobEnqueueResponse>;
   listReportProfiles: () => Promise<ReportProfile[]>;
   createReportProfile: (payload: ReportProfileCreatePayload) => Promise<ReportProfile>;

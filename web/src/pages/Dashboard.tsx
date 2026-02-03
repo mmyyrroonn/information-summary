@@ -49,6 +49,14 @@ type ClusteredReportOutline = {
   }>;
 };
 
+type ReportOutlinePayload = {
+  sections?: Array<{
+    items?: Array<{
+      tags?: string[] | null;
+    }>;
+  }>;
+};
+
 function asClusteredOutline(value: unknown): ClusteredReportOutline | null {
   if (!value || typeof value !== 'object') return null;
   const mode = (value as Record<string, unknown>).mode;
@@ -56,6 +64,33 @@ function asClusteredOutline(value: unknown): ClusteredReportOutline | null {
   const sections = (value as Record<string, unknown>).sections;
   if (!Array.isArray(sections)) return null;
   return value as ClusteredReportOutline;
+}
+
+function extractOutlineTags(outline: unknown) {
+  const tags = new Set<string>();
+  const clustered = asClusteredOutline(outline);
+  if (clustered) {
+    clustered.sections.forEach((section) => {
+      if (section.tag) {
+        tags.add(section.tag);
+      }
+      section.clusters.forEach((cluster) => {
+        cluster.tags?.forEach((tag) => tags.add(tag));
+      });
+    });
+  } else if (outline && typeof outline === 'object') {
+    const sections = (outline as ReportOutlinePayload).sections;
+    if (Array.isArray(sections)) {
+      sections.forEach((section) => {
+        if (!Array.isArray(section.items)) return;
+        section.items.forEach((item) => {
+          if (!Array.isArray(item.tags)) return;
+          item.tags.forEach((tag) => tags.add(tag));
+        });
+      });
+    }
+  }
+  return [...tags].map((tag) => tag.trim()).filter(Boolean).sort();
 }
 
 function tweetLink(id: string) {
@@ -74,6 +109,7 @@ export function DashboardPage() {
   const [socialBusy, setSocialBusy] = useState(false);
   const [socialJob, setSocialJob] = useState<BackgroundJobSummary | null>(null);
   const [socialIncludeText, setSocialIncludeText] = useState(false);
+  const [socialTags, setSocialTags] = useState<string[]>([]);
   const socialPollerRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
   const reportHtml = useMemo(() => {
@@ -87,6 +123,15 @@ export function DashboardPage() {
   }, [selectedReport?.content]);
 
   const clusteredOutline = useMemo(() => asClusteredOutline(selectedReport?.outline), [selectedReport?.outline]);
+  const reportTags = useMemo(() => extractOutlineTags(selectedReport?.outline), [selectedReport?.outline]);
+
+  useEffect(() => {
+    if (!reportTags.length) {
+      setSocialTags([]);
+      return;
+    }
+    setSocialTags((prev) => prev.filter((tag) => reportTags.includes(tag)));
+  }, [reportTags]);
 
   useEffect(() => {
     aliveRef.current = true;
@@ -245,7 +290,8 @@ export function DashboardPage() {
     try {
       const response = await api.generateSocialDigest(selectedReport.id, {
         ...(socialPrompt.trim() ? { prompt: socialPrompt.trim() } : {}),
-        ...(socialIncludeText ? { includeTweetText: true } : {})
+        ...(socialIncludeText ? { includeTweetText: true } : {}),
+        ...(socialTags.length ? { tags: socialTags } : {})
       });
       setSocialDigest(null);
       setSocialJob(response.job);
@@ -265,6 +311,15 @@ export function DashboardPage() {
     } catch (error) {
       setSocialStatus(error instanceof Error ? error.message : '复制失败');
     }
+  }
+
+  function toggleSocialTag(tag: string) {
+    setSocialTags((prev) => {
+      if (prev.includes(tag)) {
+        return prev.filter((entry) => entry !== tag);
+      }
+      return [...prev, tag];
+    });
   }
 
   function handleDownloadSocialDigest() {
@@ -445,6 +500,27 @@ export function DashboardPage() {
                     placeholder="比如：多一点口语化、强调市场情绪、不要提某主题..."
                   />
                 </label>
+                {reportTags.length ? (
+                  <div className="social-digest-label">
+                    <span>选择标签（可选）</span>
+                    <div className="social-digest-tags">
+                      {reportTags.map((tag) => (
+                        <label
+                          key={tag}
+                          className={`social-digest-tag${socialTags.includes(tag) ? ' active' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={socialTags.includes(tag)}
+                            onChange={() => toggleSocialTag(tag)}
+                          />
+                          {tag}
+                        </label>
+                      ))}
+                    </div>
+                    <span className="social-digest-hint">未选择则使用全部素材；多选会分别生成多条。</span>
+                  </div>
+                ) : null}
                 <label className="social-digest-toggle">
                   <input
                     type="checkbox"

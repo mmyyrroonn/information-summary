@@ -52,6 +52,7 @@ export interface JobPayloadMap {
     prompt?: string;
     maxItems?: number;
     includeTweetText?: boolean;
+    tags?: string[];
     result?: {
       content: string;
       usedItems: number;

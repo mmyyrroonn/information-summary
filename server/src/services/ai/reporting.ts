@@ -96,6 +96,7 @@ export interface SocialDigestOptions {
   prompt?: string;
   maxItems?: number;
   includeTweetText?: boolean;
+  tags?: string[];
 }
 
 interface ClusterReportOutline {
@@ -915,7 +916,7 @@ function buildSocialDigestPrompt(options: {
     '开头必须有吸引人的一句（疑问/反差/趋势/一句判断均可），同时口语化交代时间范围（如“昨晚/昨天/最近”），但不要写具体日期或时间范围。',
     '不使用营销式话术，不夸大，不编造未提供的信息。',
     '不要输出链接、tweetId 或来源标注；不加 hashtags；不要引用原文或加引号复述。',
-    '句子短，主体用短段落或短清单（建议 3–9 条，不强制），每条=事实 + 一句解读/影响/疑问。',
+    '主体用短段落或短清单（建议 3–9 条，不强制），每条=事实 + 一句解读/影响/疑问。',
     '如果素材不足，用“目前只看到…”说明，不要猜测；不要结尾总结或 CTA。'
   ];
   if (hasText) {
@@ -973,6 +974,26 @@ export async function generateSocialDigestFromReport(
     throw new Error('No insights available for social digest');
   }
 
+  const selectedTags = normalizeFilterTags(options.tags ?? []);
+  const tagGroups = selectedTags.length
+    ? selectedTags.map((tag) => ({ tag, items: [] as SocialDigestItem[] }))
+    : [{ tag: '', items }];
+  if (selectedTags.length) {
+    const groupByTag = new Map(tagGroups.map((group) => [group.tag, group]));
+    items.forEach((item) => {
+      const itemTags = normalizeFilterTags(item.tags ?? []);
+      const match = selectedTags.find((tag) => itemTags.includes(tag));
+      if (!match) return;
+      const group = groupByTag.get(match);
+      if (!group) return;
+      group.items.push(item);
+    });
+  }
+  const selectedGroups = tagGroups.filter((group) => group.items.length);
+  if (!selectedGroups.length) {
+    throw new Error('No insights available for selected tags');
+  }
+
   const profile = report.profileId
     ? await prisma.reportProfile.findUnique({
         where: { id: report.profileId },
@@ -992,26 +1013,33 @@ export async function generateSocialDigestFromReport(
   if (options.prompt !== undefined) {
     promptPayload.extraPrompt = options.prompt;
   }
-  const prompt = buildSocialDigestPrompt(promptPayload);
+  const contentParts: string[] = [];
+  let usedItems = 0;
+  for (const group of selectedGroups) {
+    const prompt = buildSocialDigestPrompt({ ...promptPayload, items: group.items });
+    const groupContent = await runChatCompletion(
+      {
+        model: 'deepseek-chat',
+        temperature: 0.4,
+        messages: [
+          {
+            role: 'system',
+            content: '你是资深内容编辑，擅长将资讯列表写成中文社媒单条。'
+          },
+          { role: 'user', content: prompt }
+        ]
+      },
+      { stage: 'social-digest', reportId: report.id, items: group.items.length }
+    );
+    contentParts.push(groupContent);
+    usedItems += group.items.length;
+  }
 
-  const content = await runChatCompletion(
-    {
-      model: 'deepseek-chat',
-      temperature: 0.4,
-      messages: [
-        {
-          role: 'system',
-          content: '你是资深内容编辑，擅长将资讯列表写成中文社媒日报。'
-        },
-        { role: 'user', content: prompt }
-      ]
-    },
-    { stage: 'social-digest', reportId: report.id, items: items.length }
-  );
+  const content = contentParts.join('\n\n');
 
   return {
     content,
-    usedItems: items.length,
+    usedItems,
     totalItems: tweetIds.length,
     periodStart: report.periodStart.toISOString(),
     periodEnd: report.periodEnd.toISOString()
