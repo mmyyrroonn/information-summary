@@ -384,3 +384,22 @@ export interface TweetStatsResponse {
     lengthBuckets: Array<{ label: string; count: number; share: number }>;
   };
 }
+
+export interface TweetRoutingStatsResponse {
+  range: {
+    startTime: string | null;
+    endTime: string | null;
+    subscriptionId: string | null;
+  };
+  totals: {
+    totalTweets: number;
+    embeddingHigh: number;
+    embeddingLow: number;
+    llmTotal: number;
+    llmRouted: number;
+    llmQueued: number;
+    llmCompleted: number;
+    pending: number;
+    ignoredOther: number;
+  };
+}

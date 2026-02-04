@@ -4,10 +4,11 @@ import { SubscriptionsPage } from './pages/Subscriptions';
 import { TweetsPage } from './pages/Tweets';
 import { DevJobsPage } from './pages/DevJobs';
 import { AnalyticsPage } from './pages/Analytics';
+import { RoutingAnalyticsPage } from './pages/RoutingAnalytics';
 import { EmbeddingCachePage } from './pages/EmbeddingCache';
 import './App.css';
 
-type TabKey = 'dashboard' | 'tweets' | 'analytics' | 'subscriptions' | 'embedding-cache' | 'dev';
+type TabKey = 'dashboard' | 'tweets' | 'analytics' | 'routing-analytics' | 'subscriptions' | 'embedding-cache' | 'dev';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
@@ -30,6 +31,12 @@ function App() {
           <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
             数据分析
           </button>
+          <button
+            className={activeTab === 'routing-analytics' ? 'active' : ''}
+            onClick={() => setActiveTab('routing-analytics')}
+          >
+            分流分析
+          </button>
           <button className={activeTab === 'subscriptions' ? 'active' : ''} onClick={() => setActiveTab('subscriptions')}>
             订阅管理
           </button>
@@ -48,6 +55,7 @@ function App() {
       {activeTab === 'dashboard' && <DashboardPage />}
       {activeTab === 'tweets' && <TweetsPage />}
       {activeTab === 'analytics' && <AnalyticsPage />}
+      {activeTab === 'routing-analytics' && <RoutingAnalyticsPage />}
       {activeTab === 'subscriptions' && <SubscriptionsPage />}
       {activeTab === 'embedding-cache' && <EmbeddingCachePage />}
       {activeTab === 'dev' && <DevJobsPage />}

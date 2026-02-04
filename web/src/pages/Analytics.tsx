@@ -65,11 +65,6 @@ export function AnalyticsPage() {
     loadSubscriptions();
   }, []);
 
-  useEffect(() => {
-    loadStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subscriptionId, startTime, endTime, highScoreMinImportance, tagLimit]);
-
   async function loadSubscriptions() {
     try {
       const subs = await api.listSubscriptions();

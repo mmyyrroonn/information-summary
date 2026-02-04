@@ -21,6 +21,7 @@ import type {
   RoutingEmbeddingCacheSummary,
   RoutingTagListResponse,
   TagOptionsResponse,
+  TweetRoutingStatsResponse,
   TweetStatsResponse
 } from './types';
 
@@ -136,6 +137,11 @@ interface ApiClient {
     tagLimit?: number;
     authorLimit?: number;
   }) => Promise<TweetStatsResponse>;
+  getTweetRoutingStats: (params?: {
+    subscriptionId?: string;
+    startTime?: string;
+    endTime?: string;
+  }) => Promise<TweetRoutingStatsResponse>;
   listJobs: (params?: { type?: string; status?: BackgroundJobStatus; limit?: number }) => Promise<BackgroundJobSummary[]>;
   getJob: (id: string) => Promise<BackgroundJobSummary>;
   deleteJob: (id: string) => Promise<void>;
@@ -352,6 +358,21 @@ export const api: ApiClient = {
     const query = search.toString();
     const path = query ? `/tweets/stats?${query}` : '/tweets/stats';
     return request<TweetStatsResponse>(path);
+  },
+  getTweetRoutingStats: (params = {}) => {
+    const search = new URLSearchParams();
+    if (params.subscriptionId) {
+      search.set('subscriptionId', params.subscriptionId);
+    }
+    if (params.startTime) {
+      search.set('startTime', params.startTime);
+    }
+    if (params.endTime) {
+      search.set('endTime', params.endTime);
+    }
+    const query = search.toString();
+    const path = query ? `/tweets/routing-stats?${query}` : '/tweets/routing-stats';
+    return request<TweetRoutingStatsResponse>(path);
   },
   listJobs: (params = {}) => {
     const search = new URLSearchParams();
