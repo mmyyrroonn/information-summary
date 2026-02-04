@@ -3,6 +3,7 @@ import { prisma } from '../../db';
 import { config } from '../../config';
 import { logger } from '../../logger';
 import { chunk } from '../../utils/chunk';
+import { safeJsonParse } from '../../utils/json';
 import { formatDisplayDate, withTz } from '../../utils/time';
 import { sendHighScoreMarkdownToTelegram, sendMarkdownToTelegram } from '../notificationService';
 import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from '../embeddingService';
@@ -89,8 +90,14 @@ type SocialDigestItem = {
   tweetUrl?: string;
 };
 
+type SocialDigestContent = {
+  content?: string;
+  bullets?: string[];
+};
+
 export interface SocialDigestResult {
   content: string;
+  bullets: string[];
   usedItems: number;
   totalItems: number;
   periodStart: string;
@@ -994,6 +1001,44 @@ function resolveSocialDigestModel(provider: ChatProvider, override?: string) {
   return config.SOCIAL_DIGEST_DEEPSEEK_MODEL;
 }
 
+function allocateDigestTargets(total: number, groups: number[]) {
+  if (!groups.length || total <= 0) return [];
+  const sum = groups.reduce((acc, value) => acc + value, 0) || groups.length;
+  const shares = groups.map((value) => (value / sum) * total);
+  const allocations = shares.map((value) => Math.floor(value));
+  for (let i = 0; i < allocations.length; i += 1) {
+    const value = allocations[i];
+    if (value === 0 || value === undefined) {
+      allocations[i] = 1;
+    }
+  }
+  let used = allocations.reduce((acc, value) => acc + value, 0);
+  while (used > total) {
+    let maxIndex = 0;
+    for (let i = 1; i < allocations.length; i += 1) {
+      if ((allocations[i] ?? 0) > (allocations[maxIndex] ?? 0)) {
+        maxIndex = i;
+      }
+    }
+    if ((allocations[maxIndex] ?? 0) <= 1) break;
+    allocations[maxIndex] = (allocations[maxIndex] ?? 0) - 1;
+    used -= 1;
+  }
+  let remaining = total - used;
+  if (remaining > 0) {
+    const order = shares
+      .map((value, index) => ({ index, remainder: value - Math.floor(value) }))
+      .sort((a, b) => b.remainder - a.remainder);
+    for (let i = 0; i < order.length && remaining > 0; i += 1) {
+      const entry = order[i];
+      if (!entry) break;
+      allocations[entry.index] = (allocations[entry.index] ?? 0) + 1;
+      remaining -= 1;
+    }
+  }
+  return allocations;
+}
+
 function buildSocialDigestPrompt(options: {
   start: string;
   end: string;
@@ -1007,6 +1052,9 @@ function buildSocialDigestPrompt(options: {
   const listRule = options.targetItems
     ? `主体用短段落或短清单（建议 ${options.targetItems} 条左右），以事实为主；每 3–4 条事实允许 1 条简短点评（≤1 句），避免逐条点评。`
     : '主体用短段落或短清单（建议 4–8 条），以事实为主；每 3–4 条事实允许 1 条简短点评（≤1 句），避免逐条点评。';
+  const bulletRule = options.targetItems
+    ? `bullets 必须 ${options.targetItems} 条，顺序与正文要点一致，不得合并或拆分。`
+    : 'bullets 建议 4–8 条，顺序与正文要点一致，不得合并或拆分。';
   const rules = [
     '中文输出，像业内人克制的日常快讯；允许第一人称；不写“总结/报告”腔，允许长文。',
     '开头允许有简短钩子（8–16 字以内），后接 1 句自然概览；不要情绪化，可口语化交代时间范围（如“昨晚/昨天/最近”），但不要写具体日期或时间范围。',
@@ -1018,6 +1066,10 @@ function buildSocialDigestPrompt(options: {
     '语气克制，避免强情绪词（如“炸裂/离谱/太猛/冲/暴涨/血崩/必看/天花板”）和感叹号。',
     '如内容偏宏观/信息密集，先给 1 句主题引导再列要点。',
     listRule,
+    '输出 JSON，格式：{"content":"...","bullets":["..."]}，只输出 JSON。',
+    'content 为完整 X 文案，可分段。',
+    bulletRule,
+    'bullets 用于后续图片要点提炼，每条尽量 10–18 字，避免链接/@/#/营销词/情绪词/感叹号。',
     '允许中等长度句子，不要全是短句碎片。',
     '允许最后 1 句做整体收束（仅趋势/框架性判断），不要口号式总结或 CTA。',
     '事实点尽量自包含，减少代词和省略，便于后续转成图片要点。'
@@ -1124,11 +1176,28 @@ export async function generateSocialDigestFromReport(
   if (typeof options.maxItems === 'number') {
     promptPayload.targetItems = Math.max(4, Math.min(options.maxItems, 12));
   }
+  const groupTargets =
+    typeof promptPayload.targetItems === 'number' &&
+    selectedGroups.length > 1 &&
+    promptPayload.targetItems >= selectedGroups.length
+      ? allocateDigestTargets(
+          promptPayload.targetItems,
+          selectedGroups.map((group) => group.items.length)
+        )
+      : null;
   const contentParts: string[] = [];
+  const bulletParts: string[] = [];
   let usedItems = 0;
-  for (const group of selectedGroups) {
-    const prompt = buildSocialDigestPrompt({ ...promptPayload, items: group.items });
-    const groupContent = await runChatCompletion(
+  for (const [index, group] of selectedGroups.entries()) {
+    if (!group) continue;
+    const prompt = buildSocialDigestPrompt({
+      ...promptPayload,
+      items: group.items,
+      ...(groupTargets && typeof groupTargets[index] === 'number'
+        ? { targetItems: groupTargets[index] }
+        : {})
+    });
+    const groupContent = await runStructuredCompletion<SocialDigestContent>(
       {
         model,
         temperature: 0.4,
@@ -1140,17 +1209,34 @@ export async function generateSocialDigestFromReport(
           { role: 'user', content: prompt }
         ]
       },
-      { stage: 'social-digest', reportId: report.id, items: group.items.length, provider, model },
+      {
+        stage: 'social-digest',
+        reportId: report.id,
+        items: group.items.length,
+        provider,
+        model
+      },
       { provider }
     );
-    contentParts.push(groupContent);
+    const content = typeof groupContent?.content === 'string' ? groupContent.content.trim() : '';
+    if (content) {
+      contentParts.push(content);
+    }
+    const rawBullets = Array.isArray(groupContent?.bullets) ? groupContent.bullets : [];
+    rawBullets.forEach((item) => {
+      if (typeof item !== 'string') return;
+      const trimmed = item.trim();
+      if (trimmed) bulletParts.push(trimmed);
+    });
     usedItems += group.items.length;
   }
 
-  const content = contentParts.join('\n\n');
+  const content = contentParts.join('\n\n').trim();
+  const bullets = normalizeSocialDigestBullets(bulletParts, items, promptPayload.targetItems);
 
   return {
     content,
+    bullets,
     usedItems,
     totalItems: tweetIds.length,
     periodStart: report.periodStart.toISOString(),
@@ -1855,6 +1941,39 @@ function normalizeImageBullet(text: string) {
   return truncateText(output, SOCIAL_IMAGE_ITEM_MAX_LENGTH);
 }
 
+function normalizeSocialDigestBullets(
+  bullets: string[],
+  sourceItems: SocialDigestItem[],
+  targetCount?: number
+) {
+  const output: string[] = [];
+  const seen = new Set<string>();
+  const add = (value: string) => {
+    const normalized = normalizeImageBullet(value);
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    output.push(normalized);
+  };
+  bullets.forEach((item) => add(item));
+
+  if (typeof targetCount === 'number') {
+    for (const item of sourceItems) {
+      if (output.length >= targetCount) break;
+      add(item.summary);
+    }
+    return output.slice(0, targetCount);
+  }
+
+  if (!output.length) {
+    for (const item of sourceItems) {
+      if (output.length >= 8) break;
+      add(item.summary);
+    }
+  }
+
+  return output;
+}
+
 function normalizeImageBullets(items: string[], maxItems: number) {
   const output: string[] = [];
   const seen = new Set<string>();
@@ -1865,6 +1984,26 @@ function normalizeImageBullets(items: string[], maxItems: number) {
     output.push(normalized);
   });
   return output.slice(0, maxItems);
+}
+
+function extractDigestItems(digest: string) {
+  const trimmed = digest.trim();
+  if (!trimmed) return [];
+  const looksLikeJson =
+    trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.toLowerCase().startsWith('```json');
+  if (looksLikeJson) {
+    try {
+      const parsed = safeJsonParse<{ bullets?: unknown }>(trimmed);
+      if (parsed && Array.isArray(parsed.bullets)) {
+        return parsed.bullets
+          .map((item) => (typeof item === 'string' ? item.trim() : ''))
+          .filter(Boolean);
+      }
+    } catch (error) {
+      // Fall back to line parsing.
+    }
+  }
+  return extractDigestLines(trimmed);
 }
 
 function extractDigestLines(digest: string) {
@@ -2053,7 +2192,7 @@ export async function generateSocialImagePromptFromReport(
   const digest = options.digest?.trim();
   const useDigest = Boolean(digest);
   if (useDigest) {
-    const digestItems = extractDigestLines(digest!);
+    const digestItems = extractDigestItems(digest!);
     if (!digestItems.length) {
       throw new Error('No usable content in digest');
     }

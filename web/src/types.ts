@@ -194,6 +194,7 @@ export interface ReportPublishResult {
 
 export interface SocialDigestResult {
   content: string;
+  bullets: string[];
   usedItems: number;
   totalItems: number;
   periodStart: string;

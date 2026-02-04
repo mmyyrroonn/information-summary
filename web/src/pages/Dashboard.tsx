@@ -254,7 +254,13 @@ export function DashboardPage() {
     const result = payload.result;
     if (!result || typeof result !== 'object') return null;
     if (typeof result.content !== 'string') return null;
-    return result;
+    const bullets = Array.isArray(result.bullets)
+      ? result.bullets.filter((item) => typeof item === 'string')
+      : [];
+    return {
+      ...result,
+      bullets
+    };
   }
 
   function extractImagePromptResult(job: BackgroundJobSummary): SocialImagePromptResult | null {
@@ -325,7 +331,11 @@ export function DashboardPage() {
           if (bundleNextImageRef.current) {
             bundleNextImageRef.current = false;
             if (result?.content) {
-              void runImagePromptFromDigest(result.content);
+              const digestPayload =
+                result.bullets.length > 0
+                  ? JSON.stringify({ content: result.content, bullets: result.bullets }, null, 2)
+                  : result.content;
+              void runImagePromptFromDigest(digestPayload);
             } else {
               setImagePromptStatus('社媒文案为空，无法生成图片 Prompt');
             }

@@ -57,6 +57,7 @@ export interface JobPayloadMap {
     provider?: 'deepseek' | 'dashscope' | 'auto';
     result?: {
       content: string;
+      bullets: string[];
       usedItems: number;
       totalItems: number;
       periodStart: string;
