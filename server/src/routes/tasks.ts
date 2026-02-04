@@ -18,7 +18,8 @@ const jobTypeSchema = z.enum(
     'embedding-cache-refresh',
     'embedding-cache-refresh-tag',
     'report-profile',
-    'social-digest'
+    'social-digest',
+    'social-image-prompt'
   ] as const
 );
 

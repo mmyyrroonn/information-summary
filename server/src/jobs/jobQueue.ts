@@ -10,7 +10,8 @@ export type BackgroundJobType =
   | 'embedding-cache-refresh'
   | 'embedding-cache-refresh-tag'
   | 'report-profile'
-  | 'social-digest';
+  | 'social-digest'
+  | 'social-image-prompt';
 
 export interface JobPayloadMap {
   'fetch-subscriptions': {
@@ -56,6 +57,20 @@ export interface JobPayloadMap {
     provider?: 'deepseek' | 'dashscope' | 'auto';
     result?: {
       content: string;
+      usedItems: number;
+      totalItems: number;
+      periodStart: string;
+      periodEnd: string;
+    };
+  };
+  'social-image-prompt': {
+    reportId: string;
+    prompt?: string;
+    maxItems?: number;
+    provider?: 'deepseek' | 'dashscope' | 'auto';
+    digest?: string;
+    result?: {
+      prompt: string;
       usedItems: number;
       totalItems: number;
       periodStart: string;

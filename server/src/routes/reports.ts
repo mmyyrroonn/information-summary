@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { listReports, getReport } from '../services/reportService';
-import { generateSocialImagePromptFromReport, sendHighScoreReport, sendReportAndNotify } from '../services/aiService';
+import { sendHighScoreReport, sendReportAndNotify } from '../services/aiService';
 import { publishReportToGithub } from '../services/githubPublishService';
 import { enqueueJob } from '../jobs/jobQueue';
 import { serializeJob } from '../services/jobService';
@@ -155,13 +155,31 @@ router.post('/:id/social-image-prompt', async (req, res, next) => {
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
-    const result = await generateSocialImagePromptFromReport(report, {
-      ...(body.prompt !== undefined ? { prompt: body.prompt } : {}),
-      ...(typeof body.maxItems === 'number' ? { maxItems: body.maxItems } : {}),
-      ...(body.provider ? { provider: body.provider } : {}),
-      ...(body.digest ? { digest: body.digest } : {})
+    const payload: {
+      reportId: string;
+      prompt?: string;
+      maxItems?: number;
+      provider?: 'deepseek' | 'dashscope' | 'auto';
+      digest?: string;
+    } = { reportId: report.id };
+    if (body.prompt !== undefined) {
+      payload.prompt = body.prompt;
+    }
+    if (typeof body.maxItems === 'number') {
+      payload.maxItems = body.maxItems;
+    }
+    if (body.provider) {
+      payload.provider = body.provider;
+    }
+    if (body.digest) {
+      payload.digest = body.digest;
+    }
+    const { job, created } = await enqueueJob('social-image-prompt', payload, { dedupe: false });
+    res.status(created ? 202 : 200).json({
+      created,
+      job: serializeJob(job),
+      message: created ? 'Social image prompt job enqueued' : 'Social image prompt job already running'
     });
-    res.json(result);
   } catch (error) {
     next(error);
   }

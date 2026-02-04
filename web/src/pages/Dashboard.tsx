@@ -112,6 +112,7 @@ export function DashboardPage() {
   const [socialTags, setSocialTags] = useState<string[]>([]);
   const [socialProvider, setSocialProvider] = useState<'deepseek' | 'dashscope'>('dashscope');
   const [imagePrompt, setImagePrompt] = useState<SocialImagePromptResult | null>(null);
+  const [imagePromptJob, setImagePromptJob] = useState<BackgroundJobSummary | null>(null);
   const [imagePromptExtra, setImagePromptExtra] = useState('');
   const [imagePromptStatus, setImagePromptStatus] = useState<string | null>(null);
   const [imagePromptBusy, setImagePromptBusy] = useState(false);
@@ -119,6 +120,7 @@ export function DashboardPage() {
   const [sharedMaxItems, setSharedMaxItems] = useState(8);
   const bundleNextImageRef = useRef(false);
   const socialPollerRef = useRef<number | null>(null);
+  const imagePromptPollerRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
   const reportHtml = useMemo(() => {
     if (!selectedReport?.content) {
@@ -147,6 +149,7 @@ export function DashboardPage() {
     return () => {
       aliveRef.current = false;
       stopSocialPolling();
+      stopImagePromptPolling();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -175,7 +178,9 @@ export function DashboardPage() {
       setSocialJob(null);
       setImagePrompt(null);
       setImagePromptStatus(null);
+      setImagePromptJob(null);
       stopSocialPolling();
+      stopImagePromptPolling();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '读取日报失败');
       setStatusLink(null);
@@ -234,6 +239,13 @@ export function DashboardPage() {
     }
   }
 
+  function stopImagePromptPolling() {
+    if (imagePromptPollerRef.current) {
+      window.clearTimeout(imagePromptPollerRef.current);
+      imagePromptPollerRef.current = null;
+    }
+  }
+
   function extractSocialResult(job: BackgroundJobSummary): SocialDigestResult | null {
     const payload = job.payload as {
       result?: SocialDigestResult;
@@ -245,7 +257,18 @@ export function DashboardPage() {
     return result;
   }
 
-  function formatSocialJobStatus(job?: BackgroundJobSummary | null) {
+  function extractImagePromptResult(job: BackgroundJobSummary): SocialImagePromptResult | null {
+    const payload = job.payload as {
+      result?: SocialImagePromptResult;
+    } | null;
+    if (!payload || typeof payload !== 'object') return null;
+    const result = payload.result;
+    if (!result || typeof result !== 'object') return null;
+    if (typeof result.prompt !== 'string') return null;
+    return result;
+  }
+
+  function formatJobStatus(job?: BackgroundJobSummary | null) {
     if (!job) return null;
     if (job.status === 'PENDING') return '排队中...';
     if (job.status === 'RUNNING') return '生成中...';
@@ -258,22 +281,27 @@ export function DashboardPage() {
 
   async function runImagePromptFromDigest(digest: string) {
     if (!selectedReport) return;
+    stopImagePromptPolling();
     setImagePromptBusy(true);
     setImagePromptStatus(null);
     setImagePrompt(null);
+    setImagePromptJob(null);
     try {
-      const result = await api.generateSocialImagePrompt(selectedReport.id, {
+      const response = await api.generateSocialImagePrompt(selectedReport.id, {
         ...(imagePromptExtra.trim() ? { prompt: imagePromptExtra.trim() } : {}),
         ...(typeof sharedMaxItems === 'number' ? { maxItems: sharedMaxItems } : {}),
         provider: imagePromptProvider,
         digest
       });
-      setImagePrompt(result);
-      setImagePromptStatus('已生成');
+      setImagePromptJob(response.job);
+      setImagePromptStatus('已加入队列');
+      startImagePromptPolling(response.job.id);
     } catch (error) {
       setImagePromptStatus(error instanceof Error ? error.message : '图片 Prompt 生成失败');
-    } finally {
       setImagePromptBusy(false);
+      stopImagePromptPolling();
+    } finally {
+      // busy 状态由轮询结束时关闭
     }
   }
 
@@ -284,7 +312,7 @@ export function DashboardPage() {
         const job = await api.getJob(jobId);
         if (!aliveRef.current) return;
         setSocialJob(job);
-        setSocialStatus(formatSocialJobStatus(job));
+        setSocialStatus(formatJobStatus(job));
         if (job.status === 'COMPLETED') {
           const result = extractSocialResult(job);
           if (result) {
@@ -328,6 +356,41 @@ export function DashboardPage() {
     void poll();
   }
 
+  function startImagePromptPolling(jobId: string) {
+    stopImagePromptPolling();
+    const poll = async () => {
+      try {
+        const job = await api.getJob(jobId);
+        if (!aliveRef.current) return;
+        setImagePromptJob(job);
+        setImagePromptStatus(formatJobStatus(job));
+        if (job.status === 'COMPLETED') {
+          const result = extractImagePromptResult(job);
+          if (result) {
+            setImagePrompt(result);
+          } else {
+            setImagePromptStatus('任务完成但未返回内容');
+          }
+          setImagePromptBusy(false);
+          stopImagePromptPolling();
+          return;
+        }
+        if (job.status === 'FAILED') {
+          setImagePromptBusy(false);
+          stopImagePromptPolling();
+          return;
+        }
+        imagePromptPollerRef.current = window.setTimeout(poll, 3000);
+      } catch (error) {
+        if (!aliveRef.current) return;
+        setImagePromptStatus(error instanceof Error ? error.message : '任务状态查询失败');
+        setImagePromptBusy(false);
+        stopImagePromptPolling();
+      }
+    };
+    void poll();
+  }
+
   async function generateSocialDigest(chainImage: boolean) {
     if (!selectedReport) return;
     stopSocialPolling();
@@ -338,6 +401,8 @@ export function DashboardPage() {
       bundleNextImageRef.current = true;
       setImagePromptStatus('等待社媒文案完成...');
       setImagePrompt(null);
+      setImagePromptJob(null);
+      stopImagePromptPolling();
     } else {
       bundleNextImageRef.current = false;
     }
@@ -700,6 +765,7 @@ export function DashboardPage() {
                   </select>
                 </label>
                 {imagePromptStatus ? <p className="status">{imagePromptStatus}</p> : null}
+                {imagePromptJob ? <p className="meta">任务ID：{imagePromptJob.id}</p> : null}
                 {imagePrompt?.prompt ? (
                   <pre className="social-digest-output">{imagePrompt.prompt}</pre>
                 ) : (

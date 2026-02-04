@@ -9,6 +9,7 @@ import {
   dispatchLlmClassificationJobs,
   generateReportForProfile,
   generateSocialDigestFromReport,
+  generateSocialImagePromptFromReport,
   refreshRoutingEmbeddingCache,
   refreshRoutingEmbeddingCacheForTag,
   sendReportAndNotify
@@ -305,6 +306,46 @@ export async function handleSocialDigestJob(job: QueuedJob<'social-digest'>) {
   });
 }
 
+export async function handleSocialImagePromptJob(job: QueuedJob<'social-image-prompt'>) {
+  const payload = (job.payload ?? {}) as JobPayloadMap['social-image-prompt'];
+  const reportId = payload.reportId;
+  if (!reportId) {
+    logger.warn('Social image prompt job skipped: missing reportId', { jobId: job.id });
+    return;
+  }
+
+  const report = await prisma.report.findUnique({
+    where: { id: reportId }
+  });
+  if (!report) {
+    throw new Error('Report not found for social image prompt');
+  }
+
+  const result = await withAiProcessingLock(
+    `job:${job.id}`,
+    () =>
+      generateSocialImagePromptFromReport(report, {
+        ...(payload.prompt !== undefined ? { prompt: payload.prompt } : {}),
+        ...(typeof payload.maxItems === 'number' ? { maxItems: payload.maxItems } : {}),
+        ...(payload.provider ? { provider: payload.provider } : {}),
+        ...(payload.digest ? { digest: payload.digest } : {})
+      }),
+    { scope: 'report' }
+  );
+
+  const updatedPayload = {
+    ...payload,
+    result
+  };
+
+  await prisma.backgroundJob.update({
+    where: { id: job.id },
+    data: {
+      payload: updatedPayload as unknown as Prisma.InputJsonValue
+    }
+  });
+}
+
 export async function handleJob(job: QueuedJob) {
   switch (job.type) {
     case 'fetch-subscriptions':
@@ -330,6 +371,9 @@ export async function handleJob(job: QueuedJob) {
       break;
     case 'social-digest':
       await handleSocialDigestJob(job as QueuedJob<'social-digest'>);
+      break;
+    case 'social-image-prompt':
+      await handleSocialImagePromptJob(job as QueuedJob<'social-image-prompt'>);
       break;
     default:
       logger.warn('Unknown job type encountered', { jobId: job.id, type: job.type });

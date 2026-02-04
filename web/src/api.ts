@@ -21,8 +21,7 @@ import type {
   RoutingEmbeddingCacheSummary,
   RoutingTagListResponse,
   TagOptionsResponse,
-  TweetStatsResponse,
-  SocialImagePromptResult
+  TweetStatsResponse
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
@@ -106,7 +105,7 @@ interface ApiClient {
       provider?: 'deepseek' | 'dashscope' | 'auto';
       digest?: string;
     }
-  ) => Promise<SocialImagePromptResult>;
+  ) => Promise<JobEnqueueResponse>;
   listReportProfiles: () => Promise<ReportProfile[]>;
   createReportProfile: (payload: ReportProfileCreatePayload) => Promise<ReportProfile>;
   updateReportProfile: (id: string, payload: ReportProfileUpdatePayload) => Promise<ReportProfile>;
@@ -262,7 +261,7 @@ export const api: ApiClient = {
       body: JSON.stringify(payload)
     }),
   generateSocialImagePrompt: (id, payload = {}) =>
-    request<SocialImagePromptResult>(`/reports/${id}/social-image-prompt`, {
+    request<JobEnqueueResponse>(`/reports/${id}/social-image-prompt`, {
       method: 'POST',
       body: JSON.stringify(payload)
     }),
