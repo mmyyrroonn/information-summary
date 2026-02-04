@@ -110,13 +110,13 @@ export function DashboardPage() {
   const [socialJob, setSocialJob] = useState<BackgroundJobSummary | null>(null);
   const [socialIncludeText, setSocialIncludeText] = useState(false);
   const [socialTags, setSocialTags] = useState<string[]>([]);
-  const [socialProvider, setSocialProvider] = useState<'deepseek' | 'dashscope'>('deepseek');
+  const [socialProvider, setSocialProvider] = useState<'deepseek' | 'dashscope'>('dashscope');
   const [imagePrompt, setImagePrompt] = useState<SocialImagePromptResult | null>(null);
   const [imagePromptExtra, setImagePromptExtra] = useState('');
   const [imagePromptStatus, setImagePromptStatus] = useState<string | null>(null);
   const [imagePromptBusy, setImagePromptBusy] = useState(false);
-  const [imagePromptProvider, setImagePromptProvider] = useState<'deepseek' | 'dashscope'>('deepseek');
-  const [imagePromptMaxItems, setImagePromptMaxItems] = useState(8);
+  const [imagePromptProvider, setImagePromptProvider] = useState<'deepseek' | 'dashscope'>('dashscope');
+  const [sharedMaxItems, setSharedMaxItems] = useState(8);
   const bundleNextImageRef = useRef(false);
   const socialPollerRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
@@ -264,7 +264,7 @@ export function DashboardPage() {
     try {
       const result = await api.generateSocialImagePrompt(selectedReport.id, {
         ...(imagePromptExtra.trim() ? { prompt: imagePromptExtra.trim() } : {}),
-        ...(typeof imagePromptMaxItems === 'number' ? { maxItems: imagePromptMaxItems } : {}),
+        ...(typeof sharedMaxItems === 'number' ? { maxItems: sharedMaxItems } : {}),
         provider: imagePromptProvider,
         digest
       });
@@ -344,6 +344,7 @@ export function DashboardPage() {
     try {
       const response = await api.generateSocialDigest(selectedReport.id, {
         ...(socialPrompt.trim() ? { prompt: socialPrompt.trim() } : {}),
+        ...(typeof sharedMaxItems === 'number' ? { maxItems: sharedMaxItems } : {}),
         ...(socialIncludeText ? { includeTweetText: true } : {}),
         ...(socialTags.length ? { tags: socialTags } : {}),
         provider: socialProvider
@@ -608,6 +609,19 @@ export function DashboardPage() {
                     <option value="dashscope">Qwen（qwen3-max）</option>
                   </select>
                 </label>
+                <label className="social-digest-label">
+                  要点数量（社媒文案）
+                  <select
+                    value={sharedMaxItems}
+                    onChange={(event) => setSharedMaxItems(Number(event.target.value))}
+                  >
+                    <option value={5}>5</option>
+                    <option value={6}>6</option>
+                    <option value={8}>8</option>
+                    <option value={10}>10</option>
+                    <option value={12}>12</option>
+                  </select>
+                </label>
                 {reportTags.length ? (
                   <div className="social-digest-label">
                     <span>选择标签（可选）</span>
@@ -683,19 +697,6 @@ export function DashboardPage() {
                   >
                     <option value="deepseek">DeepSeek（deepseek-chat）</option>
                     <option value="dashscope">Qwen（qwen3-max）</option>
-                  </select>
-                </label>
-                <label className="social-digest-label">
-                  要点数量
-                  <select
-                    value={imagePromptMaxItems}
-                    onChange={(event) => setImagePromptMaxItems(Number(event.target.value))}
-                  >
-                    <option value={5}>5</option>
-                    <option value={6}>6</option>
-                    <option value={8}>8</option>
-                    <option value={10}>10</option>
-                    <option value={12}>12</option>
                   </select>
                 </label>
                 {imagePromptStatus ? <p className="status">{imagePromptStatus}</p> : null}
