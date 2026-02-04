@@ -336,7 +336,7 @@ export function TweetsPage() {
               <input
                 type="text"
                 value={searchInput}
-                placeholder="关键词搜索（默认近24h，逗号=AND，分号=OR）"
+                placeholder="关键词/推文ID 搜索（默认近24h，逗号=AND，分号=OR）"
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -349,6 +349,7 @@ export function TweetsPage() {
                 搜索
               </button>
             </div>
+            <p className="hint">支持直接输入推文 ID，ID 搜索不受近 24 小时限制。</p>
           </label>
 
           <label>

@@ -24,9 +24,19 @@ export interface ListTweetsOptions {
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
 const EMBEDDING_SEARCH_CANDIDATE_LIMIT = 2000;
 
-function buildSearchFilter(raw?: string): Prisma.TweetWhereInput | null {
+function extractTweetId(term: string) {
+  const trimmed = term.trim();
+  if (!trimmed) return null;
+  const fromUrl = trimmed.match(/(?:status|statuses)\/(\d{10,})/i);
+  if (fromUrl?.[1]) return fromUrl[1];
+  if (/^\d{10,}$/.test(trimmed)) return trimmed;
+  const loose = trimmed.match(/\b(\d{10,})\b/);
+  return loose?.[1] ?? null;
+}
+
+function buildSearchFilter(raw?: string): { filter: Prisma.TweetWhereInput | null; hasTweetIdTerm: boolean } {
   if (!raw) {
-    return null;
+    return { filter: null, hasTweetIdTerm: false };
   }
   const groups = raw
     .trim()
@@ -34,22 +44,31 @@ function buildSearchFilter(raw?: string): Prisma.TweetWhereInput | null {
     .map((group) => group.split(',').map((term) => term.trim()).filter(Boolean))
     .filter((group) => group.length > 0);
   if (!groups.length) {
-    return null;
+    return { filter: null, hasTweetIdTerm: false };
   }
 
+  let hasTweetIdTerm = false;
   const groupFilters: Prisma.TweetWhereInput[] = groups.map((group) => ({
-    AND: group.map((term) => ({
-      OR: [
+    AND: group.map((term) => {
+      const tweetId = extractTweetId(term);
+      if (tweetId) {
+        hasTweetIdTerm = true;
+      }
+      const filters: Prisma.TweetWhereInput[] = [
         { text: { contains: term, mode: 'insensitive' } },
         { insights: { is: { summary: { contains: term, mode: 'insensitive' } } } },
         { insights: { is: { suggestions: { contains: term, mode: 'insensitive' } } } },
         { insights: { is: { verdict: { contains: term, mode: 'insensitive' } } } },
         { insights: { is: { tags: { has: term } } } }
-      ]
-    }))
+      ];
+      if (tweetId) {
+        filters.push({ tweetId }, { tweetUrl: { contains: tweetId } });
+      }
+      return { OR: filters };
+    })
   }));
 
-  return { OR: groupFilters };
+  return { filter: { OR: groupFilters }, hasTweetIdTerm };
 }
 
 function dot(a: number[], b: number[]) {
@@ -81,7 +100,10 @@ export async function listTweets(options: ListTweetsOptions) {
   const embeddingQuery = options.embeddingQuery?.trim() ?? '';
 
   const hasExplicitRange = Boolean(options.startTime || options.endTime);
-  const useDefaultSearchRange = Boolean((options.search || embeddingQuery) && !hasExplicitRange);
+  const searchResult = buildSearchFilter(options.search);
+  const useDefaultSearchRange = Boolean(
+    (options.search || embeddingQuery) && !hasExplicitRange && !searchResult.hasTweetIdTerm
+  );
   const searchEndTime = useDefaultSearchRange ? new Date() : options.endTime;
   const searchStartTime = useDefaultSearchRange
     ? new Date((searchEndTime ?? new Date()).getTime() - 24 * 60 * 60 * 1000)
@@ -117,10 +139,9 @@ export async function listTweets(options: ListTweetsOptions) {
       where.tweetedAt.lte = searchEndTime;
     }
   }
-  const searchFilter = buildSearchFilter(options.search);
-  if (searchFilter) {
+  if (searchResult.filter) {
     const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
-    where.AND = [...existingAnd, searchFilter];
+    where.AND = [...existingAnd, searchResult.filter];
   }
   if (typeof options.importanceMin === 'number' || typeof options.importanceMax === 'number') {
     const insightsFilter: Prisma.TweetInsightWhereInput = {};
