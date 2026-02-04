@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { listReports, getReport } from '../services/reportService';
-import { sendHighScoreReport, sendReportAndNotify } from '../services/aiService';
+import { generateSocialImagePromptFromReport, sendHighScoreReport, sendReportAndNotify } from '../services/aiService';
 import { publishReportToGithub } from '../services/githubPublishService';
 import { enqueueJob } from '../jobs/jobQueue';
 import { serializeJob } from '../services/jobService';
@@ -136,6 +136,30 @@ router.post('/:id/social', async (req, res, next) => {
       job: serializeJob(job),
       message: created ? 'Social digest job enqueued' : 'Social digest job already running'
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/social-image-prompt', async (req, res, next) => {
+  try {
+    const body = z
+      .object({
+        prompt: z.string().optional(),
+        maxItems: z.coerce.number().int().min(3).max(12).optional(),
+        provider: z.enum(['deepseek', 'dashscope', 'auto']).optional()
+      })
+      .parse(req.body ?? {});
+    const report = await getReport(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    const result = await generateSocialImagePromptFromReport(report, {
+      ...(body.prompt !== undefined ? { prompt: body.prompt } : {}),
+      ...(typeof body.maxItems === 'number' ? { maxItems: body.maxItems } : {}),
+      ...(body.provider ? { provider: body.provider } : {})
+    });
+    res.json(result);
   } catch (error) {
     next(error);
   }

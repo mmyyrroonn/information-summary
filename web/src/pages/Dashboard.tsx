@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { api } from '../api';
-import type { BackgroundJobSummary, ReportDetail, ReportSummary, SocialDigestResult } from '../types';
+import type { BackgroundJobSummary, ReportDetail, ReportSummary, SocialDigestResult, SocialImagePromptResult } from '../types';
 
 marked.setOptions({
   gfm: true,
@@ -111,6 +111,12 @@ export function DashboardPage() {
   const [socialIncludeText, setSocialIncludeText] = useState(false);
   const [socialTags, setSocialTags] = useState<string[]>([]);
   const [socialProvider, setSocialProvider] = useState<'deepseek' | 'dashscope'>('deepseek');
+  const [imagePrompt, setImagePrompt] = useState<SocialImagePromptResult | null>(null);
+  const [imagePromptExtra, setImagePromptExtra] = useState('');
+  const [imagePromptStatus, setImagePromptStatus] = useState<string | null>(null);
+  const [imagePromptBusy, setImagePromptBusy] = useState(false);
+  const [imagePromptProvider, setImagePromptProvider] = useState<'deepseek' | 'dashscope'>('deepseek');
+  const [imagePromptMaxItems, setImagePromptMaxItems] = useState(8);
   const socialPollerRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
   const reportHtml = useMemo(() => {
@@ -166,6 +172,8 @@ export function DashboardPage() {
       setSocialDigest(null);
       setSocialStatus(null);
       setSocialJob(null);
+      setImagePrompt(null);
+      setImagePromptStatus(null);
       stopSocialPolling();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '读取日报失败');
@@ -335,6 +343,47 @@ export function DashboardPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function handleGenerateImagePrompt() {
+    if (!selectedReport) return;
+    setImagePromptBusy(true);
+    setImagePromptStatus(null);
+    setImagePrompt(null);
+    try {
+      const result = await api.generateSocialImagePrompt(selectedReport.id, {
+        ...(imagePromptExtra.trim() ? { prompt: imagePromptExtra.trim() } : {}),
+        ...(typeof imagePromptMaxItems === 'number' ? { maxItems: imagePromptMaxItems } : {}),
+        provider: imagePromptProvider
+      });
+      setImagePrompt(result);
+      setImagePromptStatus('已生成');
+    } catch (error) {
+      setImagePromptStatus(error instanceof Error ? error.message : '图片 Prompt 生成失败');
+    } finally {
+      setImagePromptBusy(false);
+    }
+  }
+
+  async function handleCopyImagePrompt() {
+    if (!imagePrompt?.prompt) return;
+    try {
+      await navigator.clipboard.writeText(imagePrompt.prompt);
+      setImagePromptStatus('已复制到剪贴板');
+    } catch (error) {
+      setImagePromptStatus(error instanceof Error ? error.message : '复制失败');
+    }
+  }
+
+  function handleDownloadImagePrompt() {
+    if (!imagePrompt?.prompt) return;
+    const blob = new Blob([imagePrompt.prompt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `social-image-prompt-${selectedReport?.id ?? 'report'}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       {statusMessage && (
@@ -478,6 +527,7 @@ export function DashboardPage() {
               <p className="empty">选择左侧的日报查看详情</p>
             )}
             {selectedReport ? (
+              <>
               <div className="social-digest">
                 <div className="social-digest-head">
                   <h3>社媒文案</h3>
@@ -552,6 +602,67 @@ export function DashboardPage() {
                   </p>
                 ) : null}
               </div>
+              <div className="social-digest">
+                <div className="social-digest-head">
+                  <h3>图片 Prompt（nano banana）</h3>
+                  <div className="social-digest-actions">
+                    <button type="button" onClick={handleGenerateImagePrompt} disabled={imagePromptBusy}>
+                      {imagePromptBusy ? '生成中...' : '生成'}
+                    </button>
+                    <button type="button" className="ghost" onClick={handleCopyImagePrompt} disabled={!imagePrompt?.prompt}>
+                      复制
+                    </button>
+                    <button type="button" className="ghost" onClick={handleDownloadImagePrompt} disabled={!imagePrompt?.prompt}>
+                      下载
+                    </button>
+                  </div>
+                </div>
+                <label className="social-digest-label">
+                  额外偏好（可选）
+                  <textarea
+                    value={imagePromptExtra}
+                    onChange={(event) => setImagePromptExtra(event.target.value)}
+                    rows={3}
+                    placeholder="比如：更极简、更多留白、强调数据感..."
+                  />
+                </label>
+                <label className="social-digest-label">
+                  生成引擎
+                  <select
+                    value={imagePromptProvider}
+                    onChange={(event) => setImagePromptProvider(event.target.value as 'deepseek' | 'dashscope')}
+                  >
+                    <option value="deepseek">DeepSeek（deepseek-chat）</option>
+                    <option value="dashscope">Qwen（qwen3-max）</option>
+                  </select>
+                </label>
+                <label className="social-digest-label">
+                  要点数量
+                  <select
+                    value={imagePromptMaxItems}
+                    onChange={(event) => setImagePromptMaxItems(Number(event.target.value))}
+                  >
+                    <option value={5}>5</option>
+                    <option value={6}>6</option>
+                    <option value={8}>8</option>
+                    <option value={10}>10</option>
+                    <option value={12}>12</option>
+                  </select>
+                </label>
+                {imagePromptStatus ? <p className="status">{imagePromptStatus}</p> : null}
+                {imagePrompt?.prompt ? (
+                  <pre className="social-digest-output">{imagePrompt.prompt}</pre>
+                ) : (
+                  <p className="empty">点击生成，输出可直接用于 nano banana 的图片 Prompt。</p>
+                )}
+                {imagePrompt ? (
+                  <p className="meta">
+                    要点 {imagePrompt.usedItems}/{imagePrompt.totalItems} 条 · 时间范围{' '}
+                    {new Date(imagePrompt.periodStart).toLocaleString()} - {new Date(imagePrompt.periodEnd).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
+              </>
             ) : null}
           </article>
         </div>

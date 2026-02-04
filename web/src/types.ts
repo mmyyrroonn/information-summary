@@ -200,6 +200,14 @@ export interface SocialDigestResult {
   periodEnd: string;
 }
 
+export interface SocialImagePromptResult {
+  prompt: string;
+  usedItems: number;
+  totalItems: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
 export type ReportProfileGroupBy = 'cluster' | 'tag' | 'author';
 
 export interface ReportProfile {

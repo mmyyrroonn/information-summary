@@ -35,6 +35,10 @@ const DEFAULT_REPORT_WINDOW_HOURS = 6;
 const SOCIAL_DIGEST_MAX_ITEMS = 60;
 const SOCIAL_DIGEST_SUMMARY_MAX_LENGTH = 240;
 const SOCIAL_DIGEST_TEXT_MAX_LENGTH = 360;
+const SOCIAL_IMAGE_MAX_ITEMS = 8;
+const SOCIAL_IMAGE_SOURCE_MAX_ITEMS = 60;
+const SOCIAL_IMAGE_ITEM_MAX_LENGTH = 36;
+const SOCIAL_IMAGE_TITLE_MAX_LENGTH = 24;
 
 type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: { include: { subscription: true } } } }>;
 type InsightWithTweetEmbedding = Prisma.TweetInsightGetPayload<{
@@ -103,6 +107,37 @@ export interface SocialDigestOptions {
 }
 
 type SocialDigestProvider = 'deepseek' | 'dashscope' | 'auto';
+
+export interface SocialImagePromptResult {
+  prompt: string;
+  usedItems: number;
+  totalItems: number;
+  periodStart: string;
+  periodEnd: string;
+}
+
+export interface SocialImagePromptOptions {
+  prompt?: string;
+  maxItems?: number;
+  provider?: SocialDigestProvider;
+}
+
+type SocialImageSourceItem = {
+  summary: string;
+  tags?: string[];
+  importance?: number | null;
+  author?: string;
+  category?: string;
+};
+
+type SocialImageContent = {
+  title?: string;
+  bullets?: string[];
+  sections?: Array<{
+    title?: string;
+    bullets?: string[];
+  }>;
+};
 
 interface ClusterReportOutline {
   mode: 'clustered';
@@ -1798,6 +1833,219 @@ function formatHighScoreSummaryEntry(entry: HighScoreEntry) {
   const prefix = category ? `【${category}】` : '';
   const normalized = normalizeSummaryText(entry.text);
   return truncateText(`${prefix}${normalized}`, 180);
+}
+
+function normalizeImageBullet(text: string) {
+  let output = normalizeSummaryText(text);
+  output = output.replace(/^\s*\d+\s*[\.\、:-]\s*/g, '').trim();
+  output = output.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+  output = output.replace(/（[^）]*条[^）]*）/g, '').trim();
+  output = output.replace(/\bTags:\s*.*$/i, '').trim();
+  output = output.replace(/(?:推文|tweet)\s*[:：]?\s*$/gi, '').trim();
+  return truncateText(output, SOCIAL_IMAGE_ITEM_MAX_LENGTH);
+}
+
+function normalizeImageBullets(items: string[], maxItems: number) {
+  const output: string[] = [];
+  const seen = new Set<string>();
+  items.forEach((item) => {
+    const normalized = normalizeImageBullet(item);
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    output.push(normalized);
+  });
+  return output.slice(0, maxItems);
+}
+
+function normalizeImageSections(
+  sections: Array<{ title?: string; bullets?: string[] }>,
+  maxItems: number
+) {
+  const normalized: Array<{ title: string; bullets: string[] }> = [];
+  let remaining = maxItems;
+  sections.forEach((section) => {
+    if (remaining <= 0) return;
+    const title = typeof section.title === 'string' ? section.title.trim() : '';
+    const bullets = Array.isArray(section.bullets) ? section.bullets : [];
+    const cleaned = normalizeImageBullets(bullets, remaining);
+    if (!title || !cleaned.length) return;
+    normalized.push({ title, bullets: cleaned });
+    remaining -= cleaned.length;
+  });
+  return normalized;
+}
+
+function buildSocialImageContentPrompt(payload: {
+  items: SocialImageSourceItem[];
+  maxItems: number;
+  extraPrompt?: string;
+}) {
+  const extra = payload.extraPrompt?.trim();
+  const rules = [
+    '中文输出，仅基于素材内容，不新增事实。',
+    `输出 JSON，格式：{"title":"...","sections":[{"title":"...","bullets":["..."]}]}`,
+    'title 为 6-12 字的主题短语，概括今日主题，可用“快阅/速览/简报/聚焦”等字样，但不要包含“一图流”前缀，也不要包含具体日期或时间范围。',
+    `sections 为 3-5 组，每组 2-4 条，合计 ${Math.max(5, Math.min(payload.maxItems, 12))} 条左右。`,
+    '每条 12-18 字，完整短句或短语，不要标点堆叠。',
+    '避免营销用语、情绪词、感叹号、口号。',
+    '不要出现链接、@、#、英文缩写堆叠。',
+    '优先覆盖重要度更高、重复度更低的要点。'
+  ];
+  if (extra) {
+    rules.push(`额外要求：${extra}`);
+  }
+  return [
+    '请从素材中提炼日报图片用的标题和要点。',
+    '要求：',
+    ...rules.map((rule) => `- ${rule}`),
+    '',
+    '素材（仅可基于以下内容）：',
+    JSON.stringify(payload.items, null, 2)
+  ].join('\n');
+}
+
+function buildSocialImagePromptText(payload: {
+  title: string;
+  dateRange: string;
+  items?: string[];
+  sections?: Array<{ title: string; bullets: string[] }>;
+  extraPrompt?: string;
+}) {
+  const extra = payload.extraPrompt?.trim();
+  const lines = [
+    '请生成一张精致的中文日报信息图，整体干净、克制、专业。',
+    '画面比例 16:9，高分辨率，文字清晰易读。',
+    '风格：色彩丰富但柔和，手帐/手绘笔记质感 + 轻微漫画风，线条圆润。',
+    '配色：多彩柔和配色（薄荷绿、珊瑚橙、天蓝、柠檬黄、薰衣草紫），不同分类用不同色块/标签区分。',
+    '版式：顶部标题栏（标题 + 时间范围）；中部为多色分类卡片；底部留一小块“今日重点”或“补充信息”区域。',
+    '只使用下方提供的文字，不要新增内容；尽量让每条要点保持一行。',
+    '',
+    '需要呈现的文字：',
+    `标题：${payload.title}`,
+    `时间范围：${payload.dateRange}`
+  ];
+  if (payload.sections?.length) {
+    lines.push('分类要点：');
+    payload.sections.forEach((section) => {
+      lines.push(`【${section.title}】`);
+      section.bullets.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+    });
+  } else if (payload.items?.length) {
+    lines.push('今日要点：');
+    payload.items.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+  }
+  if (extra) {
+    lines.push('', `额外偏好：${extra}`);
+  }
+  return lines.join('\n');
+}
+
+async function collectSocialImageSource(report: Report, limit: number) {
+  const entries = extractHighScoreEntries(report.outline);
+  if (entries.length) {
+    const source = entries.slice(0, Math.min(limit, entries.length)).map((entry) => ({
+      summary: normalizeSummaryText(entry.text),
+      ...(entry.category?.trim() ? { category: entry.category.trim() } : {})
+    }));
+    const fallback = entries.map((entry) => normalizeImageBullet(formatHighScoreSummaryEntry(entry))).filter(Boolean);
+    return { source, fallback, total: fallback.length };
+  }
+
+  const tweetIds = extractTweetIdsFromOutline(report.outline as unknown);
+  if (!tweetIds.length) {
+    return { source: [], fallback: [], total: 0 };
+  }
+  const selectedIds = tweetIds.slice(0, Math.max(limit, 12));
+  const insights = await prisma.tweetInsight.findMany({
+    where: { tweetId: { in: selectedIds } },
+    include: { tweet: { include: { subscription: true } } }
+  });
+  const source = insights.map((insight) => ({
+    summary: getInsightSummary(insight),
+    tags: insight.tags ?? [],
+    importance: insight.importance ?? null,
+    author: formatAuthorTitle(insight.tweet)
+  }));
+  const fallback = insights
+    .map((insight) => normalizeImageBullet(getInsightSummary(insight)))
+    .filter(Boolean);
+  return { source, fallback, total: fallback.length };
+}
+
+export async function generateSocialImagePromptFromReport(
+  report: Report,
+  options: SocialImagePromptOptions = {}
+): Promise<SocialImagePromptResult> {
+  const maxItems = Math.max(3, Math.min(options.maxItems ?? SOCIAL_IMAGE_MAX_ITEMS, 10));
+  const sourceLimit = Math.max(maxItems, SOCIAL_IMAGE_SOURCE_MAX_ITEMS);
+  const profile = report.profileId
+    ? await prisma.reportProfile.findUnique({
+        where: { id: report.profileId },
+        select: { timezone: true, name: true }
+      })
+    : null;
+  const timezone = profile?.timezone?.trim() || config.REPORT_TIMEZONE;
+  const titleBase = profile?.name?.trim() || 'AI 日报';
+  const dateRange = `${formatDisplayDate(report.periodStart, timezone)} - ${formatDisplayDate(report.periodEnd, timezone)}`;
+
+  const { source, fallback, total } = await collectSocialImageSource(report, sourceLimit);
+  if (!source.length && !fallback.length) {
+    throw new Error('No insights available for social image prompt');
+  }
+
+  const provider = resolveSocialDigestProvider(options.provider);
+  const model = resolveSocialDigestModel(provider);
+  const contentPrompt = buildSocialImageContentPrompt({
+    items: source.slice(0, sourceLimit),
+    maxItems,
+    ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
+  });
+  const content = await runStructuredCompletion<SocialImageContent>(
+    {
+      model,
+      temperature: 0.3,
+      messages: [
+        {
+          role: 'system',
+          content: '你是中文科技/市场日报编辑，擅长提炼简短要点与标题。'
+        },
+        { role: 'user', content: contentPrompt }
+      ]
+    },
+    { stage: 'social-image', reportId: report.id, provider, model },
+    { provider }
+  );
+
+  const rawSections = Array.isArray(content?.sections) ? content.sections : [];
+  const sections = normalizeImageSections(rawSections, maxItems);
+  const rawBullets = Array.isArray(content?.bullets) ? content.bullets : [];
+  const fallbackBullets = normalizeImageBullets(fallback, maxItems);
+  const bullets = sections.length
+    ? []
+    : normalizeImageBullets(rawBullets.length ? rawBullets : fallbackBullets, maxItems);
+  if (!sections.length && !bullets.length) {
+    throw new Error('No usable bullets for social image prompt');
+  }
+
+  const theme = typeof content?.title === 'string' ? content.title.trim() : '';
+  const titleCore = theme || titleBase;
+  const title = truncateText(`一图流·${titleCore}`, SOCIAL_IMAGE_TITLE_MAX_LENGTH);
+
+  const prompt = buildSocialImagePromptText({
+    title,
+    dateRange,
+    ...(bullets.length ? { items: bullets } : {}),
+    ...(sections.length ? { sections } : {}),
+    ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
+  });
+
+  return {
+    prompt,
+    usedItems: sections.length ? sections.reduce((sum, section) => sum + section.bullets.length, 0) : bullets.length,
+    totalItems: total,
+    periodStart: report.periodStart.toISOString(),
+    periodEnd: report.periodEnd.toISOString()
+  };
 }
 
 export function buildHighScoreSummaryMarkdown(report: Report, previewUrl: string) {
