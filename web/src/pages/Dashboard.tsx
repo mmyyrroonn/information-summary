@@ -93,6 +93,50 @@ function extractOutlineTags(outline: unknown) {
   return [...tags].map((tag) => tag.trim()).filter(Boolean).sort();
 }
 
+function extractOutlineTagCounts(outline: unknown) {
+  const counts = new Map<string, number>();
+  const addCount = (tag: string, value: number) => {
+    const normalized = tag.trim();
+    if (!normalized) return;
+    const next = (counts.get(normalized) ?? 0) + value;
+    counts.set(normalized, next);
+  };
+  const clustered = asClusteredOutline(outline);
+  if (clustered) {
+    clustered.sections.forEach((section) => {
+      const sectionTag = section.tag?.trim() ?? '';
+      const sectionCount = section.clusters.reduce((sum, cluster) => sum + (cluster.size ?? 0), 0);
+      if (sectionTag && sectionCount > 0) {
+        addCount(sectionTag, sectionCount);
+      }
+      section.clusters.forEach((cluster) => {
+        const clusterCount = cluster.size ?? 0;
+        if (!Array.isArray(cluster.tags) || clusterCount <= 0) return;
+        cluster.tags.forEach((tag) => {
+          const normalized = tag.trim();
+          if (!normalized) return;
+          if (sectionTag && normalized === sectionTag) return;
+          addCount(normalized, clusterCount);
+        });
+      });
+    });
+    return Object.fromEntries(counts.entries());
+  }
+  if (outline && typeof outline === 'object') {
+    const sections = (outline as ReportOutlinePayload).sections;
+    if (Array.isArray(sections)) {
+      sections.forEach((section) => {
+        if (!Array.isArray(section.items)) return;
+        section.items.forEach((item) => {
+          if (!Array.isArray(item.tags)) return;
+          item.tags.forEach((tag) => addCount(tag, 1));
+        });
+      });
+    }
+  }
+  return Object.fromEntries(counts.entries());
+}
+
 function tweetLink(id: string) {
   return `https://x.com/i/web/status/${id}`;
 }
@@ -136,6 +180,7 @@ export function DashboardPage() {
 
   const clusteredOutline = useMemo(() => asClusteredOutline(selectedReport?.outline), [selectedReport?.outline]);
   const reportTags = useMemo(() => extractOutlineTags(selectedReport?.outline), [selectedReport?.outline]);
+  const reportTagCounts = useMemo(() => extractOutlineTagCounts(selectedReport?.outline), [selectedReport?.outline]);
 
   useEffect(() => {
     if (!reportTags.length) {
@@ -705,6 +750,8 @@ export function DashboardPage() {
                     <option value={8}>8</option>
                     <option value={10}>10</option>
                     <option value={12}>12</option>
+                    <option value={16}>16</option>
+                    <option value={20}>20</option>
                   </select>
                 </label>
                 {reportTags.length ? (
@@ -721,11 +768,12 @@ export function DashboardPage() {
                             checked={socialTags.includes(tag)}
                             onChange={() => toggleSocialTag(tag)}
                           />
-                          {tag}
+                          <span className="social-digest-tag-name">{tag}</span>
+                          <span className="social-digest-tag-count">{reportTagCounts[tag] ?? 0}</span>
                         </label>
                       ))}
                     </div>
-                    <span className="social-digest-hint">未选择则使用全部素材；多选会分别生成多条。</span>
+                    <span className="social-digest-hint">未选择则使用全部素材；多选会合并生成一条，按标签素材占比分配要点。</span>
                   </div>
                 ) : null}
                 <label className="social-digest-toggle">

@@ -34,6 +34,7 @@ const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
 const DEFAULT_REPORT_WINDOW_HOURS = 6;
 const SOCIAL_DIGEST_MAX_ITEMS = 60;
+const SOCIAL_DIGEST_MAX_BULLETS = 20;
 const SOCIAL_DIGEST_SUMMARY_MAX_LENGTH = 240;
 const SOCIAL_DIGEST_TEXT_MAX_LENGTH = 360;
 const SOCIAL_IMAGE_MAX_ITEMS = 8;
@@ -1048,6 +1049,7 @@ function buildSocialDigestPrompt(options: {
   items: SocialDigestItem[];
   extraPrompt?: string;
   targetItems?: number;
+  tagTargets?: Array<{ tag: string; count: number; target: number }>;
 }) {
   const extra = options.extraPrompt?.trim();
   const hasText = options.items.some((item) => Boolean(item.text));
@@ -1057,6 +1059,11 @@ function buildSocialDigestPrompt(options: {
   const bulletRule = options.targetItems
     ? `bullets 必须 ${options.targetItems} 条，顺序与正文要点一致，不得合并或拆分。`
     : 'bullets 建议 4–8 条，顺序与正文要点一致，不得合并或拆分。';
+  const tagRule = options.tagTargets?.length
+    ? `多标签覆盖比例（约数即可）：${options.tagTargets
+        .map((entry) => `${TAG_DISPLAY_NAMES[entry.tag] ?? entry.tag}≈${entry.target}条（素材${entry.count}条）`)
+        .join('；')}。`
+    : '';
   const rules = [
     '中文输出，像业内人克制的日常快讯；允许第一人称；不写“总结/报告”腔，允许长文。',
     '开头允许有简短钩子（8–16 字以内），后接 1 句自然概览；不要情绪化，可口语化交代时间范围（如“昨晚/昨天/最近”），但不要写具体日期或时间范围。',
@@ -1071,6 +1078,7 @@ function buildSocialDigestPrompt(options: {
     '输出 JSON，格式：{"content":"...","bullets":["..."]}，只输出 JSON。',
     'content 为完整 X 文案，可分段。',
     bulletRule,
+    ...(tagRule ? [tagRule] : []),
     'bullets 用于后续图片要点提炼，每条尽量 10–18 字，避免链接/@/#/营销词/情绪词/感叹号。',
     '允许中等长度句子，不要全是短句碎片。',
     '允许最后 1 句做整体收束（仅趋势/框架性判断），不要口号式总结或 CTA。',
@@ -1101,12 +1109,13 @@ export async function generateSocialDigestFromReport(
   if (!tweetIds.length) {
     throw new Error('Report outline missing tweet references');
   }
+  const selectedTags = normalizeFilterTags(options.tags ?? []);
   const maxItems = Math.max(5, Math.min(options.maxItems ?? SOCIAL_DIGEST_MAX_ITEMS, 200));
-  const selectedIds = tweetIds.slice(0, maxItems);
-  const orderMap = new Map(selectedIds.map((id, index) => [id, index]));
+  const candidateIds = selectedTags.length ? tweetIds : tweetIds.slice(0, maxItems);
+  const orderMap = new Map(tweetIds.map((id, index) => [id, index]));
 
   const insights = await prisma.tweetInsight.findMany({
-    where: { tweetId: { in: selectedIds } },
+    where: { tweetId: { in: candidateIds } },
     include: { tweet: { include: { subscription: true } } }
   });
 
@@ -1135,24 +1144,18 @@ export async function generateSocialDigestFromReport(
   const provider = resolveSocialDigestProvider(options.provider);
   const model = resolveSocialDigestModel(provider, options.model);
 
-  const selectedTags = normalizeFilterTags(options.tags ?? []);
-  const tagGroups = selectedTags.length
-    ? selectedTags.map((tag) => ({ tag, items: [] as SocialDigestItem[] }))
-    : [{ tag: '', items }];
-  if (selectedTags.length) {
-    const groupByTag = new Map(tagGroups.map((group) => [group.tag, group]));
-    items.forEach((item) => {
-      const itemTags = normalizeFilterTags(item.tags ?? []);
-      const match = selectedTags.find((tag) => itemTags.includes(tag));
-      if (!match) return;
-      const group = groupByTag.get(match);
-      if (!group) return;
-      group.items.push(item);
-    });
-  }
-  const selectedGroups = tagGroups.filter((group) => group.items.length);
-  if (!selectedGroups.length) {
+  const selectedSet = new Set(selectedTags);
+  let filteredItems = selectedTags.length
+    ? items.filter((item) => {
+        const itemTags = normalizeFilterTags(item.tags ?? []);
+        return itemTags.some((tag) => selectedSet.has(tag));
+      })
+    : items;
+  if (selectedTags.length && !filteredItems.length) {
     throw new Error('No insights available for selected tags');
+  }
+  if (selectedTags.length && filteredItems.length > maxItems) {
+    filteredItems = filteredItems.slice(0, maxItems);
   }
 
   const profile = report.profileId
@@ -1171,75 +1174,73 @@ export async function generateSocialDigestFromReport(
     items: SocialDigestItem[];
     extraPrompt?: string;
     targetItems?: number;
-  } = { start, end, timezone, items };
+    tagTargets?: Array<{ tag: string; count: number; target: number }>;
+  } = { start, end, timezone, items: filteredItems };
   if (options.prompt !== undefined) {
     promptPayload.extraPrompt = options.prompt;
   }
   if (typeof options.maxItems === 'number') {
-    promptPayload.targetItems = Math.max(4, Math.min(options.maxItems, 12));
+    promptPayload.targetItems = Math.max(4, Math.min(options.maxItems, SOCIAL_DIGEST_MAX_BULLETS));
   }
-  const groupTargets =
-    typeof promptPayload.targetItems === 'number' &&
-    selectedGroups.length > 1 &&
-    promptPayload.targetItems >= selectedGroups.length
-      ? allocateDigestTargets(
-          promptPayload.targetItems,
-          selectedGroups.map((group) => group.items.length)
-        )
-      : null;
-  const contentParts: string[] = [];
-  const bulletParts: string[] = [];
-  let usedItems = 0;
-  for (const [index, group] of selectedGroups.entries()) {
-    if (!group) continue;
-    const prompt = buildSocialDigestPrompt({
-      ...promptPayload,
-      items: group.items,
-      ...(groupTargets && typeof groupTargets[index] === 'number'
-        ? { targetItems: groupTargets[index] }
-        : {})
+  if (selectedTags.length > 1 && typeof promptPayload.targetItems === 'number') {
+    const counts = selectedTags.map((tag) => ({ tag, count: 0 }));
+    filteredItems.forEach((item) => {
+      const itemTags = normalizeFilterTags(item.tags ?? []);
+      counts.forEach((entry) => {
+        if (itemTags.includes(entry.tag)) {
+          entry.count += 1;
+        }
+      });
     });
-    const groupContent = await runStructuredCompletion<SocialDigestContent>(
-      {
-        model,
-        temperature: 0.4,
-        messages: [
-          {
-            role: 'system',
-            content: '你是行业研究员，写给关注行业的读者：语言自然克制，信息密度高但不逐条点评。'
-          },
-          { role: 'user', content: prompt }
-        ]
-      },
-      {
-        stage: 'social-digest',
-        reportId: report.id,
-        items: group.items.length,
-        provider,
-        model
-      },
-      { provider }
-    );
-    const content = typeof groupContent?.content === 'string' ? groupContent.content.trim() : '';
-    if (content) {
-      contentParts.push(content);
+    const active = counts.filter((entry) => entry.count > 0);
+    if (active.length > 1 && promptPayload.targetItems >= active.length) {
+      const allocations = allocateDigestTargets(
+        promptPayload.targetItems,
+        active.map((entry) => entry.count)
+      );
+      promptPayload.tagTargets = active.map((entry, index) => ({
+        ...entry,
+        target: allocations[index] ?? 1
+      }));
     }
-    const rawBullets = Array.isArray(groupContent?.bullets) ? groupContent.bullets : [];
-    rawBullets.forEach((item) => {
-      if (typeof item !== 'string') return;
-      const trimmed = item.trim();
-      if (trimmed) bulletParts.push(trimmed);
-    });
-    usedItems += group.items.length;
   }
 
-  const content = contentParts.join('\n\n').trim();
-  const bullets = normalizeSocialDigestBullets(bulletParts, items, promptPayload.targetItems);
+  const prompt = buildSocialDigestPrompt(promptPayload);
+  const digestContent = await runStructuredCompletion<SocialDigestContent>(
+    {
+      model,
+      temperature: 0.4,
+      messages: [
+        {
+          role: 'system',
+          content: '你是行业研究员，写给关注行业的读者：语言自然克制，信息密度高但不逐条点评。'
+        },
+        { role: 'user', content: prompt }
+      ]
+    },
+    {
+      stage: 'social-digest',
+      reportId: report.id,
+      items: filteredItems.length,
+      provider,
+      model
+    },
+    { provider }
+  );
+  const content = typeof digestContent?.content === 'string' ? digestContent.content.trim() : '';
+  const bulletParts: string[] = [];
+  const rawBullets = Array.isArray(digestContent?.bullets) ? digestContent.bullets : [];
+  rawBullets.forEach((item) => {
+    if (typeof item !== 'string') return;
+    const trimmed = item.trim();
+    if (trimmed) bulletParts.push(trimmed);
+  });
+  const bullets = normalizeSocialDigestBullets(bulletParts, filteredItems, promptPayload.targetItems);
 
   return {
     content,
     bullets,
-    usedItems,
+    usedItems: filteredItems.length,
     totalItems: tweetIds.length,
     periodStart: report.periodStart.toISOString(),
     periodEnd: report.periodEnd.toISOString()

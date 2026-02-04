@@ -146,7 +146,7 @@ router.post('/:id/social-image-prompt', async (req, res, next) => {
     const body = z
       .object({
         prompt: z.string().optional(),
-        maxItems: z.coerce.number().int().min(3).max(12).optional(),
+        maxItems: z.coerce.number().int().min(3).max(20).optional(),
         provider: z.enum(['deepseek', 'dashscope', 'auto']).optional(),
         digest: z.string().trim().min(1)
       })
