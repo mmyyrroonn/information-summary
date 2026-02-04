@@ -891,7 +891,12 @@ function renderClusterReportMarkdown(
   return lines.join('\n');
 }
 
-function extractTweetIdsFromOutline(outline: unknown): string[] {
+function extractTweetIdsFromOutline(
+  outline: unknown,
+  options?: {
+    includeClusterMembers?: boolean;
+  }
+): string[] {
   if (!outline || typeof outline !== 'object') {
     return [];
   }
@@ -899,6 +904,7 @@ function extractTweetIdsFromOutline(outline: unknown): string[] {
   if (outlineRecord.mode === 'clustered') {
     const sections = Array.isArray(outlineRecord.sections) ? outlineRecord.sections : [];
     const ids: string[] = [];
+    const includeMembers = options?.includeClusterMembers === true;
     sections.forEach((section) => {
       if (!section || typeof section !== 'object') return;
       const clusters = Array.isArray((section as Record<string, unknown>).clusters)
@@ -906,10 +912,21 @@ function extractTweetIdsFromOutline(outline: unknown): string[] {
         : [];
       clusters.forEach((cluster) => {
         if (!cluster || typeof cluster !== 'object') return;
-        const representative = (cluster as Record<string, unknown>).representative as Record<string, unknown> | undefined;
-        const tweetId = representative?.tweetId;
-        if (typeof tweetId === 'string' && tweetId.trim()) {
-          ids.push(tweetId.trim());
+        const record = cluster as Record<string, unknown>;
+        const representative = record.representative as Record<string, unknown> | undefined;
+        const repId = typeof representative?.tweetId === 'string' ? representative.tweetId.trim() : '';
+        if (includeMembers) {
+          const memberIds = Array.isArray(record.memberTweetIds) ? (record.memberTweetIds as unknown[]) : [];
+          const ordered = repId ? [repId, ...memberIds] : memberIds;
+          ordered.forEach((value) => {
+            if (typeof value !== 'string') return;
+            const trimmed = value.trim();
+            if (trimmed) ids.push(trimmed);
+          });
+          return;
+        }
+        if (repId) {
+          ids.push(repId);
         }
       });
     });
@@ -939,6 +956,35 @@ function extractTweetIdsFromOutline(outline: unknown): string[] {
   });
 
   return uniqueTweetIds(ids);
+}
+
+function extractClusterRepresentativeEntries(outline: unknown): Array<{ tweetId: string; tag: string }> {
+  if (!outline || typeof outline !== 'object') {
+    return [];
+  }
+  const outlineRecord = outline as Record<string, unknown>;
+  if (outlineRecord.mode !== 'clustered') {
+    return [];
+  }
+  const sections = Array.isArray(outlineRecord.sections) ? outlineRecord.sections : [];
+  const seen = new Set<string>();
+  const entries: Array<{ tweetId: string; tag: string }> = [];
+  sections.forEach((section) => {
+    if (!section || typeof section !== 'object') return;
+    const record = section as Record<string, unknown>;
+    const tagValue = typeof record.tag === 'string' ? record.tag.trim().toLowerCase() : '';
+    if (!tagValue) return;
+    const clusters = Array.isArray(record.clusters) ? (record.clusters as unknown[]) : [];
+    clusters.forEach((cluster) => {
+      if (!cluster || typeof cluster !== 'object') return;
+      const representative = (cluster as Record<string, unknown>).representative as Record<string, unknown> | undefined;
+      const tweetId = typeof representative?.tweetId === 'string' ? representative.tweetId.trim() : '';
+      if (!tweetId || seen.has(tweetId)) return;
+      seen.add(tweetId);
+      entries.push({ tweetId, tag: tagValue });
+    });
+  });
+  return entries;
 }
 
 function uniqueTweetIds(ids: string[]) {
@@ -1105,13 +1151,26 @@ export async function generateSocialDigestFromReport(
   report: Report,
   options: SocialDigestOptions = {}
 ): Promise<SocialDigestResult> {
-  const tweetIds = extractTweetIdsFromOutline(report.outline as unknown);
+  const clusterEntries = extractClusterRepresentativeEntries(report.outline as unknown);
+  const tweetIds = clusterEntries.length
+    ? clusterEntries.map((entry) => entry.tweetId)
+    : extractTweetIdsFromOutline(report.outline as unknown);
   if (!tweetIds.length) {
     throw new Error('Report outline missing tweet references');
   }
   const selectedTags = normalizeFilterTags(options.tags ?? []);
   const maxItems = Math.max(5, Math.min(options.maxItems ?? SOCIAL_DIGEST_MAX_ITEMS, 200));
-  const candidateIds = selectedTags.length ? tweetIds : tweetIds.slice(0, maxItems);
+  const useClusterTagFilter = clusterEntries.length > 0 && selectedTags.length > 0;
+  let candidateIds = tweetIds;
+  if (useClusterTagFilter) {
+    const allowed = new Set(selectedTags);
+    candidateIds = clusterEntries.filter((entry) => allowed.has(entry.tag)).map((entry) => entry.tweetId);
+    if (candidateIds.length > maxItems) {
+      candidateIds = candidateIds.slice(0, maxItems);
+    }
+  } else if (!selectedTags.length) {
+    candidateIds = tweetIds.slice(0, maxItems);
+  }
   const orderMap = new Map(tweetIds.map((id, index) => [id, index]));
 
   const insights = await prisma.tweetInsight.findMany({
@@ -1145,18 +1204,44 @@ export async function generateSocialDigestFromReport(
   const model = resolveSocialDigestModel(provider, options.model);
 
   const selectedSet = new Set(selectedTags);
-  let filteredItems = selectedTags.length
-    ? items.filter((item) => {
-        const itemTags = normalizeFilterTags(item.tags ?? []);
-        return itemTags.some((tag) => selectedSet.has(tag));
-      })
-    : items;
+  let filteredItems =
+    selectedTags.length && !useClusterTagFilter
+      ? items.filter((item) => {
+          const itemTags = normalizeFilterTags(item.tags ?? []);
+          return itemTags.some((tag) => selectedSet.has(tag));
+        })
+      : items;
   if (selectedTags.length && !filteredItems.length) {
     throw new Error('No insights available for selected tags');
   }
   if (selectedTags.length && filteredItems.length > maxItems) {
     filteredItems = filteredItems.slice(0, maxItems);
   }
+
+  const clusterTagCounts = clusterEntries.reduce<Record<string, number>>((acc, entry) => {
+    acc[entry.tag] = (acc[entry.tag] ?? 0) + 1;
+    return acc;
+  }, {});
+  const debugLimit = 60;
+  const debugItems = filteredItems.slice(0, debugLimit).map((item) => ({
+    summary: item.summary,
+    tags: item.tags,
+    importance: item.importance ?? null,
+    author: item.author ?? null,
+    tweetUrl: item.tweetUrl ?? null
+  }));
+  logger.info('Social digest input prepared', {
+    reportId: report.id,
+    source: clusterEntries.length ? 'clustered' : 'outline',
+    totalClusters: clusterEntries.length,
+    clusterTagCounts,
+    selectedTags,
+    maxItems,
+    candidateIds: candidateIds.length,
+    filteredItems: filteredItems.length,
+    debugItemsTruncated: filteredItems.length > debugLimit,
+    debugItems
+  });
 
   const profile = report.profileId
     ? await prisma.reportProfile.findUnique({
@@ -1206,6 +1291,12 @@ export async function generateSocialDigestFromReport(
   }
 
   const prompt = buildSocialDigestPrompt(promptPayload);
+  logger.info('Social digest prompt ready', {
+    reportId: report.id,
+    provider,
+    model,
+    prompt
+  });
   const digestContent = await runStructuredCompletion<SocialDigestContent>(
     {
       model,
