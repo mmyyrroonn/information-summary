@@ -104,6 +104,7 @@ interface ApiClient {
       prompt?: string;
       maxItems?: number;
       provider?: 'deepseek' | 'dashscope' | 'auto';
+      digest?: string;
     }
   ) => Promise<SocialImagePromptResult>;
   listReportProfiles: () => Promise<ReportProfile[]>;

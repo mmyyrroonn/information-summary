@@ -120,6 +120,7 @@ export interface SocialImagePromptOptions {
   prompt?: string;
   maxItems?: number;
   provider?: SocialDigestProvider;
+  digest?: string;
 }
 
 type SocialImageSourceItem = {
@@ -1014,7 +1015,8 @@ function buildSocialDigestPrompt(options: {
     '如内容偏宏观/信息密集，先给 1 句主题引导再列要点。',
     '主体用短段落或短清单（建议 4–8 条），以事实为主；每 3–4 条事实允许 1 条简短点评（≤1 句），避免逐条点评。',
     '允许中等长度句子，不要全是短句碎片。',
-    '允许最后 1 句做整体收束（仅趋势/框架性判断），不要口号式总结或 CTA。'
+    '允许最后 1 句做整体收束（仅趋势/框架性判断），不要口号式总结或 CTA。',
+    '事实点尽量自包含，减少代词和省略，便于后续转成图片要点。'
   ];
   if (hasText) {
     rules.push('text 字段是原文片段，仅用于理解，不要直接引用。');
@@ -1857,6 +1859,23 @@ function normalizeImageBullets(items: string[], maxItems: number) {
   return output.slice(0, maxItems);
 }
 
+function extractDigestBullets(digest: string) {
+  const trimmed = digest.trim();
+  if (!trimmed) return [];
+  const lines = trimmed
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*[\-\*\d\.\)\、]+/, '').trim())
+    .filter(Boolean);
+  if (lines.length >= 2) {
+    return lines;
+  }
+  return trimmed
+    .replace(/\s+/g, ' ')
+    .split(/[。！？；;]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function normalizeImageSections(
   sections: Array<{ title?: string; bullets?: string[] }>,
   maxItems: number
@@ -1901,6 +1920,35 @@ function buildSocialImageContentPrompt(payload: {
     '',
     '素材（仅可基于以下内容）：',
     JSON.stringify(payload.items, null, 2)
+  ].join('\n');
+}
+
+function buildSocialImageContentPromptFromDigest(payload: {
+  digest: string;
+  maxItems: number;
+  extraPrompt?: string;
+}) {
+  const extra = payload.extraPrompt?.trim();
+  const rules = [
+    '中文输出，仅基于下方 X 推文内容，不新增事实或细节。',
+    `输出 JSON，格式：{"title":"...","sections":[{"title":"...","bullets":["..."]}]}`,
+    'title 为 6-12 字的主题短语，概括今日主题，可用“快阅/速览/简报/聚焦”等字样，但不要包含“一图流”前缀，也不要包含具体日期或时间范围。',
+    `sections 为 3-5 组，每组 2-4 条，合计 ${Math.max(5, Math.min(payload.maxItems, 12))} 条左右。`,
+    '每条 12-18 字，完整短句或短语，不要标点堆叠。',
+    '避免营销用语、情绪词、感叹号、口号。',
+    '不要出现链接、@、#、英文缩写堆叠。',
+    '不要扩展或臆测推文未提及的信息；必要时只做同义改写或结构调整。'
+  ];
+  if (extra) {
+    rules.push(`额外要求：${extra}`);
+  }
+  return [
+    '请从以下 X 推文文案中提炼日报图片用的标题和要点。',
+    '要求：',
+    ...rules.map((rule) => `- ${rule}`),
+    '',
+    'X 推文文案（仅可基于以下内容）：',
+    payload.digest.trim()
   ].join('\n');
 }
 
@@ -1988,18 +2036,37 @@ export async function generateSocialImagePromptFromReport(
   const titleBase = profile?.name?.trim() || 'AI 日报';
   const dateRange = `${formatDisplayDate(report.periodStart, timezone)} - ${formatDisplayDate(report.periodEnd, timezone)}`;
 
-  const { source, fallback, total } = await collectSocialImageSource(report, sourceLimit);
-  if (!source.length && !fallback.length) {
-    throw new Error('No insights available for social image prompt');
+  const digest = options.digest?.trim();
+  const useDigest = Boolean(digest);
+  let fallback: string[] = [];
+  let total = 0;
+  let contentPrompt = '';
+
+  if (useDigest) {
+    fallback = normalizeImageBullets(extractDigestBullets(digest!), maxItems);
+    total = fallback.length;
+    contentPrompt = buildSocialImageContentPromptFromDigest({
+      digest: digest!,
+      maxItems,
+      ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
+    });
+  } else {
+    const sourceResult = await collectSocialImageSource(report, sourceLimit);
+    const source = sourceResult.source;
+    fallback = sourceResult.fallback;
+    total = sourceResult.total;
+    if (!source.length && !fallback.length) {
+      throw new Error('No insights available for social image prompt');
+    }
+    contentPrompt = buildSocialImageContentPrompt({
+      items: source.slice(0, sourceLimit),
+      maxItems,
+      ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
+    });
   }
 
   const provider = resolveSocialDigestProvider(options.provider);
   const model = resolveSocialDigestModel(provider);
-  const contentPrompt = buildSocialImageContentPrompt({
-    items: source.slice(0, sourceLimit),
-    maxItems,
-    ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
-  });
   const content = await runStructuredCompletion<SocialImageContent>(
     {
       model,
@@ -2039,10 +2106,13 @@ export async function generateSocialImagePromptFromReport(
     ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
   });
 
+  const usedItems = sections.length ? sections.reduce((sum, section) => sum + section.bullets.length, 0) : bullets.length;
+  const totalItems = useDigest ? Math.max(total, usedItems) : total;
+
   return {
     prompt,
-    usedItems: sections.length ? sections.reduce((sum, section) => sum + section.bullets.length, 0) : bullets.length,
-    totalItems: total,
+    usedItems,
+    totalItems,
     periodStart: report.periodStart.toISOString(),
     periodEnd: report.periodEnd.toISOString()
   };

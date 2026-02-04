@@ -147,7 +147,8 @@ router.post('/:id/social-image-prompt', async (req, res, next) => {
       .object({
         prompt: z.string().optional(),
         maxItems: z.coerce.number().int().min(3).max(12).optional(),
-        provider: z.enum(['deepseek', 'dashscope', 'auto']).optional()
+        provider: z.enum(['deepseek', 'dashscope', 'auto']).optional(),
+        digest: z.string().trim().min(1).optional()
       })
       .parse(req.body ?? {});
     const report = await getReport(req.params.id);
@@ -157,7 +158,8 @@ router.post('/:id/social-image-prompt', async (req, res, next) => {
     const result = await generateSocialImagePromptFromReport(report, {
       ...(body.prompt !== undefined ? { prompt: body.prompt } : {}),
       ...(typeof body.maxItems === 'number' ? { maxItems: body.maxItems } : {}),
-      ...(body.provider ? { provider: body.provider } : {})
+      ...(body.provider ? { provider: body.provider } : {}),
+      ...(body.digest ? { digest: body.digest } : {})
     });
     res.json(result);
   } catch (error) {

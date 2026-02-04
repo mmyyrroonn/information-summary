@@ -117,6 +117,7 @@ export function DashboardPage() {
   const [imagePromptBusy, setImagePromptBusy] = useState(false);
   const [imagePromptProvider, setImagePromptProvider] = useState<'deepseek' | 'dashscope'>('deepseek');
   const [imagePromptMaxItems, setImagePromptMaxItems] = useState(8);
+  const bundleNextImageRef = useRef(false);
   const socialPollerRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
   const reportHtml = useMemo(() => {
@@ -255,6 +256,27 @@ export function DashboardPage() {
     return null;
   }
 
+  async function runImagePromptFromDigest(digest: string) {
+    if (!selectedReport) return;
+    setImagePromptBusy(true);
+    setImagePromptStatus(null);
+    setImagePrompt(null);
+    try {
+      const result = await api.generateSocialImagePrompt(selectedReport.id, {
+        ...(imagePromptExtra.trim() ? { prompt: imagePromptExtra.trim() } : {}),
+        ...(typeof imagePromptMaxItems === 'number' ? { maxItems: imagePromptMaxItems } : {}),
+        provider: imagePromptProvider,
+        digest
+      });
+      setImagePrompt(result);
+      setImagePromptStatus('已生成');
+    } catch (error) {
+      setImagePromptStatus(error instanceof Error ? error.message : '图片 Prompt 生成失败');
+    } finally {
+      setImagePromptBusy(false);
+    }
+  }
+
   function startSocialPolling(jobId: string) {
     stopSocialPolling();
     const poll = async () => {
@@ -272,11 +294,23 @@ export function DashboardPage() {
           }
           setSocialBusy(false);
           stopSocialPolling();
+          if (bundleNextImageRef.current) {
+            bundleNextImageRef.current = false;
+            if (result?.content) {
+              void runImagePromptFromDigest(result.content);
+            } else {
+              setImagePromptStatus('社媒文案为空，无法生成图片 Prompt');
+            }
+          }
           return;
         }
         if (job.status === 'FAILED') {
           setSocialBusy(false);
           stopSocialPolling();
+          if (bundleNextImageRef.current) {
+            bundleNextImageRef.current = false;
+            setImagePromptStatus('社媒文案生成失败，无法生成图片 Prompt');
+          }
           return;
         }
         socialPollerRef.current = window.setTimeout(poll, 3000);
@@ -285,17 +319,28 @@ export function DashboardPage() {
         setSocialStatus(error instanceof Error ? error.message : '任务状态查询失败');
         setSocialBusy(false);
         stopSocialPolling();
+        if (bundleNextImageRef.current) {
+          bundleNextImageRef.current = false;
+          setImagePromptStatus('社媒文案生成异常，无法生成图片 Prompt');
+        }
       }
     };
     void poll();
   }
 
-  async function handleGenerateSocialDigest() {
+  async function generateSocialDigest(chainImage: boolean) {
     if (!selectedReport) return;
     stopSocialPolling();
     setSocialJob(null);
     setSocialBusy(true);
     setSocialStatus(null);
+    if (chainImage) {
+      bundleNextImageRef.current = true;
+      setImagePromptStatus('等待社媒文案完成...');
+      setImagePrompt(null);
+    } else {
+      bundleNextImageRef.current = false;
+    }
     try {
       const response = await api.generateSocialDigest(selectedReport.id, {
         ...(socialPrompt.trim() ? { prompt: socialPrompt.trim() } : {}),
@@ -310,7 +355,15 @@ export function DashboardPage() {
     } catch (error) {
       setSocialStatus(error instanceof Error ? error.message : '社媒文案生成失败');
       setSocialBusy(false);
+      if (bundleNextImageRef.current) {
+        bundleNextImageRef.current = false;
+        setImagePromptStatus('社媒文案生成失败，无法生成图片 Prompt');
+      }
     }
+  }
+
+  function handleGenerateSocialDigest() {
+    void generateSocialDigest(false);
   }
 
   async function handleCopySocialDigest() {
@@ -345,22 +398,15 @@ export function DashboardPage() {
 
   async function handleGenerateImagePrompt() {
     if (!selectedReport) return;
-    setImagePromptBusy(true);
-    setImagePromptStatus(null);
-    setImagePrompt(null);
-    try {
-      const result = await api.generateSocialImagePrompt(selectedReport.id, {
-        ...(imagePromptExtra.trim() ? { prompt: imagePromptExtra.trim() } : {}),
-        ...(typeof imagePromptMaxItems === 'number' ? { maxItems: imagePromptMaxItems } : {}),
-        provider: imagePromptProvider
-      });
-      setImagePrompt(result);
-      setImagePromptStatus('已生成');
-    } catch (error) {
-      setImagePromptStatus(error instanceof Error ? error.message : '图片 Prompt 生成失败');
-    } finally {
-      setImagePromptBusy(false);
+    if (!socialDigest?.content) {
+      setImagePromptStatus('请先生成社媒文案，图片 Prompt 将基于该文案生成');
+      return;
     }
+    await runImagePromptFromDigest(socialDigest.content);
+  }
+
+  function handleGenerateSocialBundle() {
+    void generateSocialDigest(true);
   }
 
   async function handleCopyImagePrompt() {
@@ -532,6 +578,9 @@ export function DashboardPage() {
                 <div className="social-digest-head">
                   <h3>社媒文案</h3>
                   <div className="social-digest-actions">
+                    <button type="button" className="ghost" onClick={handleGenerateSocialBundle} disabled={socialBusy || imagePromptBusy}>
+                      一键生成
+                    </button>
                     <button type="button" onClick={handleGenerateSocialDigest} disabled={socialBusy}>
                       {socialBusy ? '生成中...' : '生成'}
                     </button>
@@ -653,7 +702,7 @@ export function DashboardPage() {
                 {imagePrompt?.prompt ? (
                   <pre className="social-digest-output">{imagePrompt.prompt}</pre>
                 ) : (
-                  <p className="empty">点击生成，输出可直接用于 nano banana 的图片 Prompt。</p>
+                  <p className="empty">点击生成，基于上方社媒文案输出可直接用于 nano banana 的图片 Prompt。</p>
                 )}
                 {imagePrompt ? (
                   <p className="meta">
