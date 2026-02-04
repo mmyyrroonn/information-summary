@@ -482,36 +482,12 @@ function pickPrimaryTag(tags?: string[] | null, preferredTags?: Set<string> | nu
   return TAG_DISPLAY_NAMES[fallback] ? fallback : TAG_FALLBACK_KEY;
 }
 
-function normalizeLangKey(lang?: string | null) {
-  const cleaned = typeof lang === 'string' ? lang.trim().toLowerCase() : '';
-  return cleaned || 'und';
-}
-
 function clusterCandidatesByTagAndLang(
   candidates: ClusterCandidateWithLang[],
-  options: { threshold: number; crossTagThresholdBump?: number },
-  preferredTags?: Set<string> | null
+  options: { threshold: number; crossTagThresholdBump?: number }
 ) {
   if (!candidates.length) return [];
-  const groups = new Map<string, ClusterCandidateWithLang[]>();
-  candidates.forEach((candidate) => {
-    const tagKey = pickPrimaryTag(candidate.tags, preferredTags);
-    const langKey = normalizeLangKey(candidate.lang);
-    const groupKey = `${langKey}::${tagKey}`;
-    const bucket = groups.get(groupKey);
-    if (bucket) {
-      bucket.push(candidate);
-    } else {
-      groups.set(groupKey, [candidate]);
-    }
-  });
-
-  const merged: ClusterResult[] = [];
-  for (const bucket of groups.values()) {
-    if (!bucket.length) continue;
-    merged.push(...clusterByEmbedding(bucket, options));
-  }
-
+  const merged = clusterByEmbedding(candidates, options);
   const sorted = merged.sort((a, b) => {
     const imp = b.peakImportance - a.peakImportance;
     if (imp !== 0) return imp;
@@ -658,7 +634,7 @@ function getInsightSummary(insight: InsightWithTweet) {
   return truncateText(insight.tweet.text);
 }
 
-async function ensureTweetEmbeddingsForInsights(insights: InsightWithTweet[]) {
+async function ensureTweetSummaryEmbeddingsForInsights(insights: InsightWithTweet[]) {
   if (!insights.length) {
     return { eligible: 0, embedded: 0, updated: 0 };
   }
@@ -681,12 +657,17 @@ async function ensureTweetEmbeddingsForInsights(insights: InsightWithTweet[]) {
   if (!items.length) {
     return { eligible: 0, embedded: 0, updated: 0 };
   }
+
   const textPayload = items.map((insight) => {
-    const text = buildEmbeddingText(insight.tweet.text ?? '', EMBEDDING_TEXT_MAX_LENGTH, insight.tweet.lang);
+    const summarySource = insight.summary?.trim() || insight.tweet.text || '';
+    const summaryText = buildEmbeddingText(summarySource, EMBEDDING_TEXT_MAX_LENGTH);
+    const rawText = buildEmbeddingText(insight.tweet.text ?? '', EMBEDDING_TEXT_MAX_LENGTH, insight.tweet.lang);
     return {
       tweetId: insight.tweetId,
-      text,
-      textHash: hashEmbeddingText(text)
+      summaryText,
+      summaryHash: hashEmbeddingText(summaryText),
+      rawText,
+      rawHash: hashEmbeddingText(rawText)
     };
   });
 
@@ -694,18 +675,37 @@ async function ensureTweetEmbeddingsForInsights(insights: InsightWithTweet[]) {
     where: { tweetId: { in: textPayload.map((item) => item.tweetId) } }
   });
   const existingById = new Map(existing.map((item) => [item.tweetId, item]));
-  const missing: Array<{ tweetId: string; text: string; textHash: string }> = [];
+  const missing: Array<{
+    tweetId: string;
+    summaryText: string;
+    summaryHash: string;
+    rawText: string;
+    rawHash: string;
+  }> = [];
+  const createMissing: Array<{
+    tweetId: string;
+    summaryText: string;
+    summaryHash: string;
+    rawText: string;
+    rawHash: string;
+  }> = [];
   let freshCount = 0;
 
   textPayload.forEach((item) => {
     const record = existingById.get(item.tweetId);
-    const hasVector = Array.isArray(record?.embedding) && record.embedding.length === dimensions;
+    const hasVector = Array.isArray(record?.summaryEmbedding) && record.summaryEmbedding.length === dimensions;
     const isFresh =
-      hasVector && record?.model === model && record?.dimensions === dimensions && record?.textHash === item.textHash;
+      hasVector &&
+      record?.summaryModel === model &&
+      record?.summaryDimensions === dimensions &&
+      record?.summaryTextHash === item.summaryHash;
     if (isFresh) {
       freshCount += 1;
-    } else {
-      missing.push(item);
+      return;
+    }
+    missing.push(item);
+    if (!record) {
+      createMissing.push(item);
     }
   });
 
@@ -713,17 +713,31 @@ async function ensureTweetEmbeddingsForInsights(insights: InsightWithTweet[]) {
     return { eligible: items.length, embedded: freshCount, updated: 0 };
   }
 
-  logger.info('Preparing embeddings for report tweets', {
+  logger.info('Preparing summary embeddings for report tweets', {
     eligible: items.length,
     missingOrStale: missing.length,
     model,
     dimensions
   });
 
+  const rawVectorsById = new Map<string, number[]>();
+  if (createMissing.length) {
+    const rawBatches = chunk(createMissing, EMBEDDING_BATCH_SIZE);
+    for (const batch of rawBatches) {
+      const vectors = await createEmbeddings(batch.map((item) => item.rawText));
+      if (vectors.length !== batch.length) {
+        throw new Error(`Embedding batch size mismatch: expected ${batch.length}, got ${vectors.length}`);
+      }
+      batch.forEach((item, index) => {
+        rawVectorsById.set(item.tweetId, vectors[index] ?? []);
+      });
+    }
+  }
+
   let updated = 0;
   const batches = chunk(missing, EMBEDDING_BATCH_SIZE);
   for (const [batchIndex, batch] of batches.entries()) {
-    const vectors = await createEmbeddings(batch.map((item) => item.text));
+    const vectors = await createEmbeddings(batch.map((item) => item.summaryText));
     if (vectors.length !== batch.length) {
       throw new Error(`Embedding batch size mismatch: expected ${batch.length}, got ${vectors.length}`);
     }
@@ -732,26 +746,31 @@ async function ensureTweetEmbeddingsForInsights(insights: InsightWithTweet[]) {
         prisma.tweetEmbedding.upsert({
           where: { tweetId: item.tweetId },
           update: {
-            embedding: vectors[index] ?? [],
-            model,
-            dimensions,
-            textHash: item.textHash,
-            embeddedAt: now
+            summaryEmbedding: vectors[index] ?? [],
+            summaryModel: model,
+            summaryDimensions: dimensions,
+            summaryTextHash: item.summaryHash,
+            summaryEmbeddedAt: now
           },
           create: {
             tweetId: item.tweetId,
-            embedding: vectors[index] ?? [],
+            embedding: rawVectorsById.get(item.tweetId) ?? [],
             model,
             dimensions,
-            textHash: item.textHash,
-            embeddedAt: now
+            textHash: item.rawHash,
+            embeddedAt: now,
+            summaryEmbedding: vectors[index] ?? [],
+            summaryModel: model,
+            summaryDimensions: dimensions,
+            summaryTextHash: item.summaryHash,
+            summaryEmbeddedAt: now
           }
         })
       )
     );
     updated += batch.length;
     if ((batchIndex + 1) % 10 === 0 || batchIndex === batches.length - 1) {
-      logger.info('Embeddings batch stored', { batchIndex: batchIndex + 1, batches: batches.length, updated });
+      logger.info('Summary embeddings batch stored', { batchIndex: batchIndex + 1, batches: batches.length, updated });
     }
   }
 
@@ -1479,8 +1498,8 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
       return report;
     }
 
-    const embeddingStats = await ensureTweetEmbeddingsForInsights(reportInsights);
-    logger.info('Profile tweet embedding preparation completed', { ...windowMeta, ...embeddingStats });
+    const embeddingStats = await ensureTweetSummaryEmbeddingsForInsights(reportInsights);
+    logger.info('Profile tweet summary embedding preparation completed', { ...windowMeta, ...embeddingStats });
 
     const dimensions = config.EMBEDDING_DIMENSIONS;
     const eligibleWithEmbeddings =
@@ -1495,8 +1514,8 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
     const candidates: ClusterCandidateWithLang[] = eligibleWithEmbeddings
       .filter(
         (insight) =>
-          Array.isArray(insight.tweet.embedding?.embedding) &&
-          insight.tweet.embedding?.embedding.length === dimensions
+          Array.isArray(insight.tweet.embedding?.summaryEmbedding) &&
+          insight.tweet.embedding?.summaryEmbedding.length === dimensions
       )
       .map((insight) => {
         const tweetUrl = resolveTweetUrl(insight.tweet);
@@ -1510,7 +1529,7 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
           tweetedAt: insight.tweet.tweetedAt.getTime(),
           tweetUrl,
           suggestions: insight.suggestions ?? null,
-          vector: insight.tweet.embedding?.embedding ?? [],
+          vector: insight.tweet.embedding?.summaryEmbedding ?? [],
           lang: insight.tweet.lang ?? null
         };
       });
@@ -1542,13 +1561,10 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
       return report;
     }
 
-    const clusters = clusterCandidatesByTagAndLang(
-      candidates,
-      {
-        threshold: config.REPORT_CLUSTER_THRESHOLD
-      },
-      preferredTagSet
-    );
+    const clusters = clusterCandidatesByTagAndLang(candidates, {
+      threshold: config.REPORT_CLUSTER_THRESHOLD,
+      crossTagThresholdBump: config.REPORT_CLUSTER_CROSS_TAG_BUMP
+    });
     const maxClusters = config.REPORT_CLUSTER_MAX;
     const shown = maxClusters > 0 ? Math.min(maxClusters, clusters.length) : clusters.length;
     const displayClusters = clusters.slice(0, shown);
@@ -1708,8 +1724,8 @@ export async function generateReport(window?: ReportWindow | null) {
       });
     }
 
-    const embeddingStats = await ensureTweetEmbeddingsForInsights(reportInsights);
-    logger.info('Tweet embedding preparation completed', { ...windowMeta, ...embeddingStats });
+    const embeddingStats = await ensureTweetSummaryEmbeddingsForInsights(reportInsights);
+    logger.info('Tweet summary embedding preparation completed', { ...windowMeta, ...embeddingStats });
 
     const dimensions = config.EMBEDDING_DIMENSIONS;
     const eligibleWithEmbeddings =
@@ -1724,8 +1740,8 @@ export async function generateReport(window?: ReportWindow | null) {
     const candidates: ClusterCandidateWithLang[] = eligibleWithEmbeddings
       .filter(
         (insight) =>
-          Array.isArray(insight.tweet.embedding?.embedding) &&
-          insight.tweet.embedding?.embedding.length === dimensions
+          Array.isArray(insight.tweet.embedding?.summaryEmbedding) &&
+          insight.tweet.embedding?.summaryEmbedding.length === dimensions
       )
       .map((insight) => {
         const tweetUrl = resolveTweetUrl(insight.tweet);
@@ -1739,7 +1755,7 @@ export async function generateReport(window?: ReportWindow | null) {
           tweetedAt: insight.tweet.tweetedAt.getTime(),
           tweetUrl,
           suggestions: insight.suggestions ?? null,
-          vector: insight.tweet.embedding?.embedding ?? [],
+          vector: insight.tweet.embedding?.summaryEmbedding ?? [],
           lang: insight.tweet.lang ?? null
         };
       });
@@ -1773,7 +1789,8 @@ export async function generateReport(window?: ReportWindow | null) {
     }
 
     const clusters = clusterCandidatesByTagAndLang(candidates, {
-      threshold: config.REPORT_CLUSTER_THRESHOLD
+      threshold: config.REPORT_CLUSTER_THRESHOLD,
+      crossTagThresholdBump: config.REPORT_CLUSTER_CROSS_TAG_BUMP
     });
     const maxClusters = config.REPORT_CLUSTER_MAX;
     const shown = maxClusters > 0 ? Math.min(maxClusters, clusters.length) : clusters.length;
