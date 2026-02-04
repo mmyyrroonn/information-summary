@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, RoutingStatus } from '@prisma/client';
 import { config } from '../config';
 import { prisma } from '../db';
 import { buildEmbeddingText } from './ai/embeddingText';
@@ -9,6 +9,7 @@ export interface ListTweetsOptions {
   pageSize: number;
   sort: 'newest' | 'oldest' | 'priority';
   routing?: 'default' | 'ignored' | 'all';
+  routingCategory?: RoutingCategory;
   routingTag?: string;
   routingScoreMin?: number;
   routingScoreMax?: number;
@@ -23,6 +24,9 @@ export interface ListTweetsOptions {
 
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
 const EMBEDDING_SEARCH_CANDIDATE_LIMIT = 2000;
+const EMBEDDING_LOW_REASONS = ['embed-low', 'embed-negative'] as const;
+
+export type RoutingCategory = 'embedding-high' | 'embedding-low' | 'llm' | 'ignored-other' | 'pending';
 
 function extractTweetId(term: string) {
   const trimmed = term.trim();
@@ -71,6 +75,11 @@ function buildSearchFilter(raw?: string): { filter: Prisma.TweetWhereInput | nul
   return { filter: { OR: groupFilters }, hasTweetIdTerm };
 }
 
+function appendAndFilter(where: Prisma.TweetWhereInput, filter: Prisma.TweetWhereInput) {
+  const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
+  where.AND = [...existingAnd, filter];
+}
+
 function dot(a: number[], b: number[]) {
   let sum = 0;
   const n = Math.min(a.length, b.length);
@@ -113,10 +122,36 @@ export async function listTweets(options: ListTweetsOptions) {
   if (options.subscriptionId) {
     where.subscriptionId = options.subscriptionId;
   }
-  if (options.routing === 'ignored') {
-    where.routingStatus = 'IGNORED';
+  if (options.routingCategory) {
+    switch (options.routingCategory) {
+      case 'embedding-high':
+        where.routingStatus = RoutingStatus.AUTO_HIGH;
+        break;
+      case 'embedding-low':
+        where.routingStatus = RoutingStatus.IGNORED;
+        where.routingReason = { in: [...EMBEDDING_LOW_REASONS] };
+        break;
+      case 'llm':
+        where.routingStatus = {
+          in: [RoutingStatus.ROUTED, RoutingStatus.LLM_QUEUED, RoutingStatus.COMPLETED]
+        };
+        break;
+      case 'ignored-other':
+        where.routingStatus = RoutingStatus.IGNORED;
+        appendAndFilter(where, {
+          OR: [{ routingReason: null }, { routingReason: { notIn: [...EMBEDDING_LOW_REASONS] } }]
+        });
+        break;
+      case 'pending':
+        where.routingStatus = RoutingStatus.PENDING;
+        break;
+      default:
+        break;
+    }
+  } else if (options.routing === 'ignored') {
+    where.routingStatus = RoutingStatus.IGNORED;
   } else if (options.routing === 'default') {
-    where.routingStatus = { not: 'IGNORED' };
+    where.routingStatus = { not: RoutingStatus.IGNORED };
   }
   if (options.routingTag) {
     where.routingTag = options.routingTag;
@@ -140,8 +175,7 @@ export async function listTweets(options: ListTweetsOptions) {
     }
   }
   if (searchResult.filter) {
-    const existingAnd = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
-    where.AND = [...existingAnd, searchResult.filter];
+    appendAndFilter(where, searchResult.filter);
   }
   if (typeof options.importanceMin === 'number' || typeof options.importanceMax === 'number') {
     const insightsFilter: Prisma.TweetInsightWhereInput = {};

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import type { Subscription, TweetRecord } from '../types';
+import type { RoutingCategory, Subscription, TweetRecord } from '../types';
 
 const PAGE_SIZE = 20;
 
@@ -32,6 +32,16 @@ const TAG_LABELS: Record<string, string> = {
   narrative: '叙事 / 主题',
   other: '其他'
 };
+
+const ROUTING_CATEGORY_LABELS: Record<RoutingCategory, string> = {
+  'embedding-high': 'Embedding 高分',
+  'embedding-low': 'Embedding 低分',
+  llm: '进入 LLM',
+  'ignored-other': '其他忽略',
+  pending: '待路由'
+};
+
+const IGNORED_ROUTING_CATEGORIES = new Set<RoutingCategory>(['embedding-low', 'ignored-other']);
 
 const ROUTING_STATUS_LABELS: Record<string, string> = {
   PENDING: '待路由',
@@ -71,6 +81,11 @@ function formatRoutingStatus(value?: string | null) {
 function formatRoutingReason(value?: string | null) {
   if (!value) return '';
   return ROUTING_REASON_LABELS[value] ?? value;
+}
+
+function formatRoutingCategory(value?: string | null) {
+  if (!value) return '';
+  return ROUTING_CATEGORY_LABELS[value as RoutingCategory] ?? value;
 }
 
 function formatAbandonReason(value?: string | null) {
@@ -116,6 +131,7 @@ export function TweetsPage() {
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<'newest' | 'oldest' | 'priority'>('newest');
   const [routingView, setRoutingView] = useState<'default' | 'ignored'>('default');
+  const [routingCategory, setRoutingCategory] = useState<RoutingCategory | ''>('');
   const [routingTag, setRoutingTag] = useState('');
   const [routingScoreMin, setRoutingScoreMin] = useState('');
   const [routingScoreMax, setRoutingScoreMax] = useState('');
@@ -150,6 +166,7 @@ export function TweetsPage() {
     search,
     embeddingQuery,
     routingView,
+    routingCategory,
     routingTag,
     routingScoreMin,
     routingScoreMax,
@@ -200,6 +217,7 @@ export function TweetsPage() {
         pageSize: PAGE_SIZE,
         sort,
         routing: routingView,
+        routingCategory: routingCategory || undefined,
         routingTag: routingTag || undefined,
         routingScoreMin: parseNumber(routingScoreMin),
         routingScoreMax: parseNumber(routingScoreMax),
@@ -245,6 +263,7 @@ export function TweetsPage() {
   const hasRoutingScoreFilter = Boolean(routingScoreMin || routingScoreMax);
   const hasImportanceFilter = Boolean(importanceMin || importanceMax);
   const hasSearchQuery = Boolean(search.trim() || embeddingQuery.trim());
+  const hasRoutingCategory = Boolean(routingCategory);
   const timeLabel = hasTimeFilter
     ? `${formatDateTime(startTime) || '最早'} ~ ${formatDateTime(endTime) || '现在'}`
     : hasSearchQuery
@@ -257,6 +276,12 @@ export function TweetsPage() {
   const routingTagLabel = routingTag
     ? routingTagOptions.find((option) => option.tag === routingTag)?.label ?? formatTagLabel(routingTag)
     : '';
+  const routingCategoryLabel = routingCategory ? formatRoutingCategory(routingCategory) : '';
+  const routingToggleLabel = hasRoutingCategory
+    ? '分流类别筛选中'
+    : routingView === 'ignored'
+      ? '返回默认列表'
+      : '查看规则过滤';
 
   function clearTimeRange() {
     if (!hasTimeFilter) {
@@ -299,6 +324,15 @@ export function TweetsPage() {
     setPage(1);
   }
 
+  function handleRoutingCategoryChange(nextValue: string) {
+    const normalized = nextValue as RoutingCategory | '';
+    setRoutingCategory(normalized);
+    setPage(1);
+    if (normalized) {
+      setRoutingView(IGNORED_ROUTING_CATEGORIES.has(normalized) ? 'ignored' : 'default');
+    }
+  }
+
   return (
     <>
       {statusMessage && <p className="status">{statusMessage}</p>}
@@ -322,9 +356,9 @@ export function TweetsPage() {
                 setRoutingView((prev) => (prev === 'ignored' ? 'default' : 'ignored'));
                 setPage(1);
               }}
-              disabled={loading}
+              disabled={loading || hasRoutingCategory}
             >
-              {routingView === 'ignored' ? '返回默认列表' : '查看规则过滤'}
+              {routingToggleLabel}
             </button>
           </div>
         </div>
@@ -421,6 +455,18 @@ export function TweetsPage() {
               {routingTagOptions.map((tag) => (
                 <option key={tag.tag} value={tag.tag}>
                   {tag.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>分流类别</span>
+            <select value={routingCategory} onChange={(e) => handleRoutingCategoryChange(e.target.value)}>
+              <option value="">全部类别</option>
+              {Object.entries(ROUTING_CATEGORY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </select>
@@ -533,6 +579,7 @@ export function TweetsPage() {
           {search.trim() ? <span>关键词：{search.trim()}</span> : null}
           {embeddingQuery.trim() ? <span>Embedding 搜索：{embeddingQuery.trim()}</span> : null}
           {routingTag ? <span>Embedding 标签：{routingTagLabel}</span> : null}
+          {routingCategory ? <span>分流类别：{routingCategoryLabel}</span> : null}
           {hasRoutingScoreFilter ? (
             <span>
               相似度：{routingScoreMin || '最小'} ~ {routingScoreMax || '最大'}

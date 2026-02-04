@@ -73,6 +73,9 @@ router.get('/', async (req, res, next) => {
         sort: z.enum(['newest', 'oldest', 'priority']).optional(),
         routing: z.enum(['default', 'ignored', 'all']).optional(),
         routingTag: z.string().min(1).optional(),
+        routingCategory: z
+          .enum(['embedding-high', 'embedding-low', 'llm', 'ignored-other', 'pending'])
+          .optional(),
         routingScoreMin: z.coerce.number().finite().optional(),
         routingScoreMax: z.coerce.number().finite().optional(),
         subscriptionId: z.string().uuid().optional(),
@@ -111,6 +114,7 @@ router.get('/', async (req, res, next) => {
       pageSize: query.pageSize,
       sort: query.sort ?? 'newest',
       ...(query.routing ? { routing: query.routing } : {}),
+      ...(query.routingCategory ? { routingCategory: query.routingCategory } : {}),
       ...(query.routingTag ? { routingTag: query.routingTag } : {}),
       ...(typeof query.routingScoreMin === 'number' ? { routingScoreMin: query.routingScoreMin } : {}),
       ...(typeof query.routingScoreMax === 'number' ? { routingScoreMax: query.routingScoreMax } : {}),

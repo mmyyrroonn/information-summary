@@ -67,6 +67,8 @@ export interface RoutingTagListResponse {
   tags: Array<{ tag: string; label: string }>;
 }
 
+export type RoutingCategory = 'embedding-high' | 'embedding-low' | 'llm' | 'ignored-other' | 'pending';
+
 export type SubscriptionStatus = 'SUBSCRIBED' | 'UNSUBSCRIBED';
 
 export interface Subscription {

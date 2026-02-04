@@ -20,6 +20,7 @@ import type {
   ClassificationJobResponse,
   RoutingEmbeddingCacheSummary,
   RoutingTagListResponse,
+  RoutingCategory,
   TagOptionsResponse,
   TweetRoutingStatsResponse,
   TweetStatsResponse
@@ -117,6 +118,7 @@ interface ApiClient {
     pageSize?: number;
     sort?: 'newest' | 'oldest' | 'priority';
     routing?: 'default' | 'ignored' | 'all';
+    routingCategory?: RoutingCategory;
     routingTag?: string;
     routingScoreMin?: number;
     routingScoreMax?: number;
@@ -298,6 +300,9 @@ export const api: ApiClient = {
     }
     if (params.routingTag) {
       search.set('routingTag', params.routingTag);
+    }
+    if (params.routingCategory) {
+      search.set('routingCategory', params.routingCategory);
     }
     if (typeof params.routingScoreMin === 'number') {
       search.set('routingScoreMin', String(params.routingScoreMin));
