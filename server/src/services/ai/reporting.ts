@@ -38,7 +38,8 @@ const SOCIAL_DIGEST_SUMMARY_MAX_LENGTH = 240;
 const SOCIAL_DIGEST_TEXT_MAX_LENGTH = 360;
 const SOCIAL_IMAGE_MAX_ITEMS = 8;
 const SOCIAL_IMAGE_SOURCE_MAX_ITEMS = 60;
-const SOCIAL_IMAGE_ITEM_MAX_LENGTH = 36;
+const SOCIAL_IMAGE_ITEM_MAX_LENGTH = 48;
+const SOCIAL_IMAGE_HIGHLIGHT_MAX_LENGTH = 28;
 const SOCIAL_IMAGE_TITLE_MAX_LENGTH = 24;
 
 type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: { include: { subscription: true } } } }>;
@@ -145,6 +146,7 @@ type SocialImageContent = {
     title?: string;
     bullets?: string[];
   }>;
+  highlight?: string[];
 };
 
 interface ClusterReportOutline {
@@ -1941,6 +1943,23 @@ function normalizeImageBullet(text: string) {
   return truncateText(output, SOCIAL_IMAGE_ITEM_MAX_LENGTH);
 }
 
+function normalizeImageHighlight(text: string) {
+  const normalized = normalizeImageBullet(text);
+  return truncateText(normalized, SOCIAL_IMAGE_HIGHLIGHT_MAX_LENGTH);
+}
+
+function normalizeImageHighlights(items: string[]) {
+  const output: string[] = [];
+  const seen = new Set<string>();
+  items.forEach((item) => {
+    const normalized = normalizeImageHighlight(item);
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    output.push(normalized);
+  });
+  return output.slice(0, 2);
+}
+
 function normalizeSocialDigestBullets(
   bullets: string[],
   sourceItems: SocialDigestItem[],
@@ -2051,10 +2070,11 @@ function buildSocialImageContentPrompt(payload: {
   const extra = payload.extraPrompt?.trim();
   const rules = [
     '中文输出，仅基于素材内容，不新增事实。',
-    `输出 JSON，格式：{"title":"...","sections":[{"title":"...","bullets":["..."]}]}`,
+    `输出 JSON，格式：{"title":"...","sections":[{"title":"...","bullets":["..."]}],"highlight":["..."]}`,
     'title 为 6-12 字的主题短语，概括今日主题，可用“快阅/速览/简报/聚焦”等字样，但不要包含“一图流”前缀，也不要包含具体日期或时间范围。',
     `sections 为 3-5 组，每组 2-4 条，合计 ${Math.max(5, Math.min(payload.maxItems, 12))} 条左右。`,
-    '每条 12-18 字，完整短句或短语，不要标点堆叠。',
+    '每条 16-28 字，允许更完整的短句，保留关键数字/时间/动作，不要标点堆叠。',
+    'highlight 可选 1-2 条用于底部“今日重点/补充信息”，若无明确重点请输出空数组。',
     '避免营销用语、情绪词、感叹号、口号。',
     '不要出现链接、@、#、英文缩写堆叠。',
     '优先覆盖重要度更高、重复度更低的要点。'
@@ -2077,13 +2097,20 @@ function buildSocialImageContentPromptFromDigest(payload: {
   extraPrompt?: string;
 }) {
   const extra = payload.extraPrompt?.trim();
+  const total = payload.items.length;
+  const groupMin = total <= 4 ? 1 : total <= 8 ? 2 : 3;
+  const groupMax = total <= 4 ? 2 : total <= 8 ? 3 : 5;
+  const perGroupMin = total <= 4 ? 1 : 2;
+  const perGroupMax = total <= 4 ? 3 : 4;
   const rules = [
     '中文输出，仅基于下方 X 推文内容，不新增事实或细节。',
-    '对每条输入做简短压缩改写，保持意思一致，不增不减。',
-    `输出 JSON，格式：{"title":"...","bullets":["..."]}`,
+    '对每条输入做适度压缩改写，保持意思一致，不增不减，允许比原文更清晰完整。',
+    `输出 JSON，格式：{"title":"...","sections":[{"title":"...","bullets":["..."]}],"highlight":["..."]}`,
     'title 为 6-12 字的主题短语，概括今日主题，可用“快阅/速览/简报/聚焦”等字样，但不要包含“一图流”前缀，也不要包含具体日期或时间范围。',
-    `bullets 数量必须与输入条目数完全一致（共 ${payload.items.length} 条），顺序一一对应，不得合并或拆分。`,
-    '每条尽量 10-18 字，过短可保持原样；不要标点堆叠。',
+    `sections 为 ${groupMin}-${groupMax} 组，每组 ${perGroupMin}-${perGroupMax} 条，合计 ${payload.items.length} 条，按主题归类，可调整顺序但不得合并或拆分条目。`,
+    `sections.bullets 总数必须与输入条目数完全一致（共 ${payload.items.length} 条），每条只出现一次。`,
+    '每条尽量 16-28 字，保留关键信息与数字/时间；过短可保持原样；不要标点堆叠。',
+    'highlight 可选 1-2 条用于底部“今日重点/补充信息”，若无明确重点请输出空数组。',
     '额外要求只影响表达风格，不得改变条目数量或新增信息。',
     '避免营销用语、情绪词、感叹号、口号。',
     '不要出现链接、@、#、英文缩写堆叠。',
@@ -2107,16 +2134,26 @@ function buildSocialImagePromptText(payload: {
   dateRange: string;
   items?: string[];
   sections?: Array<{ title: string; bullets: string[] }>;
+  highlights?: string[];
   extraPrompt?: string;
   strictText?: boolean;
 }) {
   const extra = payload.extraPrompt?.trim();
+  const totalItems =
+    payload.sections?.reduce((sum, section) => sum + (section.bullets?.length ?? 0), 0) ??
+    payload.items?.length ??
+    0;
+  const sectionCount = payload.sections?.length ?? 0;
+  const useLongLayout = totalItems >= 10 || sectionCount >= 4;
+  const ratioLine = useLongLayout
+    ? '画面比例 9:16 长图（要点多时采用），高分辨率，文字清晰易读。'
+    : '画面比例 16:9，高分辨率，文字清晰易读。';
   const lines = [
     '请生成一张精致的中文日报信息图，整体干净、克制、专业。',
-    '画面比例 16:9，高分辨率，文字清晰易读。',
+    ratioLine,
     '风格：色彩丰富但柔和，手帐/手绘笔记质感 + 轻微漫画风，线条圆润。',
     '配色：多彩柔和配色（薄荷绿、珊瑚橙、天蓝、柠檬黄、薰衣草紫），不同分类用不同色块/标签区分。',
-    '版式：顶部标题栏（标题 + 时间范围）；中部为多色分类卡片；底部留一小块“今日重点”或“补充信息”区域。',
+    '版式：顶部标题栏（标题 + 时间范围）；中部为多色分类卡片；底部区域仅在提供“今日重点/补充信息”文字时出现（无内容则不需要）。',
     '角落空白处加上：X: @moshuishapaozi。',
     '只使用下方提供的文字，不要新增内容；尽量让每条要点保持一行。',
     ...(payload.strictText ? ['必须完整保留下方每一条文字，不得删除、合并、改写或缩短。'] : []),
@@ -2134,6 +2171,10 @@ function buildSocialImagePromptText(payload: {
   } else if (payload.items?.length) {
     lines.push('今日要点：');
     payload.items.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
+  }
+  if (payload.highlights?.length) {
+    lines.push('今日重点/补充信息：');
+    payload.highlights.forEach((item, index) => lines.push(`${index + 1}. ${item}`));
   }
   if (extra) {
     lines.push('', `额外偏好：${extra}`);
@@ -2218,24 +2259,50 @@ export async function generateSocialImagePromptFromReport(
     { stage: 'social-image', reportId: report.id, provider, model },
     { provider }
   );
-  const rawBullets = Array.isArray(content?.bullets) ? content.bullets : [];
-  const bullets = normalizeDigestBullets(rawBullets, digestItems);
-  if (!bullets.length) {
-    throw new Error('No usable bullets for social image prompt');
+  const rawSections = Array.isArray(content?.sections) ? content.sections : [];
+  let sections = normalizeImageSections(rawSections, digestItems.length);
+  let bullets: string[] | null = null;
+  if (!sections.length) {
+    const rawBullets = Array.isArray(content?.bullets) ? content.bullets : [];
+    const normalized = normalizeDigestBullets(rawBullets, digestItems);
+    if (!normalized.length) {
+      throw new Error('No usable bullets for social image prompt');
+    }
+    bullets = normalized;
+  } else {
+    const total = sections.reduce((sum, section) => sum + section.bullets.length, 0);
+    if (total < digestItems.length) {
+      const existing = new Set(sections.flatMap((section) => section.bullets));
+      const missing: string[] = [];
+      for (const item of digestItems) {
+        const normalized = normalizeImageBullet(item);
+        if (!normalized || existing.has(normalized)) continue;
+        existing.add(normalized);
+        missing.push(normalized);
+        if (missing.length >= digestItems.length - total) break;
+      }
+      if (missing.length) {
+        sections = [...sections, { title: '其他', bullets: missing }];
+      }
+    }
   }
+  const highlights = Array.isArray(content?.highlight) ? normalizeImageHighlights(content.highlight) : [];
   const theme = typeof content?.title === 'string' ? content.title.trim() : '';
   const titleCore = theme || titleBase;
   const title = truncateText(`一图流·${titleCore}`, SOCIAL_IMAGE_TITLE_MAX_LENGTH);
   const prompt = buildSocialImagePromptText({
     title,
     dateRange,
-    items: bullets,
+    ...(sections.length ? { sections } : { items: bullets ?? [] }),
+    ...(highlights.length ? { highlights } : {}),
     ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {}),
     strictText: true
   });
   return {
     prompt,
-    usedItems: bullets.length,
+    usedItems: sections.length
+      ? sections.reduce((sum, section) => sum + section.bullets.length, 0)
+      : bullets?.length ?? 0,
     totalItems: digestItems.length,
     periodStart: report.periodStart.toISOString(),
     periodEnd: report.periodEnd.toISOString()
