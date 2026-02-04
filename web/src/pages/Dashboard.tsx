@@ -117,6 +117,8 @@ export function DashboardPage() {
   const [imagePromptStatus, setImagePromptStatus] = useState<string | null>(null);
   const [imagePromptBusy, setImagePromptBusy] = useState(false);
   const [imagePromptProvider, setImagePromptProvider] = useState<'deepseek' | 'dashscope'>('dashscope');
+  const [imagePromptDigest, setImagePromptDigest] = useState<string | null>(null);
+  const [imagePromptShowDigest, setImagePromptShowDigest] = useState(false);
   const [sharedMaxItems, setSharedMaxItems] = useState(8);
   const bundleNextImageRef = useRef(false);
   const socialPollerRef = useRef<number | null>(null);
@@ -179,6 +181,8 @@ export function DashboardPage() {
       setImagePrompt(null);
       setImagePromptStatus(null);
       setImagePromptJob(null);
+      setImagePromptDigest(null);
+      setImagePromptShowDigest(false);
       stopSocialPolling();
       stopImagePromptPolling();
     } catch (error) {
@@ -263,6 +267,13 @@ export function DashboardPage() {
     };
   }
 
+  function buildImageDigestPayload(result: SocialDigestResult) {
+    if (result.bullets.length > 0) {
+      return JSON.stringify({ content: result.content, bullets: result.bullets }, null, 2);
+    }
+    return result.content;
+  }
+
   function extractImagePromptResult(job: BackgroundJobSummary): SocialImagePromptResult | null {
     const payload = job.payload as {
       result?: SocialImagePromptResult;
@@ -292,6 +303,7 @@ export function DashboardPage() {
     setImagePromptStatus(null);
     setImagePrompt(null);
     setImagePromptJob(null);
+    setImagePromptDigest(digest);
     try {
       const response = await api.generateSocialImagePrompt(selectedReport.id, {
         ...(imagePromptExtra.trim() ? { prompt: imagePromptExtra.trim() } : {}),
@@ -331,10 +343,7 @@ export function DashboardPage() {
           if (bundleNextImageRef.current) {
             bundleNextImageRef.current = false;
             if (result?.content) {
-              const digestPayload =
-                result.bullets.length > 0
-                  ? JSON.stringify({ content: result.content, bullets: result.bullets }, null, 2)
-                  : result.content;
+              const digestPayload = buildImageDigestPayload(result);
               void runImagePromptFromDigest(digestPayload);
             } else {
               setImagePromptStatus('社媒文案为空，无法生成图片 Prompt');
@@ -478,7 +487,8 @@ export function DashboardPage() {
       setImagePromptStatus('请先生成社媒文案，图片 Prompt 将基于该文案生成');
       return;
     }
-    await runImagePromptFromDigest(socialDigest.content);
+    const digestPayload = buildImageDigestPayload(socialDigest);
+    await runImagePromptFromDigest(digestPayload);
   }
 
   function handleGenerateSocialBundle() {
@@ -774,6 +784,18 @@ export function DashboardPage() {
                     <option value="dashscope">Qwen（qwen3-max）</option>
                   </select>
                 </label>
+                <label className="social-digest-toggle">
+                  <input
+                    type="checkbox"
+                    checked={imagePromptShowDigest}
+                    onChange={(event) => setImagePromptShowDigest(event.target.checked)}
+                    disabled={!imagePromptDigest}
+                  />
+                  查看输入 JSON（调试）
+                </label>
+                {imagePromptShowDigest && imagePromptDigest ? (
+                  <pre className="social-digest-output">{imagePromptDigest}</pre>
+                ) : null}
                 {imagePromptStatus ? <p className="status">{imagePromptStatus}</p> : null}
                 {imagePromptJob ? <p className="meta">任务ID：{imagePromptJob.id}</p> : null}
                 {imagePrompt?.prompt ? (

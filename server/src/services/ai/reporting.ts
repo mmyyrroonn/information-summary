@@ -2177,8 +2177,6 @@ export async function generateSocialImagePromptFromReport(
   report: Report,
   options: SocialImagePromptOptions = {}
 ): Promise<SocialImagePromptResult> {
-  const maxItems = Math.max(3, Math.min(options.maxItems ?? SOCIAL_IMAGE_MAX_ITEMS, 10));
-  const sourceLimit = Math.max(maxItems, SOCIAL_IMAGE_SOURCE_MAX_ITEMS);
   const profile = report.profileId
     ? await prisma.reportProfile.findUnique({
         where: { id: report.profileId },
@@ -2190,74 +2188,19 @@ export async function generateSocialImagePromptFromReport(
   const dateRange = `${formatDisplayDate(report.periodStart, timezone)} - ${formatDisplayDate(report.periodEnd, timezone)}`;
 
   const digest = options.digest?.trim();
-  const useDigest = Boolean(digest);
-  if (useDigest) {
-    const digestItems = extractDigestItems(digest!);
-    if (!digestItems.length) {
-      throw new Error('No usable content in digest');
-    }
-    const contentPrompt = buildSocialImageContentPromptFromDigest({
-      items: digestItems,
-      ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
-    });
-    const provider = resolveSocialDigestProvider(options.provider);
-    const model = resolveSocialDigestModel(provider);
-    const content = await runStructuredCompletion<SocialImageContent>(
-      {
-        model,
-        temperature: 0.3,
-        messages: [
-          {
-            role: 'system',
-            content: '你是中文科技/市场日报编辑，擅长提炼简短要点与标题。'
-          },
-          { role: 'user', content: contentPrompt }
-        ]
-      },
-      { stage: 'social-image', reportId: report.id, provider, model },
-      { provider }
-    );
-    const rawBullets = Array.isArray(content?.bullets) ? content.bullets : [];
-    const bullets = normalizeDigestBullets(rawBullets, digestItems);
-    if (!bullets.length) {
-      throw new Error('No usable bullets for social image prompt');
-    }
-    const theme = typeof content?.title === 'string' ? content.title.trim() : '';
-    const titleCore = theme || titleBase;
-    const title = truncateText(`一图流·${titleCore}`, SOCIAL_IMAGE_TITLE_MAX_LENGTH);
-    const prompt = buildSocialImagePromptText({
-      title,
-      dateRange,
-      items: bullets,
-      ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {}),
-      strictText: true
-    });
-    return {
-      prompt,
-      usedItems: bullets.length,
-      totalItems: digestItems.length,
-      periodStart: report.periodStart.toISOString(),
-      periodEnd: report.periodEnd.toISOString()
-    };
+  if (!digest) {
+    throw new Error('Digest required for social image prompt');
   }
 
-  let fallback: string[] = [];
-  let total = 0;
-  let contentPrompt = '';
-
-  const sourceResult = await collectSocialImageSource(report, sourceLimit);
-  const source = sourceResult.source;
-  fallback = sourceResult.fallback;
-  total = sourceResult.total;
-  if (!source.length && !fallback.length) {
-    throw new Error('No insights available for social image prompt');
+  const digestItems = extractDigestItems(digest);
+  if (!digestItems.length) {
+    throw new Error('No usable content in digest');
   }
-  contentPrompt = buildSocialImageContentPrompt({
-    items: source.slice(0, sourceLimit),
-    maxItems,
+
+  const contentPrompt = buildSocialImageContentPromptFromDigest({
+    items: digestItems,
     ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
   });
-
   const provider = resolveSocialDigestProvider(options.provider);
   const model = resolveSocialDigestModel(provider);
   const content = await runStructuredCompletion<SocialImageContent>(
@@ -2275,37 +2218,25 @@ export async function generateSocialImagePromptFromReport(
     { stage: 'social-image', reportId: report.id, provider, model },
     { provider }
   );
-
-  const rawSections = Array.isArray(content?.sections) ? content.sections : [];
-  const sections = normalizeImageSections(rawSections, maxItems);
   const rawBullets = Array.isArray(content?.bullets) ? content.bullets : [];
-  const fallbackBullets = normalizeImageBullets(fallback, maxItems);
-  const bullets = sections.length
-    ? []
-    : normalizeImageBullets(rawBullets.length ? rawBullets : fallbackBullets, maxItems);
-  if (!sections.length && !bullets.length) {
+  const bullets = normalizeDigestBullets(rawBullets, digestItems);
+  if (!bullets.length) {
     throw new Error('No usable bullets for social image prompt');
   }
-
   const theme = typeof content?.title === 'string' ? content.title.trim() : '';
   const titleCore = theme || titleBase;
   const title = truncateText(`一图流·${titleCore}`, SOCIAL_IMAGE_TITLE_MAX_LENGTH);
-
   const prompt = buildSocialImagePromptText({
     title,
     dateRange,
-    ...(bullets.length ? { items: bullets } : {}),
-    ...(sections.length ? { sections } : {}),
-    ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {})
+    items: bullets,
+    ...(options.prompt !== undefined ? { extraPrompt: options.prompt } : {}),
+    strictText: true
   });
-
-  const usedItems = sections.length ? sections.reduce((sum, section) => sum + section.bullets.length, 0) : bullets.length;
-  const totalItems = useDigest ? Math.max(total, usedItems) : total;
-
   return {
     prompt,
-    usedItems,
-    totalItems,
+    usedItems: bullets.length,
+    totalItems: digestItems.length,
     periodStart: report.periodStart.toISOString(),
     periodEnd: report.periodEnd.toISOString()
   };

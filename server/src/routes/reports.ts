@@ -148,7 +148,7 @@ router.post('/:id/social-image-prompt', async (req, res, next) => {
         prompt: z.string().optional(),
         maxItems: z.coerce.number().int().min(3).max(12).optional(),
         provider: z.enum(['deepseek', 'dashscope', 'auto']).optional(),
-        digest: z.string().trim().min(1).optional()
+        digest: z.string().trim().min(1)
       })
       .parse(req.body ?? {});
     const report = await getReport(req.params.id);
@@ -160,8 +160,8 @@ router.post('/:id/social-image-prompt', async (req, res, next) => {
       prompt?: string;
       maxItems?: number;
       provider?: 'deepseek' | 'dashscope' | 'auto';
-      digest?: string;
-    } = { reportId: report.id };
+      digest: string;
+    } = { reportId: report.id, digest: body.digest };
     if (body.prompt !== undefined) {
       payload.prompt = body.prompt;
     }
@@ -170,9 +170,6 @@ router.post('/:id/social-image-prompt', async (req, res, next) => {
     }
     if (body.provider) {
       payload.provider = body.provider;
-    }
-    if (body.digest) {
-      payload.digest = body.digest;
     }
     const { job, created } = await enqueueJob('social-image-prompt', payload, { dedupe: false });
     res.status(created ? 202 : 200).json({
