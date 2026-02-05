@@ -1119,10 +1119,10 @@ function buildSocialDigestPrompt(options: {
   const extra = options.extraPrompt?.trim();
   const hasText = options.items.some((item) => Boolean(item.text));
   const listRule = options.targetItems
-    ? `主体用短段落或短清单（建议 ${options.targetItems} 条左右），以事实为主；每 3–4 条事实允许 1 条简短点评（≤1 句），避免逐条点评。`
+    ? `主体用短段落或短清单（尽量 ${options.targetItems} 条，素材不足可少于 ${options.targetItems}），以事实为主；每 3–4 条事实允许 1 条简短点评（≤1 句），避免逐条点评。`
     : '主体用短段落或短清单（建议 4–8 条），以事实为主；每 3–4 条事实允许 1 条简短点评（≤1 句），避免逐条点评。';
   const bulletRule = options.targetItems
-    ? `bullets 必须 ${options.targetItems} 条，顺序与正文要点一致，不得合并或拆分。`
+    ? `bullets 尽量 ${options.targetItems} 条，顺序与正文要点一致；素材不足可少于 ${options.targetItems}，不得拆分凑数。`
     : 'bullets 建议 4–8 条，顺序与正文要点一致，不得合并或拆分。';
   const tagRule = options.tagTargets?.length
     ? `多标签覆盖比例（约数即可）：${options.tagTargets
@@ -1143,8 +1143,10 @@ function buildSocialDigestPrompt(options: {
     '输出 JSON，格式：{"content":"...","bullets":["..."]}，只输出 JSON。',
     'content 为完整 X 文案，可分段。',
     bulletRule,
+    '正文要点数量与 bullets 数量尽量一致。',
     ...(tagRule ? [tagRule] : []),
-    'bullets 用于后续图片要点提炼，每条尽量 10–18 字，避免链接/@/#/营销词/情绪词/感叹号。',
+    '同一事件/指标的主值+对比/补充应合并在同一条，不要拆分凑数。',
+    'bullets 用于后续图片要点提炼，每条尽量 14–26 字，必要时可到 30 字；避免链接/@/#/营销词/情绪词/感叹号。',
     '允许中等长度句子，不要全是短句碎片。',
     '允许最后 1 句做整体收束（仅趋势/框架性判断），不要口号式总结或 CTA。',
     '事实点尽量自包含，减少代词和省略，便于后续转成图片要点。'
