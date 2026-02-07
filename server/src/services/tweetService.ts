@@ -8,6 +8,7 @@ export interface ListTweetsOptions {
   page: number;
   pageSize: number;
   sort: 'newest' | 'oldest' | 'priority';
+  includeTotal?: boolean;
   routing?: 'default' | 'ignored' | 'all';
   routingCategory?: RoutingCategory;
   routingTag?: string;
@@ -107,6 +108,7 @@ export async function listTweets(options: ListTweetsOptions) {
   const pageSize = Math.max(1, Math.min(50, options.pageSize));
   const skip = (page - 1) * pageSize;
   const embeddingQuery = options.embeddingQuery?.trim() ?? '';
+  const includeTotal = options.includeTotal ?? true;
 
   const hasExplicitRange = Boolean(options.startTime || options.endTime);
   const searchResult = buildSearchFilter(options.search);
@@ -294,7 +296,7 @@ export async function listTweets(options: ListTweetsOptions) {
       return bTime - aTime;
     });
 
-    const total = matches.length;
+    const total = includeTotal ? matches.length : null;
     const items = matches.slice(skip, skip + pageSize).map((match) => ({
       ...match.tweet,
       embeddingScore: match.score
@@ -304,7 +306,27 @@ export async function listTweets(options: ListTweetsOptions) {
       page,
       pageSize,
       total,
-      hasMore: skip + items.length < total,
+      hasMore: skip + items.length < matches.length,
+      items
+    };
+  }
+
+  if (!includeTotal) {
+    const tweets = await prisma.tweet.findMany({
+      where,
+      orderBy,
+      select: baseSelect,
+      skip,
+      take: pageSize + 1
+    });
+    const hasMore = tweets.length > pageSize;
+    const items = hasMore ? tweets.slice(0, pageSize) : tweets;
+
+    return {
+      page,
+      pageSize,
+      total: null,
+      hasMore,
       items
     };
   }

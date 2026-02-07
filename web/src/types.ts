@@ -272,7 +272,7 @@ export interface TweetListResponse {
   items: TweetRecord[];
   page: number;
   pageSize: number;
-  total: number;
+  total: number | null;
   hasMore: boolean;
 }
 

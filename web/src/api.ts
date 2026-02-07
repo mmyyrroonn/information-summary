@@ -116,6 +116,7 @@ interface ApiClient {
   listTweets: (params?: {
     page?: number;
     pageSize?: number;
+    includeTotal?: boolean;
     sort?: 'newest' | 'oldest' | 'priority';
     routing?: 'default' | 'ignored' | 'all';
     routingCategory?: RoutingCategory;
@@ -291,6 +292,9 @@ export const api: ApiClient = {
     }
     if (typeof params.pageSize === 'number') {
       search.set('pageSize', String(params.pageSize));
+    }
+    if (typeof params.includeTotal === 'boolean') {
+      search.set('includeTotal', params.includeTotal ? '1' : '0');
     }
     if (params.sort) {
       search.set('sort', params.sort);

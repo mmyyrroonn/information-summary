@@ -144,11 +144,12 @@ export function TweetsPage() {
   const [embeddingQuery, setEmbeddingQuery] = useState('');
   const [importanceMin, setImportanceMin] = useState('');
   const [importanceMax, setImportanceMax] = useState('');
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
+  const [includeTotal, setIncludeTotal] = useState(false);
 
   useEffect(() => {
     loadSubscriptions();
@@ -171,7 +172,8 @@ export function TweetsPage() {
     routingScoreMin,
     routingScoreMax,
     importanceMin,
-    importanceMax
+    importanceMax,
+    includeTotal
   ]);
 
   async function loadSubscriptions() {
@@ -215,6 +217,7 @@ export function TweetsPage() {
       const response = await api.listTweets({
         page,
         pageSize: PAGE_SIZE,
+        includeTotal,
         sort,
         routing: routingView,
         routingCategory: routingCategory || undefined,
@@ -257,7 +260,7 @@ export function TweetsPage() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = total === null ? null : Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pendingCount = tweets.filter((tweet) => !tweet.insights && !tweet.abandonedAt).length;
   const hasTimeFilter = Boolean(startTime || endTime);
   const hasRoutingScoreFilter = Boolean(routingScoreMin || routingScoreMax);
@@ -571,11 +574,16 @@ export function TweetsPage() {
         </div>
 
         <div className="tweet-summary-row">
-          <span>共 {total} 条</span>
+          <span>共 {total === null ? '未知' : total} 条</span>
           <span>本页 {tweets.length} 条</span>
           <span>待分析 {pendingCount} 条</span>
           <span>时间范围：{timeLabel}</span>
           <span>模式：{routingLabel}</span>
+          {total === null ? (
+            <button type="button" className="ghost" onClick={() => setIncludeTotal(true)} disabled={loading}>
+              加载总数
+            </button>
+          ) : null}
           {search.trim() ? <span>关键词：{search.trim()}</span> : null}
           {embeddingQuery.trim() ? <span>Embedding 搜索：{embeddingQuery.trim()}</span> : null}
           {routingTag ? <span>Embedding 标签：{routingTagLabel}</span> : null}
@@ -667,11 +675,20 @@ export function TweetsPage() {
             上一页
           </button>
           <span className="tweet-pagination-info">
-            第 {page} /{' '}
-            <button type="button" onClick={() => setPage(totalPages)} disabled={page === totalPages || loading}>
-              {totalPages}
-            </button>{' '}
-            页 · 共 {total} 条
+            第 {page}
+            {totalPages !== null ? (
+              <>
+                {' '}
+                /{' '}
+                <button type="button" onClick={() => setPage(totalPages)} disabled={page === totalPages || loading}>
+                  {totalPages}
+                </button>{' '}
+                页
+              </>
+            ) : (
+              <> 页</>
+            )}{' '}
+            · {total === null ? '总数未加载' : `共 ${total} 条`}
           </span>
           <button onClick={() => hasMore && setPage((prev) => prev + 1)} disabled={!hasMore || loading}>
             下一页

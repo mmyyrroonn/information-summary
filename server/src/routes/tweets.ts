@@ -69,6 +69,7 @@ router.get('/', async (req, res, next) => {
       .object({
         page: z.coerce.number().int().min(1).default(1),
         pageSize: z.coerce.number().int().min(1).max(50).default(20),
+        includeTotal: z.enum(['0', '1']).optional().default('1').transform((value) => value === '1'),
         order: z.enum(['asc', 'desc']).optional(),
         sort: z.enum(['newest', 'oldest', 'priority']).optional(),
         routing: z.enum(['default', 'ignored', 'all']).optional(),
@@ -113,6 +114,7 @@ router.get('/', async (req, res, next) => {
       page: query.page,
       pageSize: query.pageSize,
       sort: query.sort ?? 'newest',
+      includeTotal: query.includeTotal,
       ...(query.routing ? { routing: query.routing } : {}),
       ...(query.routingCategory ? { routingCategory: query.routingCategory } : {}),
       ...(query.routingTag ? { routingTag: query.routingTag } : {}),
