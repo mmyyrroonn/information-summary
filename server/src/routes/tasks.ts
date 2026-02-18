@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { BackgroundJobStatus } from '@prisma/client';
 import { z } from 'zod';
 import { enqueueJob } from '../jobs/jobQueue';
@@ -7,8 +7,12 @@ import { getJobById, listJobs, serializeJob } from '../services/jobService';
 import { getOrCreateDefaultReportProfile } from '../services/reportProfileService';
 import { getRoutingEmbeddingCacheSummary } from '../services/aiService';
 import { normalizeTagAlias, CLASSIFY_ALLOWED_TAGS, TAG_FALLBACK_KEY } from '../services/ai/shared';
+import { authMiddleware, adminOnly, AuthRequest } from '../middleware/auth';
 
 const router = Router();
+
+router.use(authMiddleware);
+router.use(adminOnly);
 const jobTypeSchema = z.enum(
   [
     'fetch-subscriptions',

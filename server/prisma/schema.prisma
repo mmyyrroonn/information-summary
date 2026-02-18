@@ -40,21 +40,39 @@ enum SubscriptionStatus {
   UNSUBSCRIBED
 }
 
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      String   @default("user") // "admin" | "user"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions      Subscription[]
+  reports           Report[]
+  notificationConfig NotificationConfig?
+}
+
 model Subscription {
   id            String   @id @default(uuid())
   screenName    String   @unique
   displayName   String?
   avatarUrl     String?
-  note          String?
   tags          String[] @default([])
   status        SubscriptionStatus @default(SUBSCRIBED)
   unsubscribedAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   lastFetchedAt DateTime?
+  
+  // User relation (null = default subscription shared by all)
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  
   tweets        Tweet[]
 
   @@index([status, lastFetchedAt])
+  @@index([userId])
 }
 
 model Tweet {
@@ -153,6 +171,12 @@ model Report {
   profileId      String?
   deliveredAt    DateTime?
   deliveryTarget String?
+  
+  // User relation
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model RoutingEmbeddingCache {
@@ -205,11 +229,17 @@ model ReportProfile {
 }
 
 model NotificationConfig {
-  id                Int      @id @default(1)
+  id                String   @id @default(uuid())
+
+  // User relation (one config per user)
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id])
+
   tgBotToken        String?
   tgChatId          String?
   tgMessageThreadId String?
   tgHighScoreMessageThreadId String?
+  createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
 

@@ -1,14 +1,18 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import { listReports, getReport } from '../services/reportService';
 import { sendHighScoreReport, sendReportAndNotify } from '../services/aiService';
 import { publishReportToGithub } from '../services/githubPublishService';
 import { enqueueJob } from '../jobs/jobQueue';
 import { serializeJob } from '../services/jobService';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', async (req, res, next) => {
+router.use(authMiddleware);
+
+// GET /api/reports - list (default + own)
+router.get('/', async (req: AuthRequest, res: Response, next) => {
   try {
     const query = z
       .object({

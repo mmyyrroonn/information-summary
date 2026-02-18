@@ -129,8 +129,18 @@ function buildTelegramMessages(markdown: string, itemsPerMessage: number) {
   return messages;
 }
 
-export async function getNotificationConfig() {
-  const dbConfig = await prisma.notificationConfig.findUnique({ where: { id: 1 } });
+export async function getNotificationConfig(userId?: string) {
+  if (!userId) {
+    // Auth is required for config routes; fallback to env only.
+    return {
+      tgBotToken: config.TG_BOT_TOKEN ?? null,
+      tgChatId: config.TG_CHAT_ID ?? null,
+      tgMessageThreadId: config.TG_MESSAGE_THREAD_ID ?? null,
+      tgHighScoreMessageThreadId: config.TG_HIGH_SCORE_MESSAGE_THREAD_ID ?? null
+    };
+  }
+
+  const dbConfig = await prisma.notificationConfig.findUnique({ where: { userId } });
   return {
     tgBotToken: dbConfig?.tgBotToken ?? config.TG_BOT_TOKEN ?? null,
     tgChatId: dbConfig?.tgChatId ?? config.TG_CHAT_ID ?? null,
@@ -140,16 +150,23 @@ export async function getNotificationConfig() {
   };
 }
 
-export async function updateNotificationConfig(payload: {
-  tgBotToken: string | null;
-  tgChatId: string | null;
-  tgMessageThreadId: string | null;
-  tgHighScoreMessageThreadId: string | null;
-}) {
+export async function updateNotificationConfig(
+  payload: {
+    tgBotToken: string | null;
+    tgChatId: string | null;
+    tgMessageThreadId: string | null;
+    tgHighScoreMessageThreadId: string | null;
+  },
+  userId?: string
+) {
+  if (!userId) {
+    throw new Error('userId is required to update notification config');
+  }
+
   await prisma.notificationConfig.upsert({
-    where: { id: 1 },
+    where: { userId },
     create: {
-      id: 1,
+      userId,
       tgBotToken: payload.tgBotToken,
       tgChatId: payload.tgChatId,
       tgMessageThreadId: payload.tgMessageThreadId,
@@ -162,7 +179,8 @@ export async function updateNotificationConfig(payload: {
       tgHighScoreMessageThreadId: payload.tgHighScoreMessageThreadId
     }
   });
-  return getNotificationConfig();
+
+  return getNotificationConfig(userId);
 }
 
 async function sendMarkdownToTelegramWithTarget(markdown: string, target: TelegramTarget) {

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { SubscriptionStatus } from '@prisma/client';
 import {
@@ -13,19 +13,33 @@ import { importFollowingUsers, importListMembers } from '../services/subscriptio
 import { getSubscriptionTweetStats } from '../services/subscriptionStatsService';
 import { applyAutoUnsubscribe, evaluateAutoUnsubscribe } from '../services/subscriptionAutoUnsubscribeService';
 import { prisma } from '../db';
+import { authMiddleware, adminOnly, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', async (_req, res, next) => {
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
+// authMiddleware guarantees req.user is set
+
+// GET /api/subscriptions - list all (default + own)
+router.get('/', async (req: AuthRequest, res: Response, next) => {
   try {
-    const subscriptions = await listSubscriptions();
+    const userId = req.user!.userId;
+    const whereClause = {
+      OR: [{ userId: null }, { userId }]
+    };
+    const subscriptions = await prisma.subscription.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+    });
     res.json(subscriptions);
   } catch (error) {
     next(error);
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', adminOnly, async (req: AuthRequest, res: Response, next) => {
   try {
     const bodySchema = z.object({
       screenName: z.string(),
@@ -47,7 +61,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.post('/import/list', async (req, res, next) => {
+router.post('/import/list', adminOnly, async (req: AuthRequest, res: Response, next) => {
   try {
     const body = z
       .object({
@@ -66,7 +80,7 @@ router.post('/import/list', async (req, res, next) => {
   }
 });
 
-router.post('/import/following', async (req, res, next) => {
+router.post('/import/following', adminOnly, async (req: AuthRequest, res: Response, next) => {
   try {
     const body = z
       .object({
@@ -96,7 +110,7 @@ router.post('/import/following', async (req, res, next) => {
   }
 });
 
-router.get('/stats', async (_req, res, next) => {
+router.get('/stats', adminOnly, async (_req: AuthRequest, res: Response, next) => {
   try {
     const [stats, total, subscribed, unsubscribed] = await Promise.all([
       getSubscriptionTweetStats(),
@@ -114,7 +128,7 @@ router.get('/stats', async (_req, res, next) => {
   }
 });
 
-router.post('/auto-unsubscribe', async (req, res, next) => {
+router.post('/auto-unsubscribe', adminOnly, async (req: AuthRequest, res: Response, next) => {
   try {
     const body = z
       .object({
@@ -157,9 +171,12 @@ router.post('/auto-unsubscribe', async (req, res, next) => {
   }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', adminOnly, async (req: AuthRequest, res: Response, next) => {
   try {
-    const { id } = req.params;
+        const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ message: 'Missing subscription id' });
+    }
     await deleteSubscription(id);
     res.status(204).send();
   } catch (error) {
@@ -167,9 +184,12 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
-router.patch('/:id', async (req, res, next) => {
+router.patch('/:id', adminOnly, async (req: AuthRequest, res: Response, next) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ message: 'Missing subscription id' });
+    }
     const body = z
       .object({
         status: z.nativeEnum(SubscriptionStatus).optional(),
@@ -195,9 +215,12 @@ router.patch('/:id', async (req, res, next) => {
   }
 });
 
-router.post('/:id/fetch', async (req, res, next) => {
+router.post('/:id/fetch', adminOnly, async (req: AuthRequest, res: Response, next) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ message: 'Missing subscription id' });
+    }
     const body = z
       .object({ force: z.boolean().optional(), allowUnsubscribed: z.boolean().optional() })
       .parse(req.body ?? {});

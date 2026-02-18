@@ -4,8 +4,11 @@ import { listTweets } from '../services/tweetService';
 import { classifyTweetsByIds } from '../services/aiService';
 import { getTweetStats } from '../services/tweetStatsService';
 import { getTweetRoutingStats } from '../services/tweetRoutingStatsService';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
+
+router.use(authMiddleware);
 
 router.get('/stats', async (req, res, next) => {
   try {

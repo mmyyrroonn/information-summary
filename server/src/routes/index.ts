@@ -7,9 +7,11 @@ import tweetsRouter from './tweets';
 import devRouter from './tasksDev';
 import reportProfilesRouter from './reportProfiles';
 import tagsRouter from './tags';
+import authRouter from './auth';
 
 const router = Router();
 
+router.use('/auth', authRouter);
 router.use('/subscriptions', subscriptionsRouter);
 router.use('/tasks', tasksRouter);
 router.use('/reports', reportsRouter);

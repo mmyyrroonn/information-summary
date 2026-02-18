@@ -14,8 +14,12 @@ import {
 import { enqueueJob } from '../jobs/jobQueue';
 import { refreshReportProfileSchedules } from '../jobs/scheduler';
 import { serializeJob } from '../services/jobService';
+import { authMiddleware, adminOnly } from '../middleware/auth';
 
 const router = Router();
+
+router.use(authMiddleware);
+router.use(adminOnly);
 
 const verdictSchema = z.enum(['ignore', 'watch', 'actionable']);
 const groupBySchema = z.enum(['cluster', 'tag', 'author']);

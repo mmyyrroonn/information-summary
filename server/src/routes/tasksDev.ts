@@ -3,8 +3,12 @@ import { BackgroundJobStatus } from '@prisma/client';
 import { z } from 'zod';
 import { deleteJob, getJobById, listJobs } from '../services/jobService';
 import { sendTestTelegramMessage } from '../services/notificationService';
+import { authMiddleware, adminOnly } from '../middleware/auth';
 
 const router = Router();
+
+router.use(authMiddleware);
+router.use(adminOnly);
 
 const jobTypeSchema = z.enum(
   [
