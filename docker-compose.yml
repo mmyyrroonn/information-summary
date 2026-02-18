@@ -38,9 +38,7 @@ x-worker-base: &worker-base
     GITHUB_PAGES_COMMIT_NAME: ${GITHUB_PAGES_COMMIT_NAME:-report-bot}
     GITHUB_PAGES_COMMIT_EMAIL: ${GITHUB_PAGES_COMMIT_EMAIL:-report-bot@local}
     GITHUB_PAGES_AUTO_PUBLISH: ${GITHUB_PAGES_AUTO_PUBLISH:-false}
-  volumes:
-    - ${GITHUB_PAGES_REPO_PATH}:${GITHUB_PAGES_REPO_PATH}
-    - ${GITHUB_PAGES_SSH_KEY_PATH}:${GITHUB_PAGES_SSH_KEY_PATH}:ro
+  # volumes: []
   command: sh -c "npx prisma migrate deploy && node dist/worker.js"
 
 services:
@@ -98,9 +96,7 @@ services:
       GITHUB_PAGES_AUTO_PUBLISH: ${GITHUB_PAGES_AUTO_PUBLISH:-false}
     ports:
       - '4000:4000'
-    volumes:
-      - ${GITHUB_PAGES_REPO_PATH}:${GITHUB_PAGES_REPO_PATH}
-      - ${GITHUB_PAGES_SSH_KEY_PATH}:${GITHUB_PAGES_SSH_KEY_PATH}:ro
+    # volumes: []
 
   worker:
     <<: *worker-base
