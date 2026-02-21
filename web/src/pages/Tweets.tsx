@@ -136,6 +136,7 @@ export function TweetsPage() {
   const [routingScoreMin, setRoutingScoreMin] = useState('');
   const [routingScoreMax, setRoutingScoreMax] = useState('');
   const [subscriptionId, setSubscriptionId] = useState<string | undefined>(undefined);
+  const [subscriptionSearch, setSubscriptionSearch] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -209,6 +210,25 @@ export function TweetsPage() {
     if (!value) return undefined;
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  function formatSubscriptionOptionLabel(sub: Subscription) {
+    const base = sub.displayName ? `${sub.displayName} (@${sub.screenName})` : `@${sub.screenName}`;
+    return sub.status === 'UNSUBSCRIBED' ? `${base}（不再订阅）` : base;
+  }
+
+  function resolveSubscriptionId(input: string) {
+    const normalized = input.trim().toLowerCase();
+    if (!normalized) {
+      return undefined;
+    }
+    const exact = subscriptions.find((sub) => {
+      const handle = `@${sub.screenName}`.toLowerCase();
+      const screenName = sub.screenName.toLowerCase();
+      const displayName = sub.displayName?.toLowerCase();
+      return normalized === handle || normalized === screenName || normalized === displayName;
+    });
+    return exact?.id;
   }
 
   async function loadTweets() {
@@ -336,6 +356,23 @@ export function TweetsPage() {
     }
   }
 
+  useEffect(() => {
+    if (!subscriptionId) {
+      if (subscriptionSearch) {
+        setSubscriptionSearch('');
+      }
+      return;
+    }
+    const matched = subscriptions.find((sub) => sub.id === subscriptionId);
+    if (!matched) {
+      return;
+    }
+    const nextValue = `@${matched.screenName}`;
+    if (subscriptionSearch !== nextValue) {
+      setSubscriptionSearch(nextValue);
+    }
+  }, [subscriptionId, subscriptions, subscriptionSearch]);
+
   return (
     <>
       {statusMessage && <p className="status">{statusMessage}</p>}
@@ -413,21 +450,23 @@ export function TweetsPage() {
 
           <label>
             <span>订阅账号</span>
-            <select
-              value={subscriptionId ?? ''}
+            <input
+              type="text"
+              list="tweet-subscription-options"
+              value={subscriptionSearch}
+              placeholder="输入 @账号 进行搜索（留空=全部账号）"
               onChange={(e) => {
-                setSubscriptionId(e.target.value || undefined);
+                const nextValue = e.target.value;
+                setSubscriptionSearch(nextValue);
+                setSubscriptionId(resolveSubscriptionId(nextValue));
                 setPage(1);
               }}
-            >
-              <option value="">全部账号</option>
+            />
+            <datalist id="tweet-subscription-options">
               {subscriptions.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.displayName ? `${sub.displayName} (@${sub.screenName})` : `@${sub.screenName}`}
-                  {sub.status === 'UNSUBSCRIBED' ? '（不再订阅）' : ''}
-                </option>
+                <option key={sub.id} value={`@${sub.screenName}`} label={formatSubscriptionOptionLabel(sub)} />
               ))}
-            </select>
+            </datalist>
           </label>
 
           <label>
