@@ -1,5 +1,3 @@
-version: '3.9'
-
 x-worker-base: &worker-base
   build:
     context: ./server
@@ -11,6 +9,9 @@ x-worker-base: &worker-base
     - ./.env
   environment:
     NODE_ENV: production
+    JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+    ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+    ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
     DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-information_summary}
     RAPIDAPI_HOST: ${RAPIDAPI_HOST:-twitter-api45.p.rapidapi.com}
     RAPIDAPI_KEY: ${RAPIDAPI_KEY}
@@ -67,6 +68,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-information_summary}
       RAPIDAPI_HOST: ${RAPIDAPI_HOST:-twitter-api45.p.rapidapi.com}
       RAPIDAPI_KEY: ${RAPIDAPI_KEY}
@@ -112,7 +116,7 @@ services:
       context: ./web
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:4000/api}
+        VITE_API_BASE_URL: ${DOCKER_WEB_API_BASE_URL:-/api}
     depends_on:
       - server
     restart: unless-stopped

@@ -26,8 +26,7 @@ import type {
   TweetStatsResponse
 } from './types';
 import { getToken } from './auth';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+import { getApiBaseUrl } from './apiBase';
 
 function getHeaders(): HeadersInit {
   const headers: HeadersInit = {
@@ -41,7 +40,7 @@ function getHeaders(): HeadersInit {
 }
 
 async function request<T>(path: string, options: RequestInit = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     headers: { ...getHeaders(), ...(options.headers || {}) },
     ...options
   });

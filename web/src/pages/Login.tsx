@@ -1,7 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { setAuth, AuthUser } from '../auth';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
+import { getApiBaseUrl } from '../apiBase';
 
 interface LoginResponse {
   token: string;
@@ -28,7 +27,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setLoading(true);
     
     try {
-      const response = await fetch(`${API_BASE}/auth/login`, {
+      const response = await fetch(`${getApiBaseUrl()}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

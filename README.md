@@ -66,7 +66,8 @@
 | `GITHUB_PAGES_COMMIT_EMAIL` | 自动提交的作者邮箱 |
 | `GITHUB_PAGES_AUTO_PUBLISH` | 生成日报后自动发布到 GitHub Pages，默认 `false` |
 
-前端 `.env` 只需要 `VITE_API_BASE_URL` 指向后端 `/api`。
+前端 `.env` 只需要 `VITE_API_BASE_URL` 指向后端 `/api`。  
+Docker Compose 构建前端时使用 `DOCKER_WEB_API_BASE_URL`（默认 `/api`，由 Nginx 代理到 `server:4000`）。
 
 ## 本地运行
 1. 安装依赖
@@ -100,6 +101,7 @@
    cp .env.compose.example .env
    # 按需编辑 `.env`
    ```
+   默认会创建管理员账号（可在 `.env` 覆盖）：`ADMIN_USERNAME=admin`、`ADMIN_PASSWORD=admin123`。
 2. 构建并启动所有服务（Postgres + API + Web）：
    ```bash
    docker compose up --build

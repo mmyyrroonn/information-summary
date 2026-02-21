@@ -42,7 +42,24 @@ export async function findOrCreateDefaultUser(): Promise<void> {
 
   const existing = await prisma.user.findUnique({ where: { username: adminUsername } });
   if (existing) {
-    console.log('Admin user already exists');
+    const updates: { password?: string; role?: string } = {};
+    const passwordMatches = await verifyPassword(adminPassword, existing.password);
+    if (!passwordMatches) {
+      updates.password = await hashPassword(adminPassword);
+    }
+    if (existing.role !== 'admin') {
+      updates.role = 'admin';
+    }
+
+    if (updates.password || updates.role) {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: updates
+      });
+      console.log(`Admin user "${adminUsername}" synced from environment`);
+    } else {
+      console.log('Admin user already exists');
+    }
     return;
   }
 
