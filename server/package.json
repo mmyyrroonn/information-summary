@@ -12,6 +12,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "auto-unsubscribe": "node scripts/auto-unsubscribe.js",
+    "tweet:daily-count": "node scripts/tweet-daily-count.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
