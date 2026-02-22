@@ -2,9 +2,10 @@ import OpenAI from 'openai';
 import { config } from '../../config';
 import { logger } from '../../logger';
 import { safeJsonParse } from '../../utils/json';
+import { runMiniMaxChatCompletion, runMiniMaxStructuredCompletion } from './minimaxClient';
 import { delay } from './shared';
 
-export type ChatProvider = 'deepseek' | 'dashscope';
+export type ChatProvider = 'deepseek' | 'dashscope' | 'minimax';
 
 const clients: Record<ChatProvider, OpenAI | null> = {
   deepseek: config.DEEPSEEK_API_KEY
@@ -12,7 +13,8 @@ const clients: Record<ChatProvider, OpenAI | null> = {
     : null,
   dashscope: config.DASHSCOPE_API_KEY
     ? new OpenAI({ apiKey: config.DASHSCOPE_API_KEY, baseURL: config.DASHSCOPE_BASE_URL })
-    : null
+    : null,
+  minimax: null
 };
 
 const CHAT_COMPLETION_MAX_RETRIES = 3;
@@ -25,6 +27,9 @@ type ChatCompletionRequest = Parameters<OpenAI['chat']['completions']['create']>
 type ChatCompletionResponse = Awaited<ReturnType<OpenAI['chat']['completions']['create']>>;
 
 function ensureClient(provider: ChatProvider) {
+  if (provider === 'minimax') {
+    throw new Error('minimax provider does not use OpenAI client directly');
+  }
   const client = clients[provider];
   if (!client) {
     if (provider === 'dashscope') {
@@ -62,6 +67,9 @@ export async function runChatCompletion(
   options?: { provider?: ChatProvider }
 ): Promise<string> {
   const provider = options?.provider ?? 'deepseek';
+  if (provider === 'minimax') {
+    return runMiniMaxChatCompletion(request, context);
+  }
   const openai = ensureClient(provider);
   let attempt = 0;
   let lastError: unknown = null;
@@ -121,6 +129,9 @@ export async function runStructuredCompletion<T>(
   options?: { provider?: ChatProvider }
 ): Promise<T> {
   const provider = options?.provider ?? 'deepseek';
+  if (provider === 'minimax') {
+    return runMiniMaxStructuredCompletion<T>(request, context);
+  }
   const openai = ensureClient(provider);
   let attempt = 0;
   let lastError: unknown = null;

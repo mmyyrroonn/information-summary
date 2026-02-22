@@ -115,7 +115,7 @@ export interface SocialDigestOptions {
   model?: string;
 }
 
-type SocialDigestProvider = 'deepseek' | 'dashscope' | 'auto';
+type SocialDigestProvider = 'deepseek' | 'dashscope' | 'minimax' | 'auto';
 
 export interface SocialImagePromptResult {
   prompt: string;
@@ -1021,6 +1021,7 @@ function uniqueTweetIds(ids: string[]) {
 function resolveSocialDigestProvider(preferred?: SocialDigestProvider): ChatProvider {
   const hasDeepseek = Boolean(config.DEEPSEEK_API_KEY);
   const hasDashscope = Boolean(config.DASHSCOPE_API_KEY);
+  const hasMiniMax = Boolean(config.MINIMAX_API_KEY);
   const normalized = (value?: string | null) => value?.trim().toLowerCase() ?? '';
   const preferredKey = normalized(preferred === 'auto' ? '' : preferred);
   const configKey = normalized(config.SOCIAL_DIGEST_PROVIDER);
@@ -1038,16 +1039,25 @@ function resolveSocialDigestProvider(preferred?: SocialDigestProvider): ChatProv
       }
       return 'dashscope';
     }
+    if (preferredKey === 'minimax') {
+      if (!hasMiniMax) {
+        throw new Error('MINIMAX_API_KEY missing, cannot call AI');
+      }
+      return 'minimax';
+    }
   }
 
   const configPreferred =
-    configKey === 'dashscope' ? 'dashscope' : configKey === 'deepseek' ? 'deepseek' : '';
+    configKey === 'dashscope' ? 'dashscope' : configKey === 'deepseek' ? 'deepseek' : configKey === 'minimax' ? 'minimax' : '';
   if (configPreferred) {
     if (configPreferred === 'deepseek' && hasDeepseek) {
       return 'deepseek';
     }
     if (configPreferred === 'dashscope' && hasDashscope) {
       return 'dashscope';
+    }
+    if (configPreferred === 'minimax' && hasMiniMax) {
+      return 'minimax';
     }
   }
   if (hasDeepseek) {
@@ -1056,13 +1066,19 @@ function resolveSocialDigestProvider(preferred?: SocialDigestProvider): ChatProv
   if (hasDashscope) {
     return 'dashscope';
   }
+  if (hasMiniMax) {
+    return 'minimax';
+  }
 
-  throw new Error('No chat AI provider configured (DEEPSEEK_API_KEY or DASHSCOPE_API_KEY missing)');
+  throw new Error('No chat AI provider configured (DEEPSEEK_API_KEY / DASHSCOPE_API_KEY / MINIMAX_API_KEY missing)');
 }
 
 function resolveSocialDigestModel(provider: ChatProvider, override?: string) {
   const trimmed = override?.trim();
   if (trimmed) return trimmed;
+  if (provider === 'minimax') {
+    return config.SOCIAL_DIGEST_MINIMAX_MODEL;
+  }
   if (provider === 'dashscope') {
     return config.SOCIAL_DIGEST_DASHSCOPE_MODEL;
   }
