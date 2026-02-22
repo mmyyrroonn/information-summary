@@ -9,27 +9,17 @@ import { sendHighScoreMarkdownToTelegram, sendMarkdownToTelegram } from '../noti
 import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from '../embeddingService';
 import { clusterByEmbedding, ClusterCandidate, ClusterResult } from '../clusterService';
 import { buildEmbeddingText } from './embeddingText';
+import { shouldKeepClusterByImportance } from './clusterVisibility';
 import { ChatProvider, runChatCompletion, runStructuredCompletion } from './openaiClient';
 import {
   HIGH_PRIORITY_IMPORTANCE,
   TAG_DISPLAY_NAMES,
   TAG_FALLBACK_KEY,
   getErrorMessage,
-  isContentRiskMessage,
-  isServiceBusyMessage,
-  runWithConcurrency,
   truncateText
 } from './shared';
 
-const TRIAGE_CHUNK_SIZE = Math.max(1, Math.floor(config.REPORT_MID_TRIAGE_CHUNK_SIZE));
-const TRIAGE_MAX_KEEP_PER_CHUNK = Math.max(
-  1,
-  Math.min(TRIAGE_CHUNK_SIZE, Math.floor(config.REPORT_MID_TRIAGE_MAX_KEEP_PER_CHUNK))
-);
-const TRIAGE_CONCURRENCY = Math.max(1, Math.floor(config.REPORT_MID_TRIAGE_CONCURRENCY));
-const MEDIUM_MIN_IMPORTANCE = 2;
-const MEDIUM_MAX_IMPORTANCE = 3;
-const REPORT_MIN_IMPORTANCE = Math.max(1, Math.min(5, Math.floor(config.REPORT_MIN_IMPORTANCE ?? MEDIUM_MIN_IMPORTANCE)));
+const PROFILE_DEFAULT_MIN_IMPORTANCE = 1;
 const EMBEDDING_BATCH_SIZE = 10;
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
 const DEFAULT_REPORT_WINDOW_HOURS = 6;
@@ -206,157 +196,6 @@ async function defaultWindow(): Promise<ReportWindow | null> {
     start: lastEnd.toDate(),
     end: nextEnd.toDate()
   };
-}
-
-async function selectMidPriorityInsights(
-  insights: InsightWithTweet[],
-  options?: { prompt?: string | null; maxKeepPerChunk?: number }
-) {
-  if (!insights.length) {
-    return [];
-  }
-  const maxKeep = Math.max(
-    1,
-    Math.min(TRIAGE_CHUNK_SIZE, Math.floor(options?.maxKeepPerChunk ?? TRIAGE_MAX_KEEP_PER_CHUNK))
-  );
-  const batches = chunk(insights, TRIAGE_CHUNK_SIZE);
-  const keptIds = new Set<string>();
-
-  await runWithConcurrency(batches, TRIAGE_CONCURRENCY, async (batch, batchIndex) => {
-    logger.info('Running mid-priority triage batch', {
-      batchIndex: batchIndex + 1,
-      batchSize: batch.length
-    });
-    const prompt = buildTriagePrompt(batch, maxKeep, options?.prompt);
-    try {
-      const parsed = await runStructuredCompletion<{
-        decisions?: Array<{ tweetId: string; include: boolean }>;
-      }>(
-        {
-          model: 'deepseek-chat',
-          temperature: 0,
-          messages: [
-            {
-              role: 'system',
-              content: '你是资讯编辑，需要快速筛选重要推文，按指引只选择最值得保留的条目。'
-            },
-            { role: 'user', content: prompt }
-          ]
-        },
-        { stage: 'mid-triage', batchIndex: batchIndex + 1, batchSize: batch.length }
-      );
-      const includes = (parsed.decisions ?? []).filter((decision) => decision.include);
-      includes.slice(0, maxKeep).forEach((decision) => keptIds.add(decision.tweetId));
-    } catch (error) {
-      const message = getErrorMessage(error);
-      const reason = isContentRiskMessage(message) ? 'content-risk' : isServiceBusyMessage(message) ? 'service-busy' : 'failed';
-      logger.warn('Mid-priority triage batch skipped; keeping all items in batch', {
-        reason,
-        batchIndex: batchIndex + 1,
-        batchSize: batch.length,
-        error: message
-      });
-      batch.forEach((insight) => keptIds.add(insight.tweetId));
-    }
-  });
-
-  return insights.filter((insight) => keptIds.has(insight.tweetId));
-}
-
-async function triageInsightsForReport(
-  insights: InsightWithTweet[],
-  options?: { enabled?: boolean; prompt?: string | null; maxKeepPerChunk?: number }
-) {
-  const high = insights.filter((insight) => (insight.importance ?? 0) >= HIGH_PRIORITY_IMPORTANCE);
-  const mid = insights.filter((insight) => {
-    const importance = insight.importance ?? 0;
-    return importance >= MEDIUM_MIN_IMPORTANCE && importance <= MEDIUM_MAX_IMPORTANCE;
-  });
-  const triageEnabled = options?.enabled ?? config.REPORT_MID_TRIAGE_ENABLED;
-
-  if (!config.DEEPSEEK_API_KEY || mid.length === 0 || !triageEnabled) {
-    return {
-      selected: insights,
-      stats: {
-        enabled: false,
-        highKept: high.length,
-        midCandidates: mid.length,
-        midKept: mid.length
-      }
-    };
-  }
-
-  const orderedMid = [...mid].sort((a, b) => {
-    const imp = (b.importance ?? 0) - (a.importance ?? 0);
-    if (imp !== 0) return imp;
-    return b.tweet.tweetedAt.getTime() - a.tweet.tweetedAt.getTime();
-  });
-
-  const triageOptions: { prompt?: string | null; maxKeepPerChunk?: number } = {};
-  if (options?.prompt !== undefined) {
-    triageOptions.prompt = options.prompt ?? null;
-  }
-  if (typeof options?.maxKeepPerChunk === 'number') {
-    triageOptions.maxKeepPerChunk = options.maxKeepPerChunk;
-  }
-  const keptMid = await selectMidPriorityInsights(orderedMid, triageOptions);
-  if (!keptMid.length && high.length === 0) {
-    logger.warn('Mid-priority triage returned empty selection; falling back to original insights', {
-      insights: insights.length,
-      mid: mid.length
-    });
-    return {
-      selected: insights,
-      stats: {
-        enabled: true,
-        highKept: high.length,
-        midCandidates: mid.length,
-        midKept: mid.length
-      }
-    };
-  }
-
-  const keptMidIds = new Set(keptMid.map((insight) => insight.tweetId));
-  const selected = [...high, ...orderedMid.filter((insight) => keptMidIds.has(insight.tweetId))].sort((a, b) => {
-    const imp = (b.importance ?? 0) - (a.importance ?? 0);
-    if (imp !== 0) return imp;
-    return b.tweet.tweetedAt.getTime() - a.tweet.tweetedAt.getTime();
-  });
-
-  return {
-    selected,
-    stats: {
-      enabled: true,
-      highKept: high.length,
-      midCandidates: mid.length,
-      midKept: keptMid.length
-    }
-  };
-}
-
-function buildTriagePrompt(batch: InsightWithTweet[], maxKeep: number, extraPrompt?: string | null) {
-  const extra = extraPrompt?.trim();
-  const template = {
-    goal: '审阅 importance 在 2-3 的推文洞察，只保留最有价值的少量条目，其余标记为 false。',
-    rules: [
-      `每个 chunk 最多保留 ${maxKeep} 条，优先 actionable、具有明确行动价值或重大信号的内容。`,
-      '如果内容重复、缺乏上下文或影响较小，应标记 include=false。',
-      extra ? `额外要求：${extra}` : '',
-      '只能使用已有的 summary / tags 做判断，不要臆测新信息。',
-      '务必以 json 对象输出，禁止添加额外文字说明。'
-    ],
-    outputSchema: '{"decisions":[{"tweetId":"id","include":true|false}]}',
-    candidates: batch.map((insight) => ({
-      tweetId: insight.tweetId,
-      importance: insight.importance ?? null,
-      verdict: insight.verdict,
-      summary: insight.summary ?? '',
-      tags: insight.tags ?? [],
-      suggestions: insight.suggestions ?? undefined
-    }))
-  };
-  template.rules = template.rules.filter((rule) => Boolean(rule?.trim()));
-  return JSON.stringify(template);
 }
 
 function ensureOverviewList(overview: string | string[] | undefined, totalItems: number) {
@@ -824,7 +663,7 @@ function buildProfileHeadline(profile: ReportProfile, window: ReportWindow) {
 }
 
 function applyProfileFilters(insights: InsightWithTweet[], profile: ReportProfile) {
-  const minImportance = Math.max(1, Math.min(5, Math.floor(profile.minImportance ?? REPORT_MIN_IMPORTANCE)));
+  const minImportance = Math.max(1, Math.min(5, Math.floor(profile.minImportance ?? PROFILE_DEFAULT_MIN_IMPORTANCE)));
   const includeTweetTags = new Set(normalizeFilterTags(profile.includeTweetTags));
   const excludeTweetTags = new Set(normalizeFilterTags(profile.excludeTweetTags));
   const includeAuthorTags = new Set(normalizeFilterTags(profile.includeAuthorTags));
@@ -1432,34 +1271,7 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
       });
     };
 
-    const triageOptions: { enabled?: boolean; prompt?: string | null; maxKeepPerChunk?: number } = {};
-    if (typeof profile.aiFilterEnabled === 'boolean') {
-      triageOptions.enabled = profile.aiFilterEnabled;
-    }
-    if (profile.aiFilterPrompt !== undefined) {
-      triageOptions.prompt = profile.aiFilterPrompt ?? null;
-    }
-    if (typeof profile.aiFilterMaxKeepPerChunk === 'number') {
-      triageOptions.maxKeepPerChunk = profile.aiFilterMaxKeepPerChunk;
-    }
-    const { selected: reportInsights, stats: triageStats } = await triageInsightsForReport(eligible, triageOptions);
-
-    if (!reportInsights.length) {
-      logger.info('No insights kept after profile triage', windowMeta);
-      await completeAiRun();
-      return null;
-    }
-
-    if (triageStats.enabled && reportInsights.length !== eligible.length) {
-      logger.info('Profile triage completed', {
-        ...windowMeta,
-        eligible: eligible.length,
-        selected: reportInsights.length,
-        highKept: triageStats.highKept,
-        midCandidates: triageStats.midCandidates,
-        midKept: triageStats.midKept
-      });
-    }
+    const reportInsights = eligible;
 
     const groupBy = normalizeGroupBy(profile.groupBy);
     const headline = buildProfileHeadline(profile, reportWindow);
@@ -1583,9 +1395,12 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
       threshold: config.REPORT_CLUSTER_THRESHOLD,
       crossTagThresholdBump: config.REPORT_CLUSTER_CROSS_TAG_BUMP
     });
+    const filteredClusters = clusters.filter((cluster) =>
+      shouldKeepClusterByImportance({ peakImportance: cluster.peakImportance, size: cluster.size })
+    );
     const maxClusters = config.REPORT_CLUSTER_MAX;
-    const shown = maxClusters > 0 ? Math.min(maxClusters, clusters.length) : clusters.length;
-    const displayClusters = clusters.slice(0, shown);
+    const shown = maxClusters > 0 ? Math.min(maxClusters, filteredClusters.length) : filteredClusters.length;
+    const displayClusters = filteredClusters.slice(0, shown);
 
     const buckets = new Map<string, ClusterReportOutline['sections'][number]>();
     displayClusters.forEach((cluster) => {
@@ -1636,13 +1451,7 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
       totalInsights: reportInsights.length,
       rawInsights: eligible.length,
       minImportance,
-      triage: {
-        enabled: triageStats.enabled,
-        highKept: triageStats.highKept,
-        midCandidates: triageStats.midCandidates,
-        midKept: triageStats.midKept
-      },
-      totalClusters: clusters.length,
+      totalClusters: filteredClusters.length,
       shownClusters: shown,
       sections
     };
@@ -1672,10 +1481,6 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
       insights: insights.length,
       eligible: eligible.length,
       clusterCandidates: outline.totalInsights,
-      triageEnabled: triageStats.enabled,
-      triageHighKept: triageStats.highKept,
-      triageMidCandidates: triageStats.midCandidates,
-      triageMidKept: triageStats.midKept,
       clusters: outline.totalClusters,
       shownClusters: outline.shownClusters
     });
@@ -1724,23 +1529,7 @@ export async function generateReport(window?: ReportWindow | null) {
   });
 
   try {
-    const eligible = insights.filter((insight) => (insight.importance ?? 0) >= REPORT_MIN_IMPORTANCE);
-    if (!eligible.length) {
-      logger.info('No insights above importance threshold for report', windowMeta);
-      return null;
-    }
-
-    const { selected: reportInsights, stats: triageStats } = await triageInsightsForReport(eligible);
-    if (triageStats.enabled && reportInsights.length !== eligible.length) {
-      logger.info('Mid-priority triage completed for report', {
-        ...windowMeta,
-        eligible: eligible.length,
-        selected: reportInsights.length,
-        highKept: triageStats.highKept,
-        midCandidates: triageStats.midCandidates,
-        midKept: triageStats.midKept
-      });
-    }
+    const reportInsights = insights;
 
     const embeddingStats = await ensureTweetSummaryEmbeddingsForInsights(reportInsights);
     logger.info('Tweet summary embedding preparation completed', { ...windowMeta, ...embeddingStats });
@@ -1810,9 +1599,12 @@ export async function generateReport(window?: ReportWindow | null) {
       threshold: config.REPORT_CLUSTER_THRESHOLD,
       crossTagThresholdBump: config.REPORT_CLUSTER_CROSS_TAG_BUMP
     });
+    const filteredClusters = clusters.filter((cluster) =>
+      shouldKeepClusterByImportance({ peakImportance: cluster.peakImportance, size: cluster.size })
+    );
     const maxClusters = config.REPORT_CLUSTER_MAX;
-    const shown = maxClusters > 0 ? Math.min(maxClusters, clusters.length) : clusters.length;
-    const displayClusters = clusters.slice(0, shown);
+    const shown = maxClusters > 0 ? Math.min(maxClusters, filteredClusters.length) : filteredClusters.length;
+    const displayClusters = filteredClusters.slice(0, shown);
 
     const buckets = new Map<string, ClusterReportOutline['sections'][number]>();
     displayClusters.forEach((cluster) => {
@@ -1861,15 +1653,9 @@ export async function generateReport(window?: ReportWindow | null) {
     const outline: ClusterReportOutline = {
       mode: 'clustered',
       totalInsights: reportInsights.length,
-      rawInsights: eligible.length,
-      minImportance: REPORT_MIN_IMPORTANCE,
-      triage: {
-        enabled: triageStats.enabled,
-        highKept: triageStats.highKept,
-        midCandidates: triageStats.midCandidates,
-        midKept: triageStats.midKept
-      },
-      totalClusters: clusters.length,
+      rawInsights: reportInsights.length,
+      minImportance: PROFILE_DEFAULT_MIN_IMPORTANCE,
+      totalClusters: filteredClusters.length,
       shownClusters: shown,
       sections
     };
@@ -1896,12 +1682,8 @@ export async function generateReport(window?: ReportWindow | null) {
       ...windowMeta,
       reportId: report.id,
       insights: insights.length,
-      eligible: eligible.length,
+      eligible: reportInsights.length,
       clusterCandidates: outline.totalInsights,
-      triageEnabled: triageStats.enabled,
-      triageHighKept: triageStats.highKept,
-      triageMidCandidates: triageStats.midCandidates,
-      triageMidKept: triageStats.midKept,
       clusters: outline.totalClusters,
       shownClusters: outline.shownClusters
     });
