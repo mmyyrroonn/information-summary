@@ -1796,7 +1796,12 @@ section.analytics-hero {
   margin-left: 1rem;
   padding: 0.25rem 0.5rem;
   background: transparent;
+  color: #1d4ed8;
   border: 1px solid #ccc;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: rgba(29, 78, 216, 0.08);
 }
