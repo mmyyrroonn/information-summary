@@ -3,8 +3,8 @@ export interface ClusterVisibilityInput {
   size: number;
 }
 
-const IMPORTANCE_THREE_MIN_CLUSTER_SIZE = 3;
-const IMPORTANCE_TWO_MIN_CLUSTER_SIZE = 5;
+const IMPORTANCE_THREE_MIN_CLUSTER_SIZE = 2;
+const IMPORTANCE_TWO_MIN_CLUSTER_SIZE = 3;
 
 export function shouldKeepClusterByImportance(input: ClusterVisibilityInput): boolean {
   const peak = Math.floor(input.peakImportance);
