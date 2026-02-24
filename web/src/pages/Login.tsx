@@ -13,9 +13,10 @@ interface LoginResponse {
 
 interface LoginPageProps {
   onLogin: (user: AuthUser) => void;
+  onCancel?: () => void;
 }
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -78,6 +79,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <button type="submit" disabled={loading}>
           {loading ? '登录中...' : '登录'}
         </button>
+        {onCancel ? (
+          <button type="button" className="ghost" onClick={onCancel}>
+            返回浏览
+          </button>
+        ) : null}
       </form>
     </div>
   );

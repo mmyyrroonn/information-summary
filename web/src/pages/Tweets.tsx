@@ -124,7 +124,7 @@ function buildRoutingLine(tweet: TweetRecord) {
   return parts.join(' · ');
 }
 
-export function TweetsPage() {
+export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [routingTags, setRoutingTags] = useState<Array<{ tag: string; label: string }>>([]);
   const [tweets, setTweets] = useState<TweetRecord[]>([]);
@@ -153,9 +153,15 @@ export function TweetsPage() {
   const [includeTotal, setIncludeTotal] = useState(false);
 
   useEffect(() => {
-    loadSubscriptions();
+    if (isAdmin) {
+      loadSubscriptions();
+    } else {
+      setSubscriptions([]);
+      setSubscriptionId(undefined);
+      setSubscriptionSearch('');
+    }
     loadRoutingTags();
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     loadTweets();
@@ -386,9 +392,11 @@ export function TweetsPage() {
             <button onClick={() => loadTweets()} disabled={loading}>
               {loading ? '刷新中...' : '刷新列表'}
             </button>
-            <button onClick={handleAnalyzeMissing} disabled={analyzing || !pendingCount || loading}>
-              {analyzing ? 'AI 分析中...' : `分析本页缺失 (${pendingCount})`}
-            </button>
+            {isAdmin ? (
+              <button onClick={handleAnalyzeMissing} disabled={analyzing || !pendingCount || loading}>
+                {analyzing ? 'AI 分析中...' : `分析本页缺失 (${pendingCount})`}
+              </button>
+            ) : null}
             <button
               type="button"
               className={`ghost tweet-toggle${routingView === 'ignored' ? ' active' : ''}`}
@@ -448,26 +456,28 @@ export function TweetsPage() {
             <p className="hint">基于向量相似度检索内容。</p>
           </label>
 
-          <label>
-            <span>订阅账号</span>
-            <input
-              type="text"
-              list="tweet-subscription-options"
-              value={subscriptionSearch}
-              placeholder="输入 @账号 进行搜索（留空=全部账号）"
-              onChange={(e) => {
-                const nextValue = e.target.value;
-                setSubscriptionSearch(nextValue);
-                setSubscriptionId(resolveSubscriptionId(nextValue));
-                setPage(1);
-              }}
-            />
-            <datalist id="tweet-subscription-options">
-              {subscriptions.map((sub) => (
-                <option key={sub.id} value={`@${sub.screenName}`} label={formatSubscriptionOptionLabel(sub)} />
-              ))}
-            </datalist>
-          </label>
+          {isAdmin ? (
+            <label>
+              <span>订阅账号</span>
+              <input
+                type="text"
+                list="tweet-subscription-options"
+                value={subscriptionSearch}
+                placeholder="输入 @账号 进行搜索（留空=全部账号）"
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  setSubscriptionSearch(nextValue);
+                  setSubscriptionId(resolveSubscriptionId(nextValue));
+                  setPage(1);
+                }}
+              />
+              <datalist id="tweet-subscription-options">
+                {subscriptions.map((sub) => (
+                  <option key={sub.id} value={`@${sub.screenName}`} label={formatSubscriptionOptionLabel(sub)} />
+                ))}
+              </datalist>
+            </label>
+          ) : null}
 
           <label>
             <span>排序方式</span>

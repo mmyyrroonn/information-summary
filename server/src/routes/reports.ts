@@ -5,11 +5,11 @@ import { sendHighScoreReport, sendReportAndNotify } from '../services/aiService'
 import { publishReportToGithub } from '../services/githubPublishService';
 import { enqueueJob } from '../jobs/jobQueue';
 import { serializeJob } from '../services/jobService';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { optionalAuthMiddleware, adminOnly, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(optionalAuthMiddleware);
 
 // GET /api/reports - list (default + own)
 router.get('/', async (req: AuthRequest, res: Response, next) => {
@@ -34,21 +34,36 @@ router.get('/', async (req: AuthRequest, res: Response, next) => {
   }
 });
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', async (req: AuthRequest, res, next) => {
   try {
-    const report = await getReport(req.params.id);
+    const reportId = req.params.id;
+    if (!reportId) {
+      return res.status(400).json({ message: 'Report id is required' });
+    }
+    const report = await getReport(reportId);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
-    res.json(report);
+    if (req.user?.role === 'admin') {
+      res.json(report);
+      return;
+    }
+    res.json({
+      ...report,
+      outline: null
+    });
   } catch (error) {
     next(error);
   }
 });
 
-router.post('/:id/send', async (req, res, next) => {
+router.post('/:id/send', adminOnly, async (req, res, next) => {
   try {
-    const report = await getReport(req.params.id);
+    const reportId = req.params.id;
+    if (!reportId) {
+      return res.status(400).json({ message: 'Report id is required' });
+    }
+    const report = await getReport(reportId);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
@@ -59,9 +74,13 @@ router.post('/:id/send', async (req, res, next) => {
   }
 });
 
-router.post('/:id/send-high-score', async (req, res, next) => {
+router.post('/:id/send-high-score', adminOnly, async (req, res, next) => {
   try {
-    const report = await getReport(req.params.id);
+    const reportId = req.params.id;
+    if (!reportId) {
+      return res.status(400).json({ message: 'Report id is required' });
+    }
+    const report = await getReport(reportId);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
@@ -77,9 +96,13 @@ router.post('/:id/send-high-score', async (req, res, next) => {
   }
 });
 
-router.post('/:id/publish', async (req, res, next) => {
+router.post('/:id/publish', adminOnly, async (req, res, next) => {
   try {
-    const report = await getReport(req.params.id);
+    const reportId = req.params.id;
+    if (!reportId) {
+      return res.status(400).json({ message: 'Report id is required' });
+    }
+    const report = await getReport(reportId);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
@@ -94,7 +117,7 @@ router.post('/:id/publish', async (req, res, next) => {
   }
 });
 
-router.post('/:id/social', async (req, res, next) => {
+router.post('/:id/social', adminOnly, async (req, res, next) => {
   try {
     const body = z
       .object({
@@ -105,7 +128,11 @@ router.post('/:id/social', async (req, res, next) => {
         provider: z.enum(['deepseek', 'dashscope', 'auto']).optional()
       })
       .parse(req.body ?? {});
-    const report = await getReport(req.params.id);
+    const reportId = req.params.id;
+    if (!reportId) {
+      return res.status(400).json({ message: 'Report id is required' });
+    }
+    const report = await getReport(reportId);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }
@@ -145,7 +172,7 @@ router.post('/:id/social', async (req, res, next) => {
   }
 });
 
-router.post('/:id/social-image-prompt', async (req, res, next) => {
+router.post('/:id/social-image-prompt', adminOnly, async (req, res, next) => {
   try {
     const body = z
       .object({
@@ -155,7 +182,11 @@ router.post('/:id/social-image-prompt', async (req, res, next) => {
         digest: z.string().trim().min(1)
       })
       .parse(req.body ?? {});
-    const report = await getReport(req.params.id);
+    const reportId = req.params.id;
+    if (!reportId) {
+      return res.status(400).json({ message: 'Report id is required' });
+    }
+    const report = await getReport(reportId);
     if (!report) {
       return res.status(404).json({ message: 'Report not found' });
     }

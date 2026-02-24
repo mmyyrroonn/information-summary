@@ -141,7 +141,7 @@ function tweetLink(id: string) {
   return `https://x.com/i/web/status/${id}`;
 }
 
-export function DashboardPage() {
+export function DashboardPage({ isAdmin }: { isAdmin: boolean }) {
   const [reports, setReports] = useState<ReportSummary[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -600,45 +600,49 @@ export function DashboardPage() {
                   <p className="meta">
                     {new Date(report.periodStart).toLocaleDateString()} - {new Date(report.periodEnd).toLocaleDateString()}
                   </p>
-                  <div className="report-actions">
-                    <button
-                      className="ghost"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSendReport(report.id);
-                      }}
-                      disabled={busy === `send-${report.id}`}
-                    >
-                      推送TG
-                    </button>
-                    <button
-                      className="ghost"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSendHighScoreReport(report.id);
-                      }}
-                      disabled={busy === `send-high-${report.id}`}
-                    >
-                      推送高分
-                    </button>
-                    <button
-                      className="ghost"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePublishReport(report.id);
-                      }}
-                      disabled={busy === `publish-${report.id}`}
-                    >
-                      推送 GitHub
-                    </button>
-                  </div>
-                  <div className="report-status">
-                    <span>Telegram: {report.deliveredAt ? '已推送' : '未推送'}</span>
-                    <span>GitHub: {report.publishedAt ? '已发布' : '未发布'}</span>
-                  </div>
+                  {isAdmin ? (
+                    <>
+                      <div className="report-actions">
+                        <button
+                          className="ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSendReport(report.id);
+                          }}
+                          disabled={busy === `send-${report.id}`}
+                        >
+                          推送TG
+                        </button>
+                        <button
+                          className="ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSendHighScoreReport(report.id);
+                          }}
+                          disabled={busy === `send-high-${report.id}`}
+                        >
+                          推送高分
+                        </button>
+                        <button
+                          className="ghost"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePublishReport(report.id);
+                          }}
+                          disabled={busy === `publish-${report.id}`}
+                        >
+                          推送 GitHub
+                        </button>
+                      </div>
+                      <div className="report-status">
+                        <span>Telegram: {report.deliveredAt ? '已推送' : '未推送'}</span>
+                        <span>GitHub: {report.publishedAt ? '已发布' : '未发布'}</span>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -652,7 +656,7 @@ export function DashboardPage() {
                 ) : (
                   <p className="empty">报告内容为空</p>
                 )}
-                {clusteredOutline ? (
+                {isAdmin && clusteredOutline ? (
                   <details className="cluster-debug">
                     <summary>
                       聚类明细（展示 {clusteredOutline.shownClusters} / 总计 {clusteredOutline.totalClusters}，候选{' '}
@@ -703,7 +707,7 @@ export function DashboardPage() {
             ) : (
               <p className="empty">选择左侧的日报查看详情</p>
             )}
-            {selectedReport ? (
+            {isAdmin && selectedReport ? (
               <>
               <div className="social-digest">
                 <div className="social-digest-head">

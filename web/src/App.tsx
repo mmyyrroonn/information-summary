@@ -15,6 +15,7 @@ type TabKey = 'dashboard' | 'tweets' | 'analytics' | 'routing-analytics' | 'subs
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     const auth = getStoredAuth();
@@ -24,14 +25,20 @@ function App() {
   function handleLogout() {
     clearAuth();
     setUser(null);
+    setShowLogin(false);
+    setActiveTab('dashboard');
   }
 
-  // Show login if not authenticated
-  if (!user) {
-    return <LoginPage onLogin={setUser} />;
+  function handleLogin(nextUser: AuthUser) {
+    setUser(nextUser);
+    setShowLogin(false);
   }
 
-  const isAdmin = user.role === 'admin';
+  if (showLogin) {
+    return <LoginPage onLogin={handleLogin} onCancel={() => setShowLogin(false)} />;
+  }
+
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="app-shell">
@@ -40,8 +47,17 @@ function App() {
           <p className="eyebrow">自动信息雷达</p>
           <h1>Twitter 日报控制台</h1>
           <p className="hint">
-            登录为 {user.username} ({user.role})
-            <button onClick={handleLogout} className="logout-btn">退出</button>
+            {user ? (
+              <>
+                登录为 {user.username} ({user.role})
+                <button onClick={handleLogout} className="logout-btn">退出</button>
+              </>
+            ) : (
+              <>
+                游客模式（仅可浏览日报和推文）
+                <button onClick={() => setShowLogin(true)} className="logout-btn">管理员登录</button>
+              </>
+            )}
           </p>
         </div>
         <nav className="nav-tabs">
@@ -51,11 +67,11 @@ function App() {
           <button className={activeTab === 'tweets' ? 'active' : ''} onClick={() => setActiveTab('tweets')}>
             推文浏览
           </button>
-          <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
-            数据分析
-          </button>
           {isAdmin && (
             <>
+              <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
+                数据分析
+              </button>
               <button
                 className={activeTab === 'routing-analytics' ? 'active' : ''}
                 onClick={() => setActiveTab('routing-analytics')}
@@ -79,13 +95,13 @@ function App() {
         </nav>
       </header>
 
-      {activeTab === 'dashboard' && <DashboardPage />}
-      {activeTab === 'tweets' && <TweetsPage />}
-      {activeTab === 'analytics' && <AnalyticsPage />}
-      {activeTab === 'routing-analytics' && <RoutingAnalyticsPage />}
-      {activeTab === 'subscriptions' && <SubscriptionsPage />}
-      {activeTab === 'embedding-cache' && <EmbeddingCachePage />}
-      {activeTab === 'dev' && <DevJobsPage />}
+      {activeTab === 'dashboard' && <DashboardPage isAdmin={isAdmin} />}
+      {activeTab === 'tweets' && <TweetsPage isAdmin={isAdmin} />}
+      {isAdmin && activeTab === 'analytics' && <AnalyticsPage />}
+      {isAdmin && activeTab === 'routing-analytics' && <RoutingAnalyticsPage />}
+      {isAdmin && activeTab === 'subscriptions' && <SubscriptionsPage />}
+      {isAdmin && activeTab === 'embedding-cache' && <EmbeddingCachePage />}
+      {isAdmin && activeTab === 'dev' && <DevJobsPage />}
     </div>
   );
 }

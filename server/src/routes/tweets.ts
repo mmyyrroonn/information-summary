@@ -4,13 +4,13 @@ import { listTweets } from '../services/tweetService';
 import { classifyTweetsByIds } from '../services/aiService';
 import { getTweetStats } from '../services/tweetStatsService';
 import { getTweetRoutingStats } from '../services/tweetRoutingStatsService';
-import { authMiddleware } from '../middleware/auth';
+import { optionalAuthMiddleware, adminOnly } from '../middleware/auth';
 
 const router = Router();
 
-router.use(authMiddleware);
+router.use(optionalAuthMiddleware);
 
-router.get('/stats', async (req, res, next) => {
+router.get('/stats', adminOnly, async (req, res, next) => {
   try {
     const querySchema = z
       .object({
@@ -42,7 +42,7 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
-router.get('/routing-stats', async (req, res, next) => {
+router.get('/routing-stats', adminOnly, async (req, res, next) => {
   try {
     const querySchema = z
       .object({
@@ -137,7 +137,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.post('/analyze', async (req, res, next) => {
+router.post('/analyze', adminOnly, async (req, res, next) => {
   try {
     const bodySchema = z.object({
       tweetIds: z.array(z.string().uuid()).min(1).max(50)
