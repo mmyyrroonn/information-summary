@@ -167,7 +167,7 @@ export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
-  const [includeTotal, setIncludeTotal] = useState(true);
+  const includeTotal = true;
 
   useEffect(() => {
     if (isAdmin) {
@@ -196,8 +196,7 @@ export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
     routingScoreMin,
     routingScoreMax,
     importanceMin,
-    importanceMax,
-    includeTotal
+    importanceMax
   ]);
 
   async function loadSubscriptions() {
@@ -668,11 +667,6 @@ export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
           <span>待分析 {pendingCount} 条</span>
           <span>时间范围：{timeLabel}</span>
           <span>模式：{routingLabel}</span>
-          {total === null ? (
-            <button type="button" className="ghost" onClick={() => setIncludeTotal(true)} disabled={loading}>
-              加载总数
-            </button>
-          ) : null}
           {search.trim() ? <span>关键词：{search.trim()}</span> : null}
           {embeddingQuery.trim() ? <span>Embedding 搜索：{embeddingQuery.trim()}</span> : null}
           {routingTag ? <span>Embedding 标签：{routingTagLabel}</span> : null}
