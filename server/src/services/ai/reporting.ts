@@ -670,6 +670,8 @@ function applyProfileFilters(insights: InsightWithTweet[], profile: ReportProfil
   const excludeAuthorTags = new Set(normalizeFilterTags(profile.excludeAuthorTags));
   const verdicts = normalizeFilterTags(profile.verdicts);
   const allowedVerdicts = verdicts.length ? new Set(verdicts) : null;
+  const domains = normalizeFilterTags(profile.domains);
+  const allowedDomains = domains.length ? new Set(domains) : null;
 
   const filtered = insights.filter((insight) => {
     if ((insight.importance ?? 0) < minImportance) {
@@ -678,6 +680,12 @@ function applyProfileFilters(insights: InsightWithTweet[], profile: ReportProfil
     const verdict = insight.verdict?.toLowerCase();
     if (allowedVerdicts && (!verdict || !allowedVerdicts.has(verdict))) {
       return false;
+    }
+    if (allowedDomains) {
+      const insightDomain = (insight.domain ?? '').trim().toLowerCase();
+      if (!insightDomain || !allowedDomains.has(insightDomain)) {
+        return false;
+      }
     }
     const tweetTags = normalizeFilterTags(insight.tags ?? []);
     if (includeTweetTags.size && !hasOverlap(tweetTags, includeTweetTags)) {

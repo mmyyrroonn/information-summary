@@ -65,6 +65,7 @@ const MOCK_TWEETS: Tweet[] = [
     routingTag: null,
     routingScore: null,
     routingMargin: null,
+    routingDomain: null,
     routingReason: null,
     routedAt: null,
     llmQueuedAt: null
@@ -88,6 +89,7 @@ const MOCK_TWEETS: Tweet[] = [
     routingTag: null,
     routingScore: null,
     routingMargin: null,
+    routingDomain: null,
     routingReason: null,
     routedAt: null,
     llmQueuedAt: null
@@ -111,6 +113,7 @@ const MOCK_TWEETS: Tweet[] = [
     routingTag: null,
     routingScore: null,
     routingMargin: null,
+    routingDomain: null,
     routingReason: null,
     routedAt: null,
     llmQueuedAt: null
@@ -134,6 +137,7 @@ const MOCK_TWEETS: Tweet[] = [
     routingTag: null,
     routingScore: null,
     routingMargin: null,
+    routingDomain: null,
     routingReason: null,
     routedAt: null,
     llmQueuedAt: null
@@ -157,6 +161,7 @@ const MOCK_TWEETS: Tweet[] = [
     routingTag: null,
     routingScore: null,
     routingMargin: null,
+    routingDomain: null,
     routingReason: null,
     routedAt: null,
     llmQueuedAt: null

@@ -11,6 +11,8 @@ import { runStructuredCompletion } from './openaiClient';
 import { applyRuleBasedRouting } from './routing';
 import {
   CLASSIFY_ALLOWED_TAGS,
+  Domain,
+  inferDomainFromTags,
   TAG_FALLBACK_KEY,
   delay,
   getErrorMessage,
@@ -115,6 +117,50 @@ const TAG_PROMPT_PROFILES: Record<
     focus: ['叙事/赛道名称', '新进展', '数据/事件支撑', '关键参与方/项目'],
     highValue: ['有新事件/数据支撑', '参与方/项目明确'],
     lowValue: ['热度/情绪', '无事件无数据']
+  },
+  // ── AI 领域 ──
+  'model-release': {
+    task: 'AI 模型发布/更新事件分类。',
+    focus: ['模型名称/版本', 'benchmark/评测结果', '开源/闭源', '可用时间/渠道', '技术架构亮点'],
+    highValue: ['重大模型发布+benchmark', '开源+评测', '可用时间明确'],
+    lowValue: ['无评测的泛泛宣传', '纯参数对比无实测', '旧模型复述']
+  },
+  'ai-product': {
+    task: 'AI 产品/工具发布分类。',
+    focus: ['产品名称/功能', '定价/免费/付费', '可用性/上线时间', '技术基础/底层模型', '目标用户'],
+    highValue: ['产品上线+定价明确', '功能突破+可试用', '重大更新+用户影响'],
+    lowValue: ['无功能细节的概念宣传', '纯截图无结论']
+  },
+  'ai-company': {
+    task: 'AI 公司动态分类。',
+    focus: ['公司名称', '事件类型(融资/并购/人事/战略)', '金额/估值', '战略影响'],
+    highValue: ['>$50M融资/并购', '关键人事变动', '重大战略转向', '估值/金额明确'],
+    lowValue: ['无金额传闻', '泛泛行业评论']
+  },
+  // ── 传统金融领域 ──
+  equities: {
+    task: '股票/权益市场事件分类。',
+    focus: ['公司/指数名称', '财报数据(EPS/营收)', '估值/催化事件', '行业影响'],
+    highValue: ['重大财报beat/miss', '重要并购/IPO', '机构评级变动', '数据明确'],
+    lowValue: ['无数据的涨跌点评', '纯价格播报', '情绪喊单']
+  },
+  bonds: {
+    task: '债券/固收市场事件分类。',
+    focus: ['品种/期限', '收益率/利差', '信用等级', '政策影响', '供需变化'],
+    highValue: ['收益率曲线重大变化', '信用评级调整', '央行操作/政策', '数据明确'],
+    lowValue: ['无数据利率猜测', '泛泛固收评论']
+  },
+  commodities: {
+    task: '大宗商品事件分类。',
+    focus: ['品种(原油/黄金/铜等)', '价格/库存数据', '供需因素', '地缘政治影响'],
+    highValue: ['库存数据发布', '产量/减产决定', '地缘冲突影响供给', '价格与数据明确'],
+    lowValue: ['无数据价格猜测', '纯情绪解读']
+  },
+  forex: {
+    task: '外汇市场事件分类。',
+    focus: ['货币对', '汇率/波动', '央行政策/干预', '利差变化'],
+    highValue: ['央行利率决议', '官方干预', '利差结构变化', '数据明确'],
+    lowValue: ['无数据的汇率预测', '泛泛货币评论']
   }
 };
 
@@ -123,6 +169,7 @@ interface TweetInsightPayload {
   verdict: 'ignore' | 'watch' | 'actionable';
   summary?: string;
   importance?: number;
+  domain?: string;
   tags?: string[];
   suggestions?: string;
 }
@@ -160,6 +207,7 @@ type RoutingRecord = {
   tweet: Tweet;
   status: RoutingStatus;
   tag?: string | null;
+  domain?: string | null;
   score?: number;
   margin?: number;
   reason: string;
@@ -398,6 +446,7 @@ async function persistRoutingRecords(records: RoutingRecord[], routedAt: Date) {
     const data: Parameters<typeof prisma.tweet.update>[0]['data'] = {
       routingStatus: record.status,
       routingTag: record.tag ?? null,
+      routingDomain: record.domain ?? null,
       routingScore: record.score ?? null,
       routingMargin: record.margin ?? null,
       routingReason: record.reason,
@@ -438,6 +487,7 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
     routingRecords.push({
       tweet: entry.tweet,
       status: RoutingStatus.IGNORED,
+      domain: ruleResult.domainHints.get(entry.tweet.id) ?? null,
       reason: entry.reason
     });
   });
@@ -445,6 +495,7 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
     const record: RoutingRecord = {
       tweet,
       status: RoutingStatus.ROUTED,
+      domain: ruleResult.domainHints.get(tweet.id) ?? null,
       reason: 'rule-keep'
     };
     routingRecords.push(record);
@@ -616,6 +667,7 @@ async function runLlmClassificationBatches(
             verdict: insight.verdict,
             summary: insight.summary ?? null,
             importance: insight.importance ?? null,
+            domain: insight.domain ?? null,
             tags: insight.tags ?? [],
             suggestions: insight.suggestions ?? null,
             aiRunId: aiRun.id
@@ -625,6 +677,7 @@ async function runLlmClassificationBatches(
             verdict: insight.verdict,
             summary: insight.summary ?? null,
             importance: insight.importance ?? null,
+            domain: insight.domain ?? null,
             tags: insight.tags ?? [],
             suggestions: insight.suggestions ?? null,
             aiRunId: aiRun.id
@@ -776,7 +829,9 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
       '空投开始/快照提醒(无门槛/步骤/时间/规则)',
       '巨鲸转账(无标签/无净流入结论/无txhash/无明确风险)',
       '恐慌贪婪指数',
-      '爆仓金额(不带关键价位/结构变化/催化)'
+      '爆仓金额(不带关键价位/结构变化/催化)',
+      'AI营销软文(无产品细节/无benchmark/无可用时间)',
+      '股价涨跌播报(无财报/无催化事件)'
     ].join('；');
     const highValueWhitelist = [
       '监管政策/ETF/合规/制裁/税务/稳定币监管框架',
@@ -784,7 +839,9 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
       '顶级机构动态(贝莱德/灰度/主流券商/大型交易所/银行/支付巨头)',
       '安全事件(漏洞/被盗/暂停/补丁/紧急升级)',
       '宏观数据与利率路径(美联储/CPI/PCE/就业/流动性)',
-      '可验证链上数据(TVL/净流入/发行量/解锁/地址标签/Txhash)必须带数字'
+      '可验证链上数据(TVL/净流入/发行量/解锁/地址标签/Txhash)必须带数字',
+      '重大AI模型发布+benchmark/开源+评测/AI公司>$50M融资并购',
+      '央行利率决议/重大财报beat或miss/信用评级变动/关键经济数据'
     ].join('；');
     const yieldPriority = [
       'DeFi/理财收益优先：只有在原文包含明确数字(APY/APR/资金费率/借贷利率/期限/门槛)才保留；',
@@ -792,9 +849,9 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
       '只有情绪描述无数字=>降档或ignore。'
     ].join('');
     const outputSchema =
-      '{"items":[{"tweetId":"id","verdict":"ignore|watch|actionable","summary":"<=50字，必须含项目/主体名 + 数字/时间/动作之一","importance":1-5,"tags":["macro|policy|security|funding|yield|token|airdrop|trading|onchain|tech|exchange|narrative|other"],"keyData":[{"k":"指标/数字/价位/金额/期限/链/地址/txhash","v":"原文中的值(带单位)"}],"impact":{"direction":"利好|利空|中性|不确定","horizon":"立即|1-7天|更久","reason":"<=60字，因果要具体"},"tradePlan":{"entry":"可选","stop":"可选","target":"可选","setup":"可选(<=60字)","risks":"可选(<=60字)"},"suggestions":"可选：明确可执行动作（如果 actionable 则必填）"}]}';
+      '{"items":[{"tweetId":"id","verdict":"ignore|watch|actionable","summary":"<=50字，必须含项目/主体名 + 数字/时间/动作之一","importance":1-5,"domain":"crypto|ai|finance|null","tags":["macro|policy|security|funding|yield|token|airdrop|trading|onchain|tech|exchange|narrative|model-release|ai-product|ai-company|equities|bonds|commodities|forex|other"],"keyData":[{"k":"指标/数字/价位/金额/期限/链/地址/txhash","v":"原文中的值(带单位)"}],"impact":{"direction":"利好|利空|中性|不确定","horizon":"立即|1-7天|更久","reason":"<=60字，因果要具体"},"tradePlan":{"entry":"可选","stop":"可选","target":"可选","setup":"可选(<=60字)","risks":"可选(<=60字)"},"suggestions":"可选：明确可执行动作（如果 actionable 则必填）"}]}';
     const template = {
-      goal: '逐条评估推文情报价值并输出结构化洞察（中文），用于后续日报汇总；强过滤低价值噪音，只保留可验证/可行动信息。',
+      goal: '逐条评估推文情报价值并输出结构化洞察（中文），用于后续日报汇总；强过滤低价值噪音，只保留可验证/可行动信息。涵盖加密货币(crypto)、人工智能(ai)、传统金融(finance)三大领域。',
       constraints: [
         '只允许输出一个 JSON 对象，禁止任何额外文字/Markdown/代码块。',
         '必须覆盖所有输入 tweetId：items 长度必须等于输入条数，且每个 tweetId 恰好出现一次。',
@@ -809,6 +866,8 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
         yieldPriority,
         '去重：如果只是复述旧闻且无新增数字/进展/来源=>importance<=2 且 ignore。',
         '任何“传闻/可能/听说”且无来源=>最多 watch 且 importance<=3。',
+        'domain 字段：crypto(加密货币/区块链/DeFi)、ai(人工智能/大模型/AI公司)、finance(股票/债券/大宗商品/外汇/宏观经济)；跨领域或无法判断填 null。',
+        'domain 与 tags 一致性：crypto 领域专属 tags(yield/token/airdrop/onchain/exchange)只能搭配 domain=crypto；ai 领域专属(model-release/ai-product/ai-company)搭配 domain=ai；finance 专属(equities/bonds/commodities/forex)搭配 domain=finance；通用 tags(macro/policy/security/funding/tech/trading/narrative)可搭配任何 domain。',
         `tags 只能来自 allowedTags；若无法归类，请使用 ${TAG_FALLBACK_KEY}。`,
         '涉及融资/估值/回购/解锁/激励规模等资金事件：tags 应包含 funding/token/airdrop 中最贴切者。',
         '涉及央行/监管/合规：tags 必须包含 policy。',
@@ -920,6 +979,7 @@ function normalizeSingleInsight(item: TweetInsightPayload, tweet: Tweet): TweetI
   const tags = normalizeTags(item.tags);
   const importance = normalizeImportance(item.importance);
   const suggestions = normalizeSuggestions(item.suggestions);
+  const domain = normalizeDomain(item.domain, tags);
 
   const normalized: TweetInsightPayload = {
     tweetId: tweet.tweetId,
@@ -928,6 +988,9 @@ function normalizeSingleInsight(item: TweetInsightPayload, tweet: Tweet): TweetI
   };
   if (importance !== undefined) {
     normalized.importance = importance;
+  }
+  if (domain) {
+    normalized.domain = domain;
   }
   normalized.tags = tags.length ? tags : [TAG_FALLBACK_KEY];
   if (suggestions !== undefined) {
@@ -994,4 +1057,18 @@ function normalizeSuggestions(suggestions: string | undefined) {
   const text = suggestions.replace(/\s+/g, ' ').trim();
   if (!text) return undefined;
   return truncateText(text, 180);
+}
+
+const VALID_DOMAINS = new Set<string>(['crypto', 'ai', 'finance']);
+
+function normalizeDomain(domain: string | undefined, tags: string[]): string | undefined {
+  if (typeof domain === 'string') {
+    const normalized = domain.trim().toLowerCase();
+    if (VALID_DOMAINS.has(normalized)) {
+      return normalized;
+    }
+  }
+  // fallback: infer from tags
+  const inferred = inferDomainFromTags(tags);
+  return inferred ?? undefined;
 }

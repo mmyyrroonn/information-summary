@@ -1,18 +1,34 @@
 export const TAG_FALLBACK_KEY = 'other';
 
-export const CLASSIFY_ALLOWED_TAGS = [
+// ── Domain + Tag 两级体系 ──────────────────────────────────────
+export const DOMAINS = ['crypto', 'ai', 'finance'] as const;
+export type Domain = (typeof DOMAINS)[number];
+
+/** 跨领域通用 tag */
+export const SHARED_TAGS = [
   'macro',
   'policy',
   'security',
   'funding',
-  'yield',
-  'token',
-  'airdrop',
-  'trading',
-  'onchain',
   'tech',
-  'exchange',
+  'trading',
   'narrative',
+  TAG_FALLBACK_KEY
+] as const;
+
+/** 按领域分组的专属 tag */
+export const DOMAIN_SPECIFIC_TAGS: Record<Domain, readonly string[]> = {
+  crypto: ['yield', 'token', 'airdrop', 'onchain', 'exchange'],
+  ai: ['model-release', 'ai-product', 'ai-company'],
+  finance: ['equities', 'bonds', 'commodities', 'forex']
+} as const;
+
+/** 全量平铺 tag 列表（向后兼容） */
+export const CLASSIFY_ALLOWED_TAGS = [
+  ...SHARED_TAGS.filter((t) => t !== TAG_FALLBACK_KEY),
+  ...DOMAIN_SPECIFIC_TAGS.crypto,
+  ...DOMAIN_SPECIFIC_TAGS.ai,
+  ...DOMAIN_SPECIFIC_TAGS.finance,
   TAG_FALLBACK_KEY
 ] as const;
 
@@ -25,20 +41,66 @@ export function normalizeTagAlias(tag: string) {
   return TAG_ALIASES[tag] ?? tag;
 }
 
+/** 获取某个领域可用的 tag 列表（专属 + 通用） */
+export function getTagsForDomain(domain: Domain): string[] {
+  const specific = DOMAIN_SPECIFIC_TAGS[domain] ?? [];
+  return [...specific, ...SHARED_TAGS];
+}
+
+/** 根据 tag 列表推断最可能的领域 */
+export function inferDomainFromTags(tags: string[]): Domain | null {
+  if (!tags.length) return null;
+  const scores: Record<Domain, number> = { crypto: 0, ai: 0, finance: 0 };
+  for (const tag of tags) {
+    for (const domain of DOMAINS) {
+      if ((DOMAIN_SPECIFIC_TAGS[domain] as readonly string[]).includes(tag)) {
+        scores[domain] += 1;
+      }
+    }
+  }
+  let best: Domain | null = null;
+  let bestScore = 0;
+  for (const domain of DOMAINS) {
+    if (scores[domain] > bestScore) {
+      bestScore = scores[domain];
+      best = domain;
+    }
+  }
+  return best;
+}
+
+export const DOMAIN_DISPLAY_NAMES: Record<Domain, string> = {
+  crypto: '加密货币',
+  ai: '人工智能',
+  finance: '传统金融'
+};
+
 export const TAG_DISPLAY_NAMES: Record<string, string> = {
+  // 通用
   policy: '政策 / 合规',
   macro: '宏观 / 行情',
   security: '安全 / 风险',
   funding: '融资 / 资金',
+  tech: '技术 / 升级',
+  trading: '交易机会',
+  narrative: '叙事 / 主题',
+  [TAG_FALLBACK_KEY]: '其他',
+  // crypto 专属
   yield: '收益 / 理财',
   token: '代币 / 市场',
   airdrop: '空投 / 福利',
-  trading: '交易机会',
   onchain: '链上数据',
-  tech: '技术 / 升级',
   exchange: '交易所 / 平台',
-  narrative: '叙事 / 主题',
-  [TAG_FALLBACK_KEY]: '其他',
+  // ai 专属
+  'model-release': 'AI 模型发布',
+  'ai-product': 'AI 产品/工具',
+  'ai-company': 'AI 公司动态',
+  // finance 专属
+  equities: '股票 / 权益',
+  bonds: '债券 / 固收',
+  commodities: '大宗商品',
+  forex: '外汇',
+  // legacy aliases
   others: '其他',
   defi: 'DeFi',
   infrastructure: '基础设施',

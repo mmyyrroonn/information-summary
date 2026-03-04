@@ -1,16 +1,35 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db';
-import { CLASSIFY_ALLOWED_TAGS, TAG_DISPLAY_NAMES, TAG_FALLBACK_KEY } from '../services/ai/shared';
+import {
+  CLASSIFY_ALLOWED_TAGS,
+  DOMAIN_DISPLAY_NAMES,
+  DOMAIN_SPECIFIC_TAGS,
+  DOMAINS,
+  SHARED_TAGS,
+  TAG_DISPLAY_NAMES,
+  TAG_FALLBACK_KEY
+} from '../services/ai/shared';
 
 const router = Router();
 
 router.get('/routing', (_req, res) => {
-  const tags = CLASSIFY_ALLOWED_TAGS.filter((tag) => tag !== TAG_FALLBACK_KEY).map((tag) => ({
-    tag,
-    label: TAG_DISPLAY_NAMES[tag] ?? tag
-  }));
-  res.json({ tags });
+  const tags = CLASSIFY_ALLOWED_TAGS.filter((tag) => tag !== TAG_FALLBACK_KEY).map((tag) => {
+    let domain: string | null = null;
+    for (const d of DOMAINS) {
+      if ((DOMAIN_SPECIFIC_TAGS[d] as readonly string[]).includes(tag)) {
+        domain = d;
+        break;
+      }
+    }
+    return {
+      tag,
+      label: TAG_DISPLAY_NAMES[tag] ?? tag,
+      domain
+    };
+  });
+  const domains = DOMAINS.map((d) => ({ domain: d, label: DOMAIN_DISPLAY_NAMES[d] }));
+  res.json({ tags, domains });
 });
 
 router.get('/', async (req, res, next) => {

@@ -64,7 +64,8 @@ export interface RoutingEmbeddingTagMetric {
 }
 
 export interface RoutingTagListResponse {
-  tags: Array<{ tag: string; label: string }>;
+  tags: Array<{ tag: string; label: string; domain: string | null }>;
+  domains: Array<{ domain: string; label: string }>;
 }
 
 export type RoutingCategory = 'embedding-high' | 'embedding-low' | 'llm' | 'ignored-other' | 'pending';
@@ -224,6 +225,7 @@ export interface ReportProfile {
   excludeTweetTags: string[];
   includeAuthorTags: string[];
   excludeAuthorTags: string[];
+  domains: string[];
   minImportance: number;
   verdicts: string[];
   groupBy: ReportProfileGroupBy;
@@ -238,6 +240,7 @@ export interface TweetInsight {
   verdict: string;
   summary?: string | null;
   importance?: number | null;
+  domain?: string | null;
   tags?: string[] | null;
   suggestions?: string | null;
   createdAt: string;

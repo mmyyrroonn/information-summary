@@ -94,6 +94,7 @@ model Tweet {
   abandonReason  String?
   routingStatus  RoutingStatus @default(PENDING)
   routingTag     String?
+  routingDomain  String?
   routingScore   Float?
   routingMargin  Float?
   routingReason  String?
@@ -113,6 +114,7 @@ model TweetInsight {
   verdict     String
   summary     String?
   importance  Int?
+  domain      String?
   tags        String[]
   suggestions String?
   embedding           Float[] @default([])
@@ -216,6 +218,7 @@ model ReportProfile {
   excludeTweetTags       String[] @default([])
   includeAuthorTags      String[] @default([])
   excludeAuthorTags      String[] @default([])
+  domains                String[] @default([])
   minImportance          Int      @default(2)
   verdicts               String[] @default([])
   groupBy                String   @default("cluster")

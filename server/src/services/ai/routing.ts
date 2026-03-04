@@ -6,6 +6,8 @@ import { chunk } from '../../utils/chunk';
 import { createEmbeddings, embeddingsEnabled, hashEmbeddingText } from '../embeddingService';
 import {
   CLASSIFY_ALLOWED_TAGS,
+  Domain,
+  DOMAINS,
   HIGH_PRIORITY_IMPORTANCE,
   TAG_FALLBACK_KEY,
   normalizeTagAlias
@@ -37,83 +39,85 @@ const RULE_MED_LEN = 120;
 const RULE_LONG_MIN_NUMBER_TOKENS = 3;
 const RULE_TICKER_MIN_NUMBER_TOKENS = 2;
 const RULE_LOW_VALUE_LANGS = new Set(['zxx', 'und', 'qme', 'qst', 'qam', 'qct', 'qht']);
-const RULE_HIGH_SIGNAL_KEYWORDS = [
-  'sec',
-  'cftc',
-  'fomc',
-  'cpi',
-  'pce',
-  'etf',
-  'blackrock',
-  'grayscale',
-  'announce',
-  'announced',
-  'launch',
-  'launched',
-  'release',
-  'released',
-  'partnership',
-  'partner',
-  'merge',
-  'merger',
-  'acquire',
-  'acquires',
-  'acquisition',
-  'proposal',
-  'vote',
-  'approval',
-  'rejection',
-  'listing',
-  'delist',
-  'upgrade',
-  'update',
-  'patch',
-  '监管',
-  '合规',
-  '加息',
-  '降息',
-  '利率',
-  '稳定币',
-  'hack',
-  'exploit',
-  '漏洞',
-  '攻击',
-  '被盗',
-  '暂停',
-  '修复',
-  '融资',
-  'funding',
-  'round',
-  'series',
-  '估值',
-  '并购',
-  '回购',
-  'buyback',
-  '解锁',
-  'unlock',
-  '销毁',
-  'burn',
-  '主网',
-  'mainnet',
-  '升级',
-  'hard fork',
-  'testnet',
-  '宣布',
-  '发布',
-  '上线',
-  '下线',
-  '合作',
-  '伙伴',
-  '合并',
-  '提案',
-  '投票',
-  '通过',
-  '否决',
-  '下架',
-  '更新',
-  '修补'
+// ── 按领域分组的高信号关键词 ──────────────────────────────────
+const DOMAIN_KEYWORDS: Record<Domain, string[]> = {
+  crypto: [
+    'etf', 'blackrock', 'grayscale', '稳定币',
+    'hack', 'exploit', '漏洞', '攻击', '被盗', '暂停', '修复',
+    '回购', 'buyback', '解锁', 'unlock', '销毁', 'burn',
+    '主网', 'mainnet', 'hard fork', 'testnet',
+    '上线', '下线', '下架', 'listing', 'delist',
+    'airdrop', '空投', 'defi', 'tvl', 'nft'
+  ],
+  ai: [
+    'gpt', 'claude', 'gemini', 'llama', 'mistral', 'deepseek',
+    'openai', 'anthropic', 'nvidia', 'gpu', 'h100', 'a100', 'tpu',
+    '大模型', '算力', 'ai模型', 'llm', 'agi',
+    'transformer', 'diffusion', 'rlhf', 'fine-tune', 'finetune',
+    'hugging face', 'huggingface', 'replicate',
+    '开源模型', '闭源模型', 'benchmark', 'chatbot',
+    'copilot', 'midjourney', 'stable diffusion', 'sora',
+    'ai芯片', '智算', '推理', '训练'
+  ],
+  finance: [
+    's&p', 'nasdaq', 'dow jones', 'dow', 'treasury', 'yield curve',
+    'earnings', 'gdp', 'nonfarm', 'payroll', 'unemployment',
+    '美股', '国债', '大宗', '原油', '黄金', 'crude oil', 'gold',
+    'forex', '外汇', '汇率', '美元指数', 'dxy',
+    '财报', 'eps', 'revenue beat', 'revenue miss',
+    'ipo', '熔断', '做空', '做多', '期货', '期权',
+    'fed fund', 'fomc minute', '央行', '欧央行', 'ecb', 'boj',
+    '信用评级', 'moody', 'fitch'
+  ]
+};
+
+/** 跨领域通用高信号关键词 */
+const SHARED_HIGH_SIGNAL_KEYWORDS = [
+  'sec', 'cftc', 'fomc', 'cpi', 'pce',
+  'announce', 'announced', 'launch', 'launched',
+  'release', 'released', 'partnership', 'partner',
+  'merge', 'merger', 'acquire', 'acquires', 'acquisition',
+  'proposal', 'vote', 'approval', 'rejection',
+  'upgrade', 'update', 'patch',
+  '监管', '合规', '加息', '降息', '利率',
+  '融资', 'funding', 'round', 'series', '估值', '并购',
+  '升级', '宣布', '发布', '合作', '伙伴', '合并',
+  '提案', '投票', '通过', '否决', '更新', '修补'
 ];
-const RULE_HIGH_SIGNAL_NEEDLES = RULE_HIGH_SIGNAL_KEYWORDS.map((keyword) => keyword.toLowerCase());
+
+const ALL_HIGH_SIGNAL_KEYWORDS = [
+  ...SHARED_HIGH_SIGNAL_KEYWORDS,
+  ...Object.values(DOMAIN_KEYWORDS).flat()
+];
+const RULE_HIGH_SIGNAL_NEEDLES = ALL_HIGH_SIGNAL_KEYWORDS.map((keyword) => keyword.toLowerCase());
+
+const DOMAIN_KEYWORD_NEEDLES: Record<Domain, string[]> = {
+  crypto: DOMAIN_KEYWORDS.crypto.map((k) => k.toLowerCase()),
+  ai: DOMAIN_KEYWORDS.ai.map((k) => k.toLowerCase()),
+  finance: DOMAIN_KEYWORDS.finance.map((k) => k.toLowerCase())
+};
+
+/** 从文本中检测最可能的领域 */
+export function detectDomainFromText(text: string): Domain | null {
+  const lower = text.toLowerCase();
+  const scores: Record<Domain, number> = { crypto: 0, ai: 0, finance: 0 };
+  for (const domain of DOMAINS) {
+    for (const needle of DOMAIN_KEYWORD_NEEDLES[domain]) {
+      if (lower.includes(needle)) {
+        scores[domain] += 1;
+      }
+    }
+  }
+  let best: Domain | null = null;
+  let bestScore = 0;
+  for (const domain of DOMAINS) {
+    if (scores[domain] > bestScore) {
+      bestScore = scores[domain];
+      best = domain;
+    }
+  }
+  return best;
+}
 const ROUTE_SAMPLE_POOL_MULTIPLIER = 4;
 const ROUTE_SAMPLE_POOL_MAX = 5000;
 
@@ -1231,6 +1235,7 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
 export function applyRuleBasedRouting(tweets: Tweet[]) {
   const analyze: Tweet[] = [];
   const ignored: Array<{ tweet: Tweet; reason: string }> = [];
+  const domainHints = new Map<string, Domain | null>();
   const reasonCounts = new Map<string, number>();
 
   const bumpReason = (reason: string) => {
@@ -1247,6 +1252,10 @@ export function applyRuleBasedRouting(tweets: Tweet[]) {
     const timeUnit = hasTimeUnit(cleaned);
     const ticker = hasTicker(cleaned);
     const lowLang = RULE_LOW_VALUE_LANGS.has((tweet.lang ?? '').trim().toLowerCase());
+
+    // 检测领域
+    const domainHint = detectDomainFromText(cleaned);
+    domainHints.set(tweet.id, domainHint);
 
     const shouldAnalyze =
       highSignal ||
@@ -1281,6 +1290,7 @@ export function applyRuleBasedRouting(tweets: Tweet[]) {
   return {
     analyze,
     ignored,
+    domainHints,
     reasonCounts
   };
 }

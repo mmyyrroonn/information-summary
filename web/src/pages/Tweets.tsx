@@ -18,19 +18,36 @@ function formatVerdict(value?: string | null) {
 }
 
 const TAG_LABELS: Record<string, string> = {
+  // 通用
   policy: '政策 / 合规',
   macro: '宏观 / 行情',
   security: '安全 / 风险',
   funding: '融资 / 资金',
+  tech: '技术 / 升级',
+  trading: '交易机会',
+  narrative: '叙事 / 主题',
+  other: '其他',
+  // crypto
   yield: '收益 / 理财',
   token: '代币 / 市场',
   airdrop: '空投 / 福利',
-  trading: '交易机会',
   onchain: '链上数据',
-  tech: '技术 / 升级',
   exchange: '交易所 / 平台',
-  narrative: '叙事 / 主题',
-  other: '其他'
+  // ai
+  'model-release': 'AI 模型发布',
+  'ai-product': 'AI 产品/工具',
+  'ai-company': 'AI 公司动态',
+  // finance
+  equities: '股票 / 权益',
+  bonds: '债券 / 固收',
+  commodities: '大宗商品',
+  forex: '外汇'
+};
+
+const DOMAIN_LABELS: Record<string, string> = {
+  crypto: '加密货币',
+  ai: '人工智能',
+  finance: '传统金融'
 };
 
 const ROUTING_CATEGORY_LABELS: Record<RoutingCategory, string> = {
@@ -126,7 +143,7 @@ function buildRoutingLine(tweet: TweetRecord) {
 
 export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [routingTags, setRoutingTags] = useState<Array<{ tag: string; label: string }>>([]);
+  const [routingTags, setRoutingTags] = useState<Array<{ tag: string; label: string; domain: string | null }>>([]);
   const [tweets, setTweets] = useState<TweetRecord[]>([]);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<'newest' | 'oldest' | 'priority'>('newest');
@@ -150,7 +167,7 @@ export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
-  const [includeTotal, setIncludeTotal] = useState(false);
+  const [includeTotal, setIncludeTotal] = useState(true);
 
   useEffect(() => {
     if (isAdmin) {
@@ -301,7 +318,7 @@ export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
   const routingLabel = routingView === 'ignored' ? '规则过滤' : '默认';
   const routingTagOptions = routingTags.length
     ? routingTags
-    : Object.entries(TAG_LABELS).map(([tag, label]) => ({ tag, label }));
+    : Object.entries(TAG_LABELS).map(([tag, label]) => ({ tag, label, domain: null as string | null }));
   const routingTagLabel = routingTag
     ? routingTagOptions.find((option) => option.tag === routingTag)?.label ?? formatTagLabel(routingTag)
     : '';
@@ -504,11 +521,34 @@ export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
               }}
             >
               <option value="">全部标签</option>
-              {routingTagOptions.map((tag) => (
-                <option key={tag.tag} value={tag.tag}>
-                  {tag.label}
-                </option>
-              ))}
+              {(() => {
+                const shared = routingTagOptions.filter((t) => !t.domain);
+                const grouped = new Map<string, typeof routingTagOptions>();
+                routingTagOptions.forEach((t) => {
+                  if (!t.domain) return;
+                  const list = grouped.get(t.domain) ?? [];
+                  list.push(t);
+                  grouped.set(t.domain, list);
+                });
+                return (
+                  <>
+                    {Array.from(grouped.entries()).map(([domain, tags]) => (
+                      <optgroup key={domain} label={DOMAIN_LABELS[domain] ?? domain}>
+                        {tags.map((t) => (
+                          <option key={t.tag} value={t.tag}>{t.label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    {shared.length > 0 && (
+                      <optgroup label="通用">
+                        {shared.map((t) => (
+                          <option key={t.tag} value={t.tag}>{t.label}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </>
+                );
+              })()}
             </select>
           </label>
 
