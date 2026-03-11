@@ -8,6 +8,9 @@ export interface AutoUnsubscribeThresholds {
   minHighScoreRatio: number;
   highScoreMinImportance: number;
   protectNewSubscriptions: boolean;
+  /** Unsubscribe KOLs with fewer than minRecentTweets in the last inactiveMonths months */
+  inactiveMonths: number;
+  minRecentTweets: number;
 }
 
 export type AutoSubscriptionAction = 'none' | 'unsubscribe' | 'resubscribe';
@@ -25,6 +28,8 @@ export interface AutoUnsubscribeDecisionItem {
   matchedAvg: boolean;
   matchedHighCount: boolean;
   matchedHighRatio: boolean;
+  inactive: boolean;
+  recentTweets: number;
   decision: 'keep' | 'drop';
 }
 
@@ -43,7 +48,10 @@ export async function evaluateAutoUnsubscribe(thresholds: AutoUnsubscribeThresho
     prisma.subscription.findMany({
       select: { id: true, screenName: true, status: true, createdAt: true }
     }),
-    getSubscriptionTweetStats({ highScoreMinImportance: thresholds.highScoreMinImportance })
+    getSubscriptionTweetStats({
+      highScoreMinImportance: thresholds.highScoreMinImportance,
+      recentMonths: thresholds.inactiveMonths
+    })
   ]);
 
   const statsById = new Map(stats.items.map((item) => [item.subscriptionId, item]));
@@ -58,13 +66,16 @@ export async function evaluateAutoUnsubscribe(thresholds: AutoUnsubscribeThresho
 
     const hasScoreData = scoredTweets > 0;
     const isNewSubscription = sub.createdAt.getTime() >= minCreatedAtMs;
+    const recentTweets = stat?.recentTweets ?? 0;
+    const inactive = recentTweets < thresholds.minRecentTweets;
 
     const matchedAvg = hasScoreData && typeof avgImportance === 'number' && avgImportance >= thresholds.minAvgImportance;
     const matchedHighCount = hasScoreData && highScoreTweets >= thresholds.minHighScoreTweets;
     const ratio = hasScoreData ? normalizeRatio(highScoreRatio) : null;
     const matchedHighRatio = hasScoreData && typeof ratio === 'number' && ratio > thresholds.minHighScoreRatio;
 
-    const keep = matchedAvg || matchedHighCount || matchedHighRatio;
+    // Inactive KOLs are dropped regardless of score quality
+    const keep = inactive ? false : (matchedAvg || matchedHighCount || matchedHighRatio);
     const desiredStatus = keep ? SubscriptionStatus.SUBSCRIBED : SubscriptionStatus.UNSUBSCRIBED;
 
     const shouldFreeze = thresholds.protectNewSubscriptions && isNewSubscription;
@@ -90,6 +101,8 @@ export async function evaluateAutoUnsubscribe(thresholds: AutoUnsubscribeThresho
       matchedAvg,
       matchedHighCount,
       matchedHighRatio,
+      inactive,
+      recentTweets,
       decision: keep ? 'keep' : 'drop'
     });
   }

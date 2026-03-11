@@ -137,6 +137,8 @@ router.post('/auto-unsubscribe', adminOnly, async (req: AuthRequest, res: Respon
         minHighScoreRatio: z.number().optional(),
         highScoreMinImportance: z.number().int().optional(),
         protectNewSubscriptions: z.boolean().optional(),
+        inactiveMonths: z.number().int().min(1).optional(),
+        minRecentTweets: z.number().int().min(0).optional(),
         dryRun: z.boolean().optional()
       })
       .parse(req.body ?? {});
@@ -146,7 +148,9 @@ router.post('/auto-unsubscribe', adminOnly, async (req: AuthRequest, res: Respon
       minHighScoreTweets: body.minHighScoreTweets ?? 6,
       minHighScoreRatio: body.minHighScoreRatio ?? 0.25,
       highScoreMinImportance: body.highScoreMinImportance ?? 4,
-      protectNewSubscriptions: body.protectNewSubscriptions ?? true
+      protectNewSubscriptions: body.protectNewSubscriptions ?? true,
+      inactiveMonths: body.inactiveMonths ?? 2,
+      minRecentTweets: body.minRecentTweets ?? 10
     };
 
     const dryRun = body.dryRun ?? true;

@@ -10,10 +10,12 @@ export interface SubscriptionTweetStats {
   firstTweetedAt: Date | null;
   lastTweetedAt: Date | null;
   avgTweetsPerDay: number | null;
+  recentTweets: number;
 }
 
-export async function getSubscriptionTweetStats(options?: { highScoreMinImportance?: number }) {
+export async function getSubscriptionTweetStats(options?: { highScoreMinImportance?: number; recentMonths?: number }) {
   const highScoreMinImportance = options?.highScoreMinImportance ?? 4;
+  const recentMonths = options?.recentMonths ?? 2;
 
   const items = await prisma.$queryRaw<SubscriptionTweetStats[]>`
     SELECT
@@ -31,7 +33,8 @@ export async function getSubscriptionTweetStats(options?: { highScoreMinImportan
       CASE
         WHEN MIN(t."tweetedAt") IS NULL THEN NULL
         ELSE (COUNT(t."id")::float8 / GREATEST(1, (EXTRACT(EPOCH FROM MAX(t."tweetedAt") - MIN(t."tweetedAt")) / 86400.0) + 1))
-      END as "avgTweetsPerDay"
+      END as "avgTweetsPerDay",
+      SUM(CASE WHEN t."tweetedAt" >= NOW() - (${recentMonths}::int * INTERVAL '1 month') THEN 1 ELSE 0 END)::int as "recentTweets"
     FROM "Subscription" s
     LEFT JOIN "Tweet" t ON t."subscriptionId" = s."id"
     LEFT JOIN "TweetInsight" ti ON ti."tweetId" = t."tweetId"
