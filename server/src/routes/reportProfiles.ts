@@ -8,6 +8,7 @@ import {
   deleteReportProfile,
   getReportProfile,
   getOrCreateDefaultReportProfile,
+  getOrCreateUsStockReportProfile,
   listReportProfiles,
   updateReportProfile
 } from '../services/reportProfileService';
@@ -50,6 +51,8 @@ function normalizePrompt(input?: string | null) {
   return trimmed ? trimmed : null;
 }
 
+const domainSchema = z.enum(['crypto', 'ai', 'finance']);
+
 const profileCreateSchema = z.object({
   name: z.string().min(1),
   enabled: z.boolean().optional(),
@@ -60,6 +63,7 @@ const profileCreateSchema = z.object({
   excludeTweetTags: z.array(z.string()).optional(),
   includeAuthorTags: z.array(z.string()).optional(),
   excludeAuthorTags: z.array(z.string()).optional(),
+  domains: z.array(domainSchema).optional(),
   minImportance: z.number().int().min(1).max(5).optional(),
   verdicts: z.array(verdictSchema).optional(),
   groupBy: groupBySchema.optional(),
@@ -82,6 +86,15 @@ router.get('/', async (_req, res, next) => {
 router.get('/default', async (_req, res, next) => {
   try {
     const profile = await getOrCreateDefaultReportProfile();
+    res.json(profile);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/us-stock', async (_req, res, next) => {
+  try {
+    const profile = await getOrCreateUsStockReportProfile();
     res.json(profile);
   } catch (error) {
     next(error);
@@ -115,6 +128,7 @@ router.post('/', async (req, res, next) => {
       excludeTweetTags: normalizeStringList(body.excludeTweetTags),
       includeAuthorTags: normalizeStringList(body.includeAuthorTags),
       excludeAuthorTags: normalizeStringList(body.excludeAuthorTags),
+      domains: normalizeStringList(body.domains),
       minImportance: body.minImportance ?? config.REPORT_MIN_IMPORTANCE,
       verdicts: normalizeStringList(body.verdicts),
       groupBy: body.groupBy ?? 'cluster',
@@ -160,6 +174,9 @@ router.put('/:id', async (req, res, next) => {
     }
     if (body.excludeAuthorTags !== undefined) {
       data.excludeAuthorTags = normalizeStringList(body.excludeAuthorTags);
+    }
+    if (body.domains !== undefined) {
+      data.domains = normalizeStringList(body.domains);
     }
     if (body.minImportance !== undefined) {
       data.minImportance = body.minImportance;

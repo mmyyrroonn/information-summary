@@ -60,14 +60,21 @@ const DOMAIN_KEYWORDS: Record<Domain, string[]> = {
     'ai芯片', '智算', '推理', '训练'
   ],
   finance: [
-    's&p', 'nasdaq', 'dow jones', 'dow', 'treasury', 'yield curve',
+    's&p', 'sp500', 'spx', 'spy', 'nasdaq', 'qqq', 'dow jones', 'dow',
+    'russell', 'vix', '标普', '纳指', '道指', '罗素',
+    'treasury', 'yield curve',
     'earnings', 'gdp', 'nonfarm', 'payroll', 'unemployment',
-    '美股', '国债', '大宗', '原油', '黄金', 'crude oil', 'gold',
+    '美股', '港股', '中概股', '科技股', '芯片股',
+    '国债', '大宗', '原油', '黄金', 'crude oil', 'gold',
     'forex', '外汇', '汇率', '美元指数', 'dxy',
-    '财报', 'eps', 'revenue beat', 'revenue miss',
+    '财报', '财报季', 'eps', 'revenue beat', 'revenue miss',
+    '盘前', '盘后', 'pre-market', 'after-hours', 'premarket',
     'ipo', '熔断', '做空', '做多', '期货', '期权',
+    '目标价', 'price target', 'overweight', 'underweight', 'outperform',
+    '回购', 'buyback', '分红', 'dividend', '拆股', 'stock split',
     'fed fund', 'fomc minute', '央行', '欧央行', 'ecb', 'boj',
-    '信用评级', 'moody', 'fitch'
+    '信用评级', 'moody', 'fitch',
+    '营收', 'guidance', '指引', '上调', '下调', 'upgrade', 'downgrade'
   ]
 };
 
