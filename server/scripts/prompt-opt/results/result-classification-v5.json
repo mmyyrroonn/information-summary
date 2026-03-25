@@ -1,0 +1,1171 @@
+[
+  {
+    "tweetId": "2036662233191813442",
+    "author": "终身！一辈子！🔰🇹🇼🇯🇵🇳🇿🇺🇦 (@jamliu0229)",
+    "text": "好神奇。",
+    "lang": "ja",
+    "output": {
+      "tweetId": "2036662233191813442",
+      "verdict": "ignore",
+      "summary": "无实质内容，仅表情表达",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "无实质信息"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "好神奇。",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036664623244726691",
+    "author": "Forbes (@Forbes)",
+    "text": "ICE officers deployed at airports across the United States are collecting a paycheck, even as they face criticism for being untrained to patrol airports—while TSA workers have gone more than a month without pay.\nRead more: https://t.co/NPv7FnVlf1 https://t.co/Sksg3r23La",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036664623244726691",
+      "verdict": "ignore",
+      "summary": "美国ICE与TSA员工薪资争议，社会新闻",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "非金融/加密/AI领域"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "ICE officers deployed at airports across the United States are collecting a paycheck, even as they face criticism for b…",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036668944753500447",
+    "author": "Stella X (@Stellaaa)",
+    "text": "Fan girl moment omg my weather crush 🫶🏻 https://t.co/vsi6jIH5TU",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036668944753500447",
+      "verdict": "ignore",
+      "summary": "纯个人追星情绪帖，无行业信息",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "与行业无关"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "Fan girl moment omg my weather crush 🫶🏻 https://t.co/vsi6jIH5TU",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036666240367038845",
+    "author": "能量魔法师 (@KaspaASI)",
+    "text": "“你一天的开始应该摄入蛋白质和脂肪。”\n\n马克·海曼博士引用了哈佛大学的一项“意义深远”的研究，该研究表明，像燕麦片这样富含碳水化合物的早餐比像煎蛋卷这样的蛋白质和脂肪为主的早餐更容易引发更高的压力激素活性和饥饿感。\n\n“早上吃淀粉或糖——无论是松饼、百吉饼、燕麦片、法式吐司、煎饼，还是其他人吃的任何东西——都是最糟糕的事情do.\"\n\n⬆️所以，米饭、意大利面、燕麦片、玉米片都富含碳水化合物。\n\n到底该吃什么才能不每分钟都觉得饿，又能给身体补充能量啊哈哈哈哈？\n\n⬆️早餐决定一天的基调，我以为早餐一定要优先选择蛋白质和脂肪。",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036666240367038845",
+      "verdict": "ignore",
+      "summary": "健康饮食建议帖，引用哈佛研究",
+      "importance": 2,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "与金融/加密/AI无关"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "“你一天的开始应该摄入蛋白质和脂肪。” 马克·海曼博士引用了哈佛大学的一项“意义深远”的研究，该研究表明，像燕麦片这样富含碳水化合物的早餐比像煎蛋卷这样的蛋白质和脂肪为主的早餐更容易引发更高的压力激素活性和饥饿感。 “早上吃淀粉或糖——无…",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036662891940905023",
+    "author": "Paper Gains (@PaperGainsInc)",
+    "text": "RT @MOSSADil: ‼️ JUST IN: \nAccording to Faytuks, Iran’s demands to end the war: shut down all U.S. bases in the Gulf, guarantee no future a…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036662891940905023",
+      "verdict": "watch",
+      "summary": "伊朗结束战争条件：关闭海湾全部美军基地并保证不再攻击",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "地缘政治事件或影响能源/大宗商品市场"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "RT @MOSSADil: ‼️ JUST IN: According to Faytuks, Iran’s demands to end the war: shut down all U.S. bases in the Gulf, gu…",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036640397594923302",
+    "author": "Pythia Cap: Partially Conductive (@PythiaR)",
+    "text": "RT @Alex_Intel_: I have no idea if this will cause a selloff in memory and NAND stocks. Nor if it is justified\n\nBut just getting ahead of i…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036640397594923302",
+      "verdict": "ignore",
+      "summary": "转发称不确定内存/NAND股票是否因某事抛售，无具体数据或来源，纯猜测",
+      "importance": 1,
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "传闻式预警无验证"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "RT称内存和NAND股票可能承压",
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036654382586998980",
+    "author": "Fox News (@FoxNews)",
+    "text": "Ballot box upset: Democrats flip Florida legislative seat in Trump’s stomping ground https://t.co/7Flwx5XfSa",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036654382586998980",
+      "verdict": "ignore",
+      "summary": "民主党在特朗普佛罗里达传统选区翻转地方立法席位，纯政治新闻无金融影响",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "地方选举非宏观催化剂"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "Ballot box upset: Democrats flip Florida legislative seat in Trump’s stomping ground https://t.co/7Flwx5XfSa",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036638883656417505",
+    "author": "Bill Ackman (@BillAckman)",
+    "text": "RT @GerardFilitti: Let's be precise about who is responsible here.\n\nUnder New York City's mayoral control structure, the Mayor appoints the…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036638883656417505",
+      "verdict": "ignore",
+      "summary": "转发关于纽约市长控制结构谁负责的讨论，纯政治法律分析无投资观点",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯政治讨论无市场影响"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "Bill Ackman转发关于纽约市长任命权的政治讨论",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036641905661116888",
+    "author": "New Zealand First (@nzfirst)",
+    "text": "WATCH NOW: Shane Jones takes down Megan Woods over the closure of Marsden Point\nhttps://t.co/qD7oOd0qm5",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036641905661116888",
+      "verdict": "ignore",
+      "summary": "新西兰政党批评Marsden Point炼油厂关闭，纯国内政治争议无经济分析",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "新西兰地方性能源事件"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "新西兰政党指责关闭Marsden Point炼油厂",
+      "domain": "finance",
+      "tags": [
+        "policy"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036625174725120200",
+    "author": "Sunny🔆 (@sunshineg)",
+    "text": "Sora 是阶段性问题，现在战场在 Codex 🤖和 All in ONE XGPT，我预计全面对标 Claude Desktop（chat、work、code）的 Open AI 版本，额外整合浏览器的版本可能很快到来。",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036625174725120200",
+      "verdict": "watch",
+      "summary": "从业者分析Sora现状与AI竞争格局：战场转向Codex和XGPT，预计OpenAI对标Claude Desktop版本将推出",
+      "importance": 4,
+      "domain": "ai",
+      "tags": [
+        "ai-product"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "AI产品竞争动态，信号来自从业者一手观察"
+      },
+      "suggestions": "关注OpenAI产品更新与Claude Desktop对标进展"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Sora 是阶段性问题，现在战场在 Codex 🤖和 All in ONE XGPT，我预计全面对标 Claude Desktop（chat、work、code）的 Open AI 版本，额外整合浏览器的版本可能很快到来。",
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036662145786785816",
+    "author": "Urkel (@SteveUrkelDude)",
+    "text": "Robinhood board approved $1.5 billion in share repurchases. \nMakes a lot of sense with where the stock is at currently and the cash on hand.\n$HOOD",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036662145786785816",
+      "verdict": "watch",
+      "summary": "Robinhood董事会批准150亿美元股票回购，反映当前股价和现金状况",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "funding",
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "回购金额",
+          "v": "$1.5B"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "股票回购通常提升股价，增加股东价值"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Robinhood board approved $1.5 billion in share repurchases. Makes a lot of sense with where the stock is at currently a…",
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "funding"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036639495131398275",
+    "author": "The Free Press (@TheFP)",
+    "text": "The war in Iran is choking global energy supply. History shows shocks like this rarely end without a recession, writes Niall Ferguson. https://t.co/7QmVd4iXqc",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036639495131398275",
+      "verdict": "watch",
+      "summary": "Niall Ferguson分析伊朗战争冲击全球能源供应，历史显示类似冲击常伴衰退",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "历史规律分析，但当前具体情况可能不同"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Niall Ferguson：伊朗战争冲击全球能源供应，历史经验显示类似冲击常致衰退",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036660408543797425",
+    "author": "touchstone🇺🇸试金石 (@jcweb11)",
+    "text": "最新动态💥美军公布B52战略轰炸机对伊朗🇮🇷军事工业城进行毁灭性💣炸了。 B-52最大载弹量约为 31.5吨。可携带各种传统和核武器，包括20枚空射巡航导弹或核弹，可携带51枚500磅/750磅炸弹，或30枚CBU系列集束炸弹，以及AGM-84鱼叉反舰导弹。川普以武力让伊朗彻底降服。\nhttps://t.co/1du1dk4fLt",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036660408543797425",
+      "verdict": "ignore",
+      "summary": "美军B52轰炸伊朗军事城，资讯类军事新闻",
+      "importance": 2,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [
+        {
+          "k": "载弹量",
+          "v": "31.5吨"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "纯新闻播报，无投资含义"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "B-52轰炸伊朗Alborz工业城，分析载弹量及地缘影响",
+      "domain": null,
+      "tags": [
+        "macro",
+        "policy"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036627993876201584",
+    "author": "Cow_cow (@Cow_cowcat)",
+    "text": "Not sure $CRCL down 20% because of news from latest Clarity Act or Tether getting an audit from the big 4.\n\nBut either way, Circle is too expensive at $25 Billion dollars valuation. https://t.co/XO51KeUSVx",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036627993876201584",
+      "verdict": "ignore",
+      "summary": "CRCL跌20%原因推测，涉及Circle估值过高讨论，无具体数据支撑",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "CRCL跌幅",
+          "v": "20%"
+        },
+        {
+          "k": "Circle估值",
+          "v": "$25B"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "纯推测无验证，无法作为决策依据"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "CRCL代币下跌20%，或因Clarity Act或Tether审计；Circle估值250亿美元被认为过高",
+      "domain": "crypto",
+      "tags": [
+        "narrative",
+        "policy"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036632819544588442",
+    "author": "Arun S. Chopra CFA CMT🧐 (@FusionptCapital)",
+    "text": "Start a war sell gold for 11 days in a row then rally it on rumors of a ceasefire https://t.co/6we9nz9Mhr",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036632819544588442",
+      "verdict": "ignore",
+      "summary": "黄金11天抛售后因停火传闻反弹，纯价格描述无数据",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "commodities"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "无具体价格/点位数据，仅泛泛描述盘面"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "【黄金技术交易信号】连续11日卖出后因停火传闻反弹",
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036644595497599119",
+    "author": "Chris (@zkyo)",
+    "text": "Dispatch连Claude code其实体验还不错，因为它相对是code上一层和你交流，有时候更保守，同样的情况让code去查就已经开始下手测试搞了，我也看过它实际给code部署的命令，比我们人类的部署上下文要完整很多，我觉得这是一个更好的agent调动其它agent的趋势，现在唯一缺点是回的慢，这也没办法 https://t.co/zKiPtcodO2",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036644595497599119",
+      "verdict": "watch",
+      "summary": "讨论Dispatch连Claude code体验：相对保守但部署上下文更完整，是更好的agent趋势，缺点是回复慢",
+      "importance": 3,
+      "domain": "ai",
+      "tags": [
+        "ai-product"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "产品体验分享，无直接市场影响"
+      }
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Dispatch连Claude code其实体验还不错，因为它相对是code上一层和你交流，有时候更保守，同样的情况让code去查就已经开始下手测试搞了，我也看过它实际给code部署的命令，比我们人类的部署上下文要完整很多，我觉得这是一个…",
+      "domain": "ai",
+      "tags": [
+        "ai-product"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036630513813725655",
+    "author": "The Free Press (@TheFP)",
+    "text": "The conflict with Iran didn’t begin three weeks ago; it is the continuation of a decades-long religious war to weaken the West and eliminate Israel, writes Yardena Schwartz. https://t.co/35hClaJSEX",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036630513813725655",
+      "verdict": "ignore",
+      "summary": "地缘政治评论：称伊以冲突是延续数十年的宗教战争，旨在削弱西方和消除以色列",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "macro"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "已有广泛报道的旧闻复述，无新增信号"
+      }
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "The conflict with Iran didn’t begin three weeks ago; it is the continuation of a decades-long religious war to weaken t…",
+      "domain": null,
+      "tags": [
+        "macro",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036665507173331116",
+    "author": "日經中文網 (@rijingzhongwen)",
+    "text": "【黑石集團今後3年要向日本房地産投資150億美元】黑石集團預測認為，隨著日本的企業越來越重視資本效率、推進資産精簡，房地産的出售將增加，因此將擴大對日投資……\nhttps://t.co/kDV8aA9POW",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036665507173331116",
+      "verdict": "watch",
+      "summary": "黑石集团未来3年拟向日本房地产投资150亿美元，认为企业资产精简将带来更多收购机会",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "funding"
+      ],
+      "keyData": [
+        {
+          "k": "投资额",
+          "v": "150亿美元"
+        },
+        {
+          "k": "投资期限",
+          "v": "3年"
+        },
+        {
+          "k": "机构",
+          "v": "黑石集团"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "顶级机构大规模布局日本房地产，释放长期看多信号"
+      }
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "【黑石集團今後3年要向日本房地産投資150億美元】黑石集團預測認為，隨著日本的企業越來越重視資本效率、推進資産精簡，房地産的出售將增加，因此將擴大對日投資…… https://t.co/kDV8aA9POW",
+      "domain": "finance",
+      "tags": [
+        "funding",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036661345358413953",
+    "author": "MastersInvest.com (@mastersinvest)",
+    "text": "Lindsell Train US Fund - February Update\n\n'Whilst Open AI appears to have taken the lead in consumer applications, there exists today half a dozen ‘primary players’ engaged in an almost daily race for demarcation. \n\nIn our view the more likely, or at least more predictable, long-term beneficiaries will be entrenched, differentiated incumbents – which instead of competing, incorporate an advancing technology already frequently priced below cost. \n\nThose in possession of genuinely proprietary datasets (backed for example by contributary customer arrangements or benchmark IP – and hence not scrapable) look to be well insulated from the disruption, whilst simultaneously poised to benefit from its adoption. \n\nWithout this IP, LLMs are unable to truly serve core, data sensitive, high cost of failure industries like tax, risk, and finance, as the many partnerships already announced in these areas attest.'\n\n'In the wake of the above sell-off, we have increased our exposure to several software and data companies already held in the Fund, buying more of S&P Global, Intuit, Fico, Adobe, and Verisk, funded through reductions to some of our consumer staples (Colgate, Pepsi, Coke, Estée Lauder, and Mondelez), all of which have held up comparatively well into 2026.'\n\n- James Bullock\n\nhttps://t.co/Sj9f6A92AQ",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036661345358413953",
+      "verdict": "watch",
+      "summary": "Lindsell Train US Fund月度更新：认为AI长期受益者将是拥有专有数据的现有巨头，减持消费必需品并增持软件数据公司",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "增持",
+          "v": "S&P Global, Intuit, FICO, Adobe, Verisk"
+        },
+        {
+          "k": "减持",
+          "v": "Colgate, Pepsi, Coke, Estée Lauder, Mondelez"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "顶级资管机构明确调仓方向和AI投资逻辑，具参考价值"
+      }
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Lindsell Train增持S&P Global/Intuit/Fico/Adobe/Verisk，减持Colgate/Pepsi/Coke等消费股",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036612452335411530",
+    "author": "Bio Stocks™ (@BioStocks)",
+    "text": "SpaceX aims to file for IPO as soon as this week. $TSLA \n\nhttps://t.co/mgZF6ul0rk",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036612452335411530",
+      "verdict": "watch",
+      "summary": "SpaceX最快可能在本周提交IPO申请",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "公司",
+          "v": "SpaceX"
+        },
+        {
+          "k": "事件",
+          "v": "提交IPO申请"
+        },
+        {
+          "k": "时间",
+          "v": "本周"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "立即",
+        "reason": "重大IPO信号，但来源非主流媒体，可信度需验证"
+      }
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Bio Stocks报道SpaceX计划本周申请IPO",
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036633321409593500",
+    "author": "Restructuring__ (@Restructuring__)",
+    "text": "Really great data from BBG / Moody, some thoughts:\n- People might think that protections like J. Crew are always included, but the data tells a very different story\n- Of 158 high-yield bonds surveyed in 2025, only 32% contained so-called J. Crew blockers, up from 20% in 2024\n- Protections for very famous LMEs like Pluralsight and Envision are still very rare at 5% of the market; perfect example of the negotiating power of issuers in times of strong capital markets\n- There is a very linear correlation between time from the first LME and % of protection included (J. Crew is the oldest and now it is the most protected, etc.); that said, the time needed for these protections to regularly flow in is really long (decades)\n\nI plan to have a dedicated writeup on the current LME landscape from the creditor perspective, but this graph makes the perfect case: leveraged finance market has, for better or worse, settled into an equilibrium in which newly issued credit agreements are loose by default",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036633321409593500",
+      "verdict": "watch",
+      "summary": "BBG/Moody数据：2025年158只高收益债券仅32%含J.Crew保护条款(2024年20%)，知名LME保护条款仅5%，体现发行人强议价力",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "bonds",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "高收益债券含J.Crew保护条款比例",
+          "v": "32%(2025年)"
+        },
+        {
+          "k": "2024年比例",
+          "v": "20%"
+        },
+        {
+          "k": "知名LME保护条款占比",
+          "v": "5%"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "反映杠杆融资市场 equilibri um，借款人保护条款长期稀缺"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "【BBG/Moody数据】2025年158只高收益债券仅32%含J.Crew条款，2024年仅20%；知名LME保护仍仅5%",
+      "domain": "finance",
+      "tags": [
+        "bonds"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036585953725399136",
+    "author": "Madison Malone (@maddireidy)",
+    "text": "NZ FOUNDER NEWS: Cow collar agri-tech company @halterHQ has raised US$220m at a US$2b valuation led by @foundersfund \n\nValuation has increased from US$1b less than a year ago. \n\nHusband and I are proud to have participated in this round supporting Craig Piggott and Halter’s Cowgorithm making farms & ranches more efficient all over the world. The cows in Colorado are v happy customers!!",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036585953725399136",
+      "verdict": "watch",
+      "summary": "农业科技公司Halter获Founders Fund领投$220M，估值从$1B升至$2B(不到一年翻倍)，产品为奶牛可穿戴设备",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "funding",
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "融资金额",
+          "v": "$220M"
+        },
+        {
+          "k": "投前估值",
+          "v": "$2B"
+        },
+        {
+          "k": "上次估值",
+          "v": "$1B"
+        },
+        {
+          "k": "时间跨度",
+          "v": "<1年"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "农业科技赛道大额融资，估值增长强劲"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "农业科技Halter获$220M融资，估值$2B（年内从$1B翻倍），Founders Fund领投",
+      "domain": "finance",
+      "tags": [
+        "funding",
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036593942334972103",
+    "author": "EliteOptionsTrader (@EliteOptions2)",
+    "text": "TRADE PLAN for Wednesday 📈 \n\n$SPX another consolidation day. SPX needs to continue to defend 6521 otherwise one more leg lower in play before a bottom comes. Let's see if SPX can reclaim 6600 tmrw. Positive news of 1 month cease fire came out\nSPX March 26 6650C is best above 6600\n\n$SNDK on the next run higher can move to 800+. Once the market bottoms, I'd consider SNDK calls above 725. Wait for Macro news to bottom the market.\n\n$QQQ every pop higher gets sold the past 2 months. QQQ needs back above 593 to set up for 600\nQQQ March 27 590C is best above 588 as a lotto this week.\n\nBE patient until we see more positive news involving Iran before swinging calls. Good luck tmrw everyone!! 🫡",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036593942334972103",
+      "verdict": "actionable",
+      "summary": "周三交易计划：SPX需守住6521并夺回6600；SNDK下一波看800+，回调至725可考虑；QQQ需重返593上方",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "SPX支撑",
+          "v": "6521"
+        },
+        {
+          "k": "SPX阻力",
+          "v": "6600"
+        },
+        {
+          "k": "SNDK目标",
+          "v": "800+"
+        },
+        {
+          "k": "QQQ阻力",
+          "v": "593"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "短期技术面交易，需等待伊朗停火消息确认"
+      },
+      "suggestions": "SPX: 6650C above 6600; SNDK: calls above 725; QQQ: 590C above 588; 耐心等待伊朗消息后再操作看涨期权"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 4,
+      "summary": "TRADE PLAN for Wednesday 📈 $SPX another consolidation day. SPX needs to continue to defend 6521 otherwise one more leg …",
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036568527612813378",
+    "author": "StockMarket.News (@_Investinq)",
+    "text": "Disney handed the keys to Mickey Mouse, Darth Vader, and the entire Marvel universe to an AI company, and three months later that company killed the product.\n\nNobody in Hollywood saw the ending coming this fast.\n\nIn December 2025, Disney CEO Bob Iger signed a $1 billion investment deal with OpenAI built around a video generator called Sora.\n\nThe terms were staggering, over 200 characters from Disney, Marvel, Pixar and Star Wars were licensed to an AI platform that would let fans generate short videos featuring their favorite heroes.\n\nDisney would stream that content directly on Disney+, and Iger publicly called it the future of storytelling.\n\nThe deal had one fatal flaw hiding inside the fine print.\n\nIt was built entirely on a product that OpenAI was losing confidence in, as Sora downloads cratered after launch and the app never found a mainstream audience.\n\nThe technology was real but the demand was not.\n\nAnd today, OpenAI pulled the plug completely.\n\nThe company officially shut down Sora as a standalone app, sunsetting Sora 1 for US users on March 13 and announcing a full platform shutdown shortly after.\n\nThe Disney investment had nothing left to stand on, and a Disney spokesperson confirmed it.\n\nNobody knows exactly how much money already changed hands between the two companies, and nobody knows yet whether Disney recovers any of it.\n\nThe most valuable IP library on the planet had been cracked open and the company it was handed to simply walked away.\n\nOpenAI, meanwhile, is chasing a completely different vision, a desktop superapp that merges ChatGPT, its browser, and its coding tools into a single platform aimed at enterprise customers.\n\nThe company told employees internally it had been \"dispersing efforts across too many apps,\" and Sora was the casualty of that reckoning.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036568527612813378",
+      "verdict": "watch",
+      "summary": "迪士尼2025年12月向OpenAI投资$1B用于Sora视频生成，200+角色IP授权，2026年3月13日Sora被关闭，合作失败",
+      "importance": 4,
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "ai-company"
+      ],
+      "keyData": [
+        {
+          "k": "投资金额",
+          "v": "$1B"
+        },
+        {
+          "k": "签约时间",
+          "v": "2025年12月"
+        },
+        {
+          "k": "Sora关闭时间",
+          "v": "2026年3月13日"
+        },
+        {
+          "k": "涉及IP角色数",
+          "v": "200+"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "更久",
+        "reason": "AI产品市场接受度低，大企业AI投资失败案例"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "迪士尼$1B投资OpenAI Sora遭失败，3月13日关停",
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036633536187306385",
+    "author": "Tanay Jaipuria (@tanayj)",
+    "text": "Cursor's Composer 2 technical report is fantastic. Some of my notes:\n\n- Base model is Kimi K2.5. Also Considered GLM‑5, Deepseek v3.2\n- Two-stage training: continued pretraining on code-heavy data, then large-scale RL\n- Tasks used for RL were based on representative Cursor usage (iterating on features, debugging most represented)\n- Training stack built on Ray + PyTorch. Fully asynchronous with independent training and rollout generation workers\n- RL Training environments run on Firecracker VMs via an internal platform called Anyrun\n- RL inference runs on Fireworks AI\n- Developed own evals (Cursorbench-3) where tasks require ~10x more lines changed and have shorter instructions than SWE-bench\n- Composer2 is close to SOTA on their evals and much cheaper than other models with similar performance",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036633536187306385",
+      "verdict": "watch",
+      "summary": "Cursor Composer 2技术报告：基模为Kimi K2.5，两阶段训练+大规模RL，RL环境用Firecracker VM，Cursorbench-3评估接近SOTA",
+      "importance": 4,
+      "domain": "ai",
+      "tags": [
+        "model-release",
+        "ai-product",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "基模",
+          "v": "Kimi K2.5"
+        },
+        {
+          "k": "训练方式",
+          "v": "续预训练+大规模RL"
+        },
+        {
+          "k": "RL环境",
+          "v": "Firecracker VM (Anyrun平台)"
+        },
+        {
+          "k": "RL推理",
+          "v": "Fireworks AI"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "AI编程产品技术迭代，性能接近SOTA且成本更低"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Cursor's Composer 2 technical report is fantastic. Some of my notes: - Base model is Kimi K2.5. Also Considered GLM‑5, …",
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036373245822378494",
+    "author": "加密大师兄 (@zigmapratama48)",
+    "text": "中东局势急速升级:美以袭击伊朗能源设施，海湾国家被曝正接近参战，油价冲破100美元！\n\n最新动态汇总：\n\n美以联合行动：伊朗证实两国袭击了伊斯法罕和霍拉姆沙赫尔的关键天然气设施\n\n油价飙升：布伦特原油日内涨超4%，站上100美元/桶关口\n\n海湾国家转向：据《华尔街日报》，沙特已同意向美军开放法赫德国王空军基地，王储本·萨勒曼“接近决定加入攻击”，阿联酋也在加码施压伊朗\n\n谈判陷入僵局：尽管特朗普声称谈判有进展，但阿拉伯调解人私下“深表怀疑”，伊朗正“疏远谈判”——双方在霍尔木兹海峡控制权等核心问题上分歧巨大\n\n局势瞬息万变，油市与地缘风险同步升温。🌍📈\n\n#中东局势 #油价 #伊朗 #地缘风险 #原油",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036373245822378494",
+      "verdict": "watch",
+      "summary": "美以袭击伊朗能源设施，海湾国家接近参战，布伦特原油涨超4%突破100美元/桶",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "油价",
+          "v": "100美元/桶"
+        },
+        {
+          "k": "布伦特涨幅",
+          "v": "超4%"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "立即",
+        "reason": "地缘冲突升级推高油价，能源板块获益"
+      },
+      "suggestions": "关注原油/油气ETF及相关期货合约，警惕波动率急剧上升"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "中东局势急速升级:美以袭击伊朗能源设施，海湾国家被曝正接近参战，油价冲破100美元！ 最新动态汇总： 美以联合行动：伊朗证实两国袭击了伊斯法罕和霍拉姆沙赫尔的关键天然气设施 油价飙升：布伦特原油日内涨超4%，站上100美元/桶关口 海湾国…",
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036033399446782446",
+    "author": "区块链行情研究 (@qkl2058)",
+    "text": "昨天凌晨三点，Claude Code给我打了个电话。\n\n我迷迷糊糊拿起手机，屏幕上弹出一条消息：“钱包在11美分时买入BTC看涨。要打开Polymarket吗？”\n\n我说了声“是”，就继续睡了。\n\n然后Claude Code自己解锁了我的备用手机，打开Polymarket，找到对应的市场，填好金额，点了买入。我在笔记本的网页界面上看得一清二楚，手机截图每秒都在刷新。到早上的时候，那个仓位已经盈利平掉了。\n\n跟你说说我是怎么弄到这个程度的。\n\n一周前，我让Claude Code写个脚本，从Polymarket拉链上数据，按照15分钟BTC市场的胜率给钱包排个名。二十分钟后，我拿到了一张表格，里面有几百个地址，其中有一个明显不一样——每天两百多笔交易，入场时机非常准，盈利曲线一路往上走。\n\n我把这个地址扔回给Claude Code，让它分析一下策略。结果发现，这个钱包每100毫秒就在监控Binance和Bybit上的BTC波动率，等波动率降到0.08%以下的时候，同时用25到35美分的价格买入看涨和看跌。\n\n这是个标准的跨式策略：一边亏掉，另一边能飞到1美元，每笔仓位能赚个三到四倍。一天能跑几十次。\n\n我想跟单，但这玩意儿信号随时会来，总不能每十五分钟爬起来看一眼。所以我又搭了个东西。\n\n拿了部旧安卓手机，装了一个基于Qwen3-VL视觉模型的代理。这个代理能看懂屏幕上发生了什么，然后通过ADB模拟人操作——点一下、滑动、输入文字。再把它接到Claude Code上当执行器。\n\n现在的流程是这样的：Claude Code盯着那个钱包，发现新仓位就给我打电话。我说“行”，或者三十秒没接，手机上那个代理就会自己打开Polymarket，把单子给跟进去。\n\n说白了，我用两个AI搭了个自动驾驶系统——一个负责想，一个负责按按钮。我该睡觉睡觉，偶尔接个电话就行。\n\n→ 这是整个系统追踪的钱包：https://t.co/XXfblWBlJL\n\n如果不想自己折腾这套系统，有个Telegram机器人能把第一步给做了：跟踪这个钱包，每次新入场的时候发个信号过来：https://t.co/EgT16k3fC5\n\nAI凌晨三点打电话问我能不能花我的钱。\n\n一年前这事儿听着像精神分裂，现在也就是个普通的星期一。",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036033399446782446",
+      "verdict": "ignore",
+      "summary": "用户讲述用Claude Code+Qwen3-VL搭建AI自动交易系统执行Polymarket跟单的过程",
+      "importance": 2,
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "tech"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "个人技术展示无直接市场影响，仅展示AI自动化交易可能性"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "昨天凌晨三点，Claude Code给我打了个电话。 我迷迷糊糊拿起手机，屏幕上弹出一条消息：“钱包在11美分时买入BTC看涨。要打开Polymarket吗？” 我说了声“是”，就继续睡了。 然后Claude Code自己解锁了我的备用手…",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "onchain",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036542116730388641",
+    "author": "Akado (@AkadoSang)",
+    "text": "RT @karpathy: Software horror: litellm PyPI supply chain attack. \n\nSimple `pip install litellm` was enough to exfiltrate SSH keys, AWS/GCP/…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036542116730388641",
+      "verdict": "actionable",
+      "summary": "litellm PyPI供应链遭攻击，恶意包窃取SSH密钥及AWS/GCP/云凭证",
+      "importance": 5,
+      "domain": "tech",
+      "tags": [
+        "security"
+      ],
+      "keyData": [
+        {
+          "k": "受攻击包",
+          "v": "litellm"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "立即",
+        "reason": "使用litellm的开发者面临凭证泄露风险，需立即检查依赖"
+      },
+      "suggestions": "立即检查项目中litellm依赖，确认是否从官方PyPI安装，排查是否有异常网络请求"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "Karpathy警示：litellm PyPI供应链攻击可窃取SSH/AWS/GCP密钥",
+      "domain": null,
+      "tags": [
+        "security",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036451101080166897",
+    "author": "The Bitcoin Historian (@pete_rizzo_)",
+    "text": "JUST IN: $800 BILLION ALLIANCE BERNSTEIN JUST SAID IT NOW EXPECTS MICHAEL SAYLOR'S STRATEGY TO BUY 1,300,000 #BITCOIN \n\nTHEY PROJECT $MSTR WILL SURGE TO $450 – OVER 220% – WITHIN A YEAR\n\nYOU'VE BEEN WARNED 🚀 https://t.co/g1WroRzuxa",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036451101080166897",
+      "verdict": "watch",
+      "summary": "Alliance Bernstein预计MSTR一年内买入130万BTC，目标价450美元，较当前涨超220%",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "equities",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "MSTR目标价",
+          "v": "450美元"
+        },
+        {
+          "k": "预期涨幅",
+          "v": "220%"
+        },
+        {
+          "k": "机构管理规模",
+          "v": "8000亿美元"
+        },
+        {
+          "k": "预计购入BTC",
+          "v": "130万枚"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "顶级机构看涨MSTR，机构资金可能持续流入MicroStrategy相关标的"
+      },
+      "suggestions": "关注MSTR回调至支撑位的交易机会，止损设于关键均线下方"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "Alliance Bernstein预计MSTR一年内买入130万BTC，目标价$450",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036129180014850207",
+    "author": "ℙ𝕙𝕚 ℂ𝕒𝕡𝕚𝕥𝕒𝕝 𝕀𝕟𝕧𝕖𝕤𝕥𝕞𝕖𝕟𝕥𝕤 (@phi_ci)",
+    "text": "RT @SpecialSitsNews: TRADERS FLAG $1.5B S&amp;P 500 FUTURES BUY AND $192M OIL FUTURES SELL FIVE MINUTES BEFORE TRUMP ANNOUNCEMENT; INSIDER TRAD…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036129180014850207",
+      "verdict": "watch",
+      "summary": "交易员发现特朗普宣布前5分钟有15亿美元S&P500期货买入和1.92亿美元原油期货卖出，疑似内幕交易",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "forex",
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "S&P500期货买入",
+          "v": "15亿美元"
+        },
+        {
+          "k": "原油期货卖出",
+          "v": "1.92亿美元"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "1-7天",
+        "reason": "若证实内幕交易将引发监管调查和市场信任危机，利好正规机构资金流入"
+      },
+      "suggestions": "关注后续SEC调查进展及机构资金流向变化"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "交易员发现特朗普宣布前5分钟有15亿美元S&P500期货买入和1.92亿美元原油期货卖出，涉嫌内幕交易",
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "security",
+        "forex",
+        "commodities"
+      ]
+    }
+  }
+]

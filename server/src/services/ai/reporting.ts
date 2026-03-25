@@ -1188,7 +1188,7 @@ export async function generateSocialDigestFromReport(
       messages: [
         {
           role: 'system',
-          content: '你是行业研究员，写给关注行业的读者：语言自然克制，信息密度高但不逐条点评。'
+          content: '你是行业研究员，写给关注行业的读者：语言自然克制，信息密度高但不逐条点评。所有输出字段（content 和 bullets）都是必填的，不可省略；只输出严格 JSON。'
         },
         { role: 'user', content: prompt }
       ]
@@ -2168,7 +2168,7 @@ export async function generateSocialImagePromptFromReport(
       messages: [
         {
           role: 'system',
-          content: '你是中文科技/市场日报编辑，擅长提炼简短要点与标题。'
+          content: '你是中文科技/市场日报编辑，擅长提炼简短要点与标题。所有输出字段（title、sections、highlight）都是必填的；只输出严格 JSON。'
         },
         { role: 'user', content: contentPrompt }
       ]
