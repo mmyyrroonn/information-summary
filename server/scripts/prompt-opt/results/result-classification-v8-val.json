@@ -1,0 +1,4622 @@
+[
+  {
+    "tweetId": "2036817208672940411",
+    "author": "Solana (@solana)",
+    "text": "American innovation at Solana speed.\n\nAccelerate USA is coming to Miami on May 5th.\n\nJoin us. https://t.co/KeXlUHClYr",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036817208672940411",
+      "verdict": "ignore",
+      "summary": "Solana官方宣布5月5日在Miami举办Accelerate USA活动，属于常规营销宣传",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯商业活动公告，无实质产品/技术/政策信息"
+      }
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "American innovation at Solana speed. Accelerate USA is coming to Miami on May 5th. Join us. https://t.co/KeXlUHClYr",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036803683631972439",
+    "author": "Jungle Rock (@JungleRockRes)",
+    "text": "reversals everywhere https://t.co/jzu1AJCpEd",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036803683631972439",
+      "verdict": "ignore",
+      "summary": "仅一句\"reversals everywhere\"加无法验证的链接，无任何具体信息",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "内容空洞，无实质数据或分析可提取"
+      }
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "reversals everywhere https://t.co/jzu1AJCpEd",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036801138625012112",
+    "author": "陈桂林 (@Guilin_Chen_)",
+    "text": "空军刻大饼还能刻个右肩出来，这以太就有点吓人了；上边只有个前高。 https://t.co/3RkpwWkbjN",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036801138625012112",
+      "verdict": "ignore",
+      "summary": "用户对以太坊价格走势的技术分析点评，无具体价位/时间/数据支撑",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "泛泛技术面评论，缺乏可验证数据或交易信号"
+      }
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "空军刻大饼还能刻个右肩出来，这以太就有点吓人了；上边只有个前高。 https://t.co/3RkpwWkbjN",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036801772707311951",
+    "author": "SuperLeo (@Big_Tea_Rice)",
+    "text": "各位大佬有没有交易所出的Skill合集哇？\n\n我想丢给我的龙虾来学习学习~",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036801772707311951",
+      "verdict": "ignore",
+      "summary": "询问交易所Skill合集，欲给\"龙虾\"学习，含意不明，无实质内容",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "个人需求咨询，无行业信息/数据/洞察"
+      }
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "各位大佬有没有交易所出的Skill合集哇？ 我想丢给我的龙虾来学习学习~",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036812385051385946",
+    "author": "大宇 (@BTCdayu)",
+    "text": "之前 120 多卖了一点 crcl，买成了拼多多。\n\n今天拼多多涨了一点点，但是意识到卖 Crcl的决定是错的，又买回来稍微多了点，从高速列车下车抽了根烟，还好车没走。\n\n至于手上的拼多多还在考虑，可能先暂时留着后面如果这口继续跌的话，在80到60再考虑换回来吧",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036812385051385946",
+      "verdict": "ignore",
+      "summary": "用户分享个人买卖CRCL和拼多多的交易经历，属私域操作分享",
+      "importance": 1,
+      "domain": "finance",
+      "tags": [
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "CRCL卖点位",
+          "v": "120+"
+        },
+        {
+          "k": "换股",
+          "v": "拼多多"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "个案投资记录，无普遍性信号或可复制的交易逻辑"
+      }
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "用户交易操作反思：卖出CRCL买入拼多多",
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036820758551318920",
+    "author": "Usual (@usualmoney)",
+    "text": "Usual builds the stablecoin layer. Fira builds the credit layer. Different protocols, one DeFi ecosystem.\n\nFixed rates onchain. It was time.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036820758551318920",
+      "verdict": "watch",
+      "summary": "Usual和Fira分别构建稳定币层和信贷层，形成统一DeFi生态，提供链上固定利率",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "token",
+        "yield",
+        "tech"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "新产品线发布但缺具体利率和上线时间"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "Usual builds the stablecoin layer. Fira builds the credit layer. Different protocols, one DeFi ecosystem. Fixed rates o…",
+      "domain": "crypto",
+      "tags": [
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036806233722679642",
+    "author": "Raydium (@Raydium)",
+    "text": "https://t.co/XH5Cp81Y81",
+    "lang": "zxx",
+    "output": {
+      "tweetId": "2036806233722679642",
+      "verdict": "ignore",
+      "summary": "推文仅含链接，无实际文本内容，无法评估",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "内容缺失"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "https://t.co/XH5Cp81Y81",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036811154123526366",
+    "author": "FinancialJuice (@financialjuice)",
+    "text": "Iran: Talks won't happen until the five conditions are met",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036811154123526366",
+      "verdict": "watch",
+      "summary": "伊朗表示谈判需满足五个条件才能重启，缺具体条件清单",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "地缘消息但缺乏谈判条件细节"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "Iran: Talks won't happen until the five conditions are met",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036820748900434313",
+    "author": "Fiona ❤️& ✌️ (@nft_hu)",
+    "text": "Anyway, I bought $MU today",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036820748900434313",
+      "verdict": "ignore",
+      "summary": "用户仅声明买入$MU，无任何分析/数据/理由，纯个人操作分享",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "无信息价值"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "Anyway, I bought $MU today",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036806055804690943",
+    "author": "Decrypt (@DecryptMedia)",
+    "text": "TAO Jumps Up 15%, Circle Plunges 20%, Crypto Grinds Up as US Plans End to Iran War \n\nhttps://t.co/BkIWkDtd0S",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036806055804690943",
+      "verdict": "watch",
+      "summary": "TAO涨15%、Circle跌20%，因美国计划结束伊朗战争带动加密市场整体上涨",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "macro",
+        "trading",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "TAO涨幅",
+          "v": "15%"
+        },
+        {
+          "k": "Circle跌幅",
+          "v": "20%"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "地缘缓和预期提振市场情绪，但Circle大跌需关注"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 1,
+      "summary": "TAO Jumps Up 15%, Circle Plunges 20%, Crypto Grinds Up as US Plans End to Iran War https://t.co/BkIWkDtd0S",
+      "domain": null,
+      "tags": [
+        "other"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036758468301041679",
+    "author": "Dune | We Are Hiring! (@Dune)",
+    "text": ". @21shares just shipped what might be the most complete @HyperliquidX dashboard on Dune.\n\nVolume, OI, sector breakdowns, trader cohorts, validator economics, buyback tracking, slippage comps. It's all there.\n\nIf you're researching $HYPE or the perps DEX landscape, bookmark this.",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "watch",
+      "importance": 2,
+      "summary": "Dune发布Hyperliquid完整仪表板，含交易量/持仓/验证者经济数据",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036767577146331415",
+    "author": "Daan Crypto Trades (@DaanCrypto)",
+    "text": "$ETH Also consolidating on top of its 4H 200MA/EMA and the $2.1K high timeframe level.\n\nHonestly doesn't look too bad but needs to get going here over the next week in my opinion.\n\nDon't want to sit on the same support for too long, even if you're slowly grinding higher. At some point you want to ignite some momentum to put strength behind the move.",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "watch",
+      "importance": 2,
+      "summary": "ETH在4H 200MA/EMA和$2.1K上方整理，需一周内突破",
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036815214591520776",
+    "author": "Morpho 🦋 (@Morpho)",
+    "text": "RT @tokenterminal: 🦋👥 Monthly active users for @Morpho on @ethereum are at an all-time high of 15k, up over 100% YoY.\n\nA metric to follow 👇…",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "RT @tokenterminal: 🦋👥 Monthly active users for @Morpho on @ethereum are at an all-time high of 15k, up over 100% YoY. A…",
+      "domain": "crypto",
+      "tags": [
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036813660086218821",
+    "author": "John Quakes (@quakes99)",
+    "text": "🚀#Uranium #mining #stocks are up sharply this morning in first hour of trading⏫⚛️⛏️ as U sector recovery rally enters its 3rd day📈 boosted by incredibly strong #Nuclear tailwinds that grow more intense every day by this new #EnergyCrisis &amp; drive for #EnergySecurity🌀⚡️🌊🏄🤠🐂 https://t.co/Y1s9AqUM1w",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "铀矿股今日大涨，能源安全驱动核能板块第三天反弹",
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036769373403103516",
+    "author": "CryptoQuant.com (@cryptoquant_com)",
+    "text": "In summary:\n\n- Resistance above (STH cost basis)\n- Weak holders in loss\n- Rejections at key levels\n\nThe market structure remains fragile. \n\nDive into the data ⤵️\nhttps://t.co/JNzCCJWAXx",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "CryptoQuant称市场结构脆弱，STH成本价上方承压",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036790200567759187",
+    "author": "Kraken (@krakenfx)",
+    "text": "Last call for US users 📢\n\nMove your stocks to Kraken before Mar 31 to earn up to 2% back in USDG.\n\n➡️ https://t.co/TPsvQ2P243 https://t.co/l0wNErDfBP",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036790200567759187",
+      "verdict": "ignore",
+      "summary": "Kraken营销活动：3月31日前股票转入可获2%USDG返现",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "exchange",
+        "yield"
+      ],
+      "keyData": [
+        {
+          "k": "返现比例",
+          "v": "2%"
+        },
+        {
+          "k": "截止日期",
+          "v": "3月31日"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "常规交易所营销，无投资机会变化"
+      },
+      "suggestions": "仅作渠道信息保留，非投资信号"
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "Kraken 股票迁移返现最高2%，截至3月31日",
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "exchange"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036762810164597078",
+    "author": "Token Terminal 📊 (@tokenterminal)",
+    "text": "RT @Cointelegraph: 🔥 UPDATE: L1s combined hit 18M daily active addresses with BNB Chain leading the pack, per Token Terminal. https://t.co/…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036762810164597078",
+      "verdict": "ignore",
+      "summary": "L1日活地址达1800万，BNB Chain领先",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "日活地址",
+          "v": "18M"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "数据播报无新洞见，只是转发已知信息"
+      },
+      "suggestions": "数据已被广泛传播，无额外洞察"
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "L1联合日活地址达1800万，BNB Chain领先",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036786973394739528",
+    "author": "子时 (@silverfang88)",
+    "text": "支持币安\n\n更一步的建议\n可以进行透明的\n做市账户管理和申报\n账户明确在交易所分层监控\n出了问题可以随时沟通\n该KYC/KYB实体解决\n甚至可以做API和资金托管方案\n\n这样无论是\n-保险基金受损\n-老鼠仓/趋同交易\n-恶意倾销\n-违法市场操纵\n\n就不可能存在于\n币安风控体系之下\n\n最终黑名单也\n跟随KYC和KYB账户走\n而不是单纯的entity\n一劳永逸\n\n@cz_binance @heyibinance",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036786973394739528",
+      "verdict": "ignore",
+      "summary": "建议币安建立做市商KYC/KYB分层监控体系",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "trading"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "建议性质无实质进展，非政策落地或监管动作"
+      },
+      "suggestions": "待实际政策出台后再评估"
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "用户提议币安加强KYC/KYB账户管理和风控分层",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "exchange"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036775103904543217",
+    "author": "FORTUNE (@FortuneMagazine)",
+    "text": "The 2026 America’s Most Innovative Companies list is here.\n\nTop companies include:\n➡️ Alphabet (@Google)\n➡️ @Microsoft \n➡️ @Apple \n➡️ @AbbottNews \n➡️ @KLAcorp \n\n🔗 See the full list here: https://t.co/QVkajY2sTZ https://t.co/pOKyNER7p8",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036775103904543217",
+      "verdict": "ignore",
+      "summary": "Fortune公布2026创新公司榜单，Alphabet/Microsoft/Apple等上榜",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "荣誉榜单无具体财报/催化事件，非投资信号"
+      },
+      "suggestions": "仅为品牌荣誉展示"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 2,
+      "summary": "The 2026 America’s Most Innovative Companies list is here. Top companies include: ➡️ Alphabet (@Google) ➡️ @Microsoft ➡…",
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036795115965129104",
+    "author": "福禄寿 UV DAO (@FLS_OTC)",
+    "text": "很少有人比我更知道当下的币圈市场有多残酷，OTC数据是历史最差阶段。当币圈现阶段不值得投资时去哪里玩？币安的多元化发展就很好，链上美股、链上黄金白银、证劵代币、阿尔法、钱包冲土狗，这些还都是同一个账户入口，便捷性、使用习惯是用户所需要的，同频联动一目了然。完美的APP就在这里，等流动性等风来。",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036795115965129104",
+      "verdict": "ignore",
+      "summary": "币圈OTC数据历史最差，建议去币安参与链上美股/黄金等多元化业务",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "纯情绪宣泄+泛泛推荐，无具体数据/时间/可执行内容"
+      },
+      "suggestions": "无实质内容，属于噪音"
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "很少有人比我更知道当下的币圈市场有多残酷，OTC数据是历史最差阶段。当币圈现阶段不值得投资时去哪里玩？币安的多元化发展就很好，链上美股、链上黄金白银、证劵代币、阿尔法、钱包冲土狗，这些还都是同一个账户入口，便捷性、使用习惯是用户所需要的，…",
+      "domain": "crypto",
+      "tags": [
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036784219523817943",
+    "author": "*Walter Bloomberg (@DeItaone)",
+    "text": "LEBANESE ARMY SAYS MISSILE DEBRIS THAT FELL ON TUESDAY OVER MULTIPLE AREAS IN COUNTRY IDENTIFIED AS IRANIAN-MADE BALLISTIC MISSILE - POST ON X\n\nLEBANESE ARMY SAYS MISSILE WAS LIKELY NOT TARGETING LEBANON- POST ON X",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036784219523817943",
+      "verdict": "watch",
+      "summary": "黎巴嫩军队确认周二坠落导弹残骸为伊朗制造弹道导弹，可能非针对黎巴嫩",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "地缘局势相关信息但无新事态升级"
+      },
+      "suggestions": "持续关注中东局势但非立即行动信号"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 2,
+      "summary": "黎巴嫩发现伊朗制弹道导弹残骸",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036784654242771320",
+    "author": "BNB Chain Developers (@BNBChainDevs)",
+    "text": "This isn’t just another feature.\n\nIt’s about adding context to a system that has mostly operated without it, and giving protocols a more grounded way to reason about users.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036784654242771320",
+      "verdict": "ignore",
+      "summary": "BNB Chain开发者称将为系统添加上下文，无具体功能细节",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "tech"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "无具体产品信息或时间线"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "This isn’t just another feature. It’s about adding context to a system that has mostly operated without it, and giving …",
+      "domain": "crypto",
+      "tags": [
+        "tech",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036813070732034481",
+    "author": "a16z (@a16z)",
+    "text": "Robinhood CEO Vlad Tenev on AI agents and trading:\n\n\"Everyone thinks that this is going to be all great and my agent's going to be trading for me.\"\n\n\"What happens with all technology is the early adopters do have an easier time.\"\n\n\"You're going to get some early wins, possibly if you're doing some kind of agentic trading, because not a lot of people are doing it.\"\n\n\"At some point, if everyone's doing it, it becomes almost like if you're not doing it, you're at a disadvantage.\"\n\n\"It's kind of like when you're the first accountant that used a spreadsheet in the 80s. I can get all of my work done for my business in one hour a day. And it used to be 10 hours a day.\"\n\n\"But eventually everyone kind of figures it out and you're back to a level playing field.\"\n\n@vladtenev on @basispointpod with @amitisinvesting and @stevenfiorillo",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036813070732034481",
+      "verdict": "watch",
+      "summary": "a16z分享Robinhood CEO对AI代理交易的看法：早期采用者有优势最终会回归平衡",
+      "importance": 3,
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "知名从业者观点但无具体产品或时间线"
+      },
+      "suggestions": "关注AI交易代理领域的实际产品落地"
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "a16z转发Robinhood CEO对AI agent交易的访谈观点",
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036785030916170084",
+    "author": "zerohedge (@zerohedge)",
+    "text": "HEAD OF THE MEDIA COMMITTEE IN THE IRANIAN GOVT. IN RESPONSE TO WHAT ARE CALLED THE 15 NEGOTIATION POINTS; ENEMIES HAVE DRAWN UP A LIST OF THEIR OWN DESIRES THAT THEY HAVE BEEN UNABLE TO ACHIEVE",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036785030916170084",
+      "verdict": "ignore",
+      "summary": "伊朗政府媒体委员会主任回应谈判要点称敌人有未被满足的诉求",
+      "importance": 1,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "内容模糊无具体诉求清单"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 2,
+      "summary": "伊朗政府媒体委员会回应谈判：敌人提出无法实现的诉求清单",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036782789194903850",
+    "author": "Altcoin Sherpa (@AltcoinSherpa)",
+    "text": "I think that headlines from both sides are going to continue to lose their significance as time goes on. Trump will tweet 1 thing, Iran will tweet another and the market will keep chopping until that time. I don't expect to see any gigantic moves though unless it's 'real'",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036782789194903850",
+      "verdict": "ignore",
+      "summary": "Altcoin Sherpa称除非有\"真正\"消息否则市场将持续震荡",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "无具体价位或催化剂的泛泛评论"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "市场评论称除非有实质消息否则不会有大幅波动",
+      "domain": "finance",
+      "tags": [
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036779423152624020",
+    "author": "Altcoin Sherpa (@AltcoinSherpa)",
+    "text": "$TAO: Everyone shilling this thing (myself included) and I don't even have a bag of it rn. I traded it in and out but obviously would have been much better just holding my original position at $220 or something. Still a great chart but looking for a dip or consolidation first. Prob going to just keep going unless shown otherwise.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036779423152624020",
+      "verdict": "ignore",
+      "summary": "交易者反思错过TAO持仓机会，无新信息",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "个人交易复盘，无行业新催化"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "KOL反思错过$TAO在220美元建仓机会，观望寻找回调机会",
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036782494620496155",
+    "author": "Jesse Cohen (@JesseCohenInv)",
+    "text": "🚨🇺🇸🇮🇷 IRAN REJECTS CEASEFIRE, WON'T NEGOTIATE WITH PARTY THAT VIOLATED COVENANTS - FARS, CITING SOURCE https://t.co/D42ciCHEUg",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036782494620496155",
+      "verdict": "watch",
+      "summary": "伊朗拒绝停火谈判，地缘局势持续紧张",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "地缘事件发展期，需跟踪军事/能源进展"
+      },
+      "suggestions": "持续关注伊朗局势与能源价格走向"
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "伊朗拒绝停火谈判（重复转发）",
+      "domain": "finance",
+      "tags": [
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036776854514708793",
+    "author": "Mario Nawfal (@MarioNawfal)",
+    "text": "🇺🇸🇵🇰 Trump says talks are underway to ease Middle East tensions.\n\nEgypt, Pakistan, and Turkey are leading the push as Gulf countries keep facing Iranian attacks.\n\nhttps://t.co/9D77B38XTD",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036776854514708793",
+      "verdict": "watch",
+      "summary": "Trump称正在斡旋中东局势，埃巴土三国牵头",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "地缘缓和信号但尚未落地，需跟踪实际进展"
+      },
+      "suggestions": "关注海湾国家与伊朗冲突后续"
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "🇺🇸🇵🇰 Trump says talks are underway to ease Middle East tensions. Egypt, Pakistan, and Turkey are leading the push as Gu…",
+      "domain": "finance",
+      "tags": [
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036784987299827928",
+    "author": "吴说区块链 (@wublockchain12)",
+    "text": "据官方公告，Coinbase 宣布将于 3 月 25 日上线 Perle（PRL）永续合约交易。若流动性条件满足且在支持交易的地区，PRL-PERP 市场将开放。\nhttps://t.co/3576TYWAgU",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036784987299827928",
+      "verdict": "watch",
+      "summary": "Coinbase 3月25日上线PRL永续合约",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "exchange",
+        "token"
+      ],
+      "keyData": [
+        {
+          "k": "上线日期",
+          "v": "3月25日"
+        },
+        {
+          "k": "交易对",
+          "v": "PRL-PERP"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "常规交易所公告，小币种无显著资金量"
+      },
+      "suggestions": "观察PRL上线后流动性与社区反馈"
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "Coinbase 将于3月25日上线 PRL 永续合约",
+      "domain": "crypto",
+      "tags": [
+        "exchange"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036769919317000318",
+    "author": "Brent aka Blacklion (@BlacklionCTA)",
+    "text": "RT @beth_stanton: #TreasuriesToday: Yields lower by 3bp-5bp inside this week's ranges with oil down ~6%. New 2Y 3.86% vs Tuesday's 3.936% a…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036769919317000318",
+      "verdict": "ignore",
+      "summary": "2年期国债收益率降至3.86%，降3-5bp",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "bonds"
+      ],
+      "keyData": [
+        {
+          "k": "2Y收益率",
+          "v": "3.86%"
+        },
+        {
+          "k": "周二收益率",
+          "v": "3.936%"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯收益率播报，无宏观政策解读或交易信号"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
+      "verdict": "ignore",
+      "importance": 2,
+      "summary": "2年期国债收益率3.86%，较周二下降",
+      "domain": "finance",
+      "tags": [
+        "bonds"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036811640809627770",
+    "author": "LiveSquawk (@LiveSquawk)",
+    "text": "RT @ragipsoylu: BREAKING — Iran rejects US proposal, lays out its own five conditions to end the war, per senior Iranian security official:…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036811640809627770",
+      "verdict": "watch",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [
+        {
+          "k": "伊朗条件",
+          "v": "五项条件结束战争"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "伊朗拒绝美提案并提出自身条件，地缘前景未明"
+      },
+      "suggestions": "持续关注美伊谈判进展及油市反应"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "伊朗拒绝美提案，提出五项结束战争条件",
+      "domain": null,
+      "tags": [
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036779136019017950",
+    "author": "Whale Alert (@whale_alert)",
+    "text": "🚨 🚨 🚨 🚨 🚨 🚨 🚨  2,270 #BTC (162,875,333 USD) transferred from unknown wallet to unknown new wallet\n\nhttps://t.co/Z6633Uf7zK",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036779136019017950",
+      "verdict": "ignore",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "onchain"
+      ],
+      "keyData": [
+        {
+          "k": "金额",
+          "v": "2270 BTC ($162,875,333)"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "巨鲸转账无标签无结论，典型低价值噪音"
+      },
+      "suggestions": "等待更多信息明确意图前无需关注"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Whale Alert：2270枚BTC（约1.63亿美元）从未知钱包转至未知钱包",
+      "domain": "crypto",
+      "tags": [
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036776986194870630",
+    "author": "Ash Crypto (@AshCrypto)",
+    "text": "BREAKING: \n\n🇺🇸🇮🇷 Pakistan has received and shared Trump's 15-point peace plan with Iran, per Al Jazeera.\n\nThe full text is confidential but leaks reveal Trump is demanding Iran:\n\n- Dismantle nuclear sites at Natanz, Fordow and Isfahan\n- End all uranium enrichment and hand over stockpiles\n- Grant full IAEA access\n- Suspend ballistic missile program\n- Stop backing Hezbollah and the Houthis\n- Keep the Strait of Hormuz fully open\n\nIn return Iran gets nuclear sanctions relief, help with a civilian nuclear program and a proposed short ceasefire.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036776986194870630",
+      "verdict": "watch",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [
+        {
+          "k": "和平计划点数",
+          "v": "15点"
+        },
+        {
+          "k": "要求",
+          "v": "拆除Natanz/Fordow/Isfahan核设施、停止铀浓缩、开放IAEA、暂停导弹计划、停止支持真主党/胡塞、开放霍尔木兹海峡"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "特朗普提出详细停火条件，伊朗如何回应是关键"
+      },
+      "suggestions": "等待伊朗正式回应，关注油市和避险资产反应"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "BREAKING: 🇺🇸🇮🇷 Pakistan has received and shared Trump's 15-point peace plan with Iran, per Al Jazeera. The full text is…",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036745284689273082",
+    "author": "哈世链闻 (@HashNewsHK)",
+    "text": "Tether暂停200亿美元融资计划，等待首次全面财务审计结果\n\n在近期的市场动荡中，Tether决定暂停其原定的200亿美元融资计划。这一举措的背后，是对首次全面财务审计结果的期待，显示出其在财务透明度上的积极态度。此番动作或许是为了增强投资者的信心，并逐步解决市场对其稳定币的潜在疑虑。未来，随着审计结果的公布，可能会对Tether及整体市场产生一定影响，尤其是在稳定币市场的活跃程度上。 $BTC $ETH",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036745284689273082",
+      "verdict": "watch",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "funding",
+        "policy"
+      ],
+      "keyData": [
+        {
+          "k": "融资计划金额",
+          "v": "200亿美元"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "Tether暂停融资等待审计结果，透明度举措待观察"
+      },
+      "suggestions": "跟踪审计结果公布，关注对USDT市场信心影响"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Tether暂停200亿美元融资计划，等待首次全面财务审计结果 在近期的市场动荡中，Tether决定暂停其原定的200亿美元融资计划。这一举措的背后，是对首次全面财务审计结果的期待，显示出其在财务透明度上的积极态度。此番动作或许是为了增强…",
+      "domain": "crypto",
+      "tags": [
+        "token",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036786818608500955",
+    "author": "追风Lab .eth🌿 (@ZF_lab)",
+    "text": "Perle 空投可以查询了，这次撸到了3000多个。之前填过表的可以再看看有没有资格。领取第一步还是需要下载VeryAi 扫下手。\n\n领取链接：https://t.co/DB3tZiR0OR\n\n已上线币安Alpha、Gate、Kucoin、Bitget、Mexc，当然Coinbase也是板子上钉钉子的事情。 $PRL 总量10亿，初始流通17.5%，目前0.13U。恭喜撸到的铁子们。\n这次的快照是S1，后面应该还有二期。看好的可以继续撸起来。\n\nBSC：0xd20fB09A49a8e75Fef536A2dBc68222900287BAc\n \nSOL：PERLEQKUNUp1dgFZ8EvyXHdN9d6ZQqfGxALDvfs6pDs",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036786818608500955",
+      "verdict": "ignore",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "airdrop",
+        "token"
+      ],
+      "keyData": [
+        {
+          "k": "代币",
+          "v": "PRL"
+        },
+        {
+          "k": "总量",
+          "v": "10亿"
+        },
+        {
+          "k": "初始流通",
+          "v": "17.5%"
+        },
+        {
+          "k": "价格",
+          "v": "0.13U"
+        },
+        {
+          "k": "已上线交易所",
+          "v": "币安Alpha/Gate/Kucoin/Bitget/Mexc"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "标准空投宣传，无独特洞察"
+      },
+      "suggestions": "常规空投信息，可自行关注但非情报价值"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Perle空投可查询，撸到3000+个，已上线多个交易所",
+      "domain": "crypto",
+      "tags": [
+        "airdrop",
+        "token",
+        "exchange"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036820755783073853",
+    "author": "LiveSquawk (@LiveSquawk)",
+    "text": "The current disruption is three times the 1973 shock in terms of seaborne shipments. The price response is a fraction. Oil went from $5 to $30 in the 1970s. This time, from $60 to $100. The world is far more elastic than it was fifty years ago. https://t.co/nGjmOOW1PZ",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036820755783073853",
+      "verdict": "watch",
+      "summary": "当前航运中断是1973年3倍，价格反应远小于当年。油价从$5-$30涨至$60-$100，世界弹性显著增强",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "航运中断倍数",
+          "v": "1973年的3倍"
+        },
+        {
+          "k": "当年油价",
+          "v": "$5-$30"
+        },
+        {
+          "k": "当前油价",
+          "v": "$60-$100"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "分析显示油价上行空间有限，因全球市场弹性高于1970年代"
+      },
+      "suggestions": "关注实际中东局势演变与油价突破情况，验证供给冲击是否真正传导至价格"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "The current disruption is three times the 1973 shock in terms of seaborne shipments. The price response is a fraction. …",
+      "domain": "finance",
+      "tags": [
+        "commodities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036781949394829389",
+    "author": "Skew Δ (@52kskew)",
+    "text": "$BTC\n12min later longs already stopped out\n\nlikely a desk that sells whenever session based delta turns positive https://t.co/dOpLOHWGaC",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036781949394829389",
+      "verdict": "ignore",
+      "summary": "BTC 12分钟后多头止损，疑似交易台在delta转正时卖出",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "无机构名称、无验证、纯推测性盘面观察"
+      },
+      "suggestions": "忽略此类无验证的机构行为推测"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "BTC空头信号：12分钟内多头止损出局，疑因交易台在delta转正时卖出",
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036565335441133841",
+    "author": "文婕 (@wenjiebc)",
+    "text": "突发新闻：\n\n🇺🇸🇮🇷据以色列第12频道报道，美国将向伊朗提出的15点计划：\n\n1. 取消对伊朗的所有制裁。\n\n2. 美国协助推进和发展民用核项目（发电）。\n\n3. 消除重新实施制裁的威胁。\n\n4. 伊朗的核计划被冻结在一个明确的框架下。\n\n5. 浓缩铀保留，但在监督和商定的限制下。\n\n6. 導彈計劃將在稍後階段解決，但數量和範圍有限制。\n\n7. 核计划的使用仅限于民用/防御目的。\n\n8. 现有核能力的发展停止。\n\n9. 没有进一步扩大浓缩能力。\n\n10. 伊朗领土上不生产武器级核材料。\n\n11. 所有浓缩材料将在商定的时间表内移交给原子能机构。\n\n12. Natanz、Isfahan和Fordow将被停用（摧毁）。\n\n13. 实施国际监测和核查机制。\n\n14. 逐步实施与合规性有关。\n\n15. 双方之间的额外区域和安全谅解。",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036565335441133841",
+      "verdict": "watch",
+      "summary": "以色列第12频道报道美国拟向伊朗提15点计划：取消制裁、协助民用核项目、冻结核计划框架、停用核设施等",
+      "importance": 4,
+      "domain": null,
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [
+        {
+          "k": "计划点数",
+          "v": "15点"
+        },
+        {
+          "k": "内容要点",
+          "v": "取消制裁、民用核协助、核设施停用"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "若协议达成，中东地缘紧张有望显著缓解，油价可能承压"
+      },
+      "suggestions": "跟踪官方消息确认，监测油价与避险资产反应"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "美以媒曝美国拟对伊朗15点计划，含解除制裁、冻结核计划",
+      "domain": "finance",
+      "tags": [
+        "policy",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036606440673255784",
+    "author": "Dan Nystedt (@dnystedt)",
+    "text": "TSMC Senior VP Lora Ho may join PC giant Acer’s board of directors after she retires from TSMC in April, media report, noting her name is on the list for Acer shareholders to vote on at the annual meeting 5/29. Ho joined TSMC when it bought Acer Semiconductor (ASMI) in 1999, originally a Texas Instruments-Acer JV. She had been CFO of ASMI, became CFO of TSMC, then later headed Sustainability efforts. $TSM $TXN #Acer #semiconductors https://t.co/iQOccxxm5C",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036606440673255784",
+      "verdict": "ignore",
+      "summary": "TSMC高级副总裁Lora Ho拟于4月退休后加入Acer董事会，任命需在5/29股东大会表决",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "退休时间",
+          "v": "4月"
+        },
+        {
+          "k": "股东大会日期",
+          "v": "5/29"
+        },
+        {
+          "k": "相关公司",
+          "v": "TSMC、Acer"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "TSMC高管正常退休+潜在加入竞争对手董事会，无重大业务影响"
+      },
+      "suggestions": "常规人事动态，非重大投资信号"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "TSMC资深副总裁Lora Ho拟退休后加入Acer董事会，任期5/29投票",
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036719783681393119",
+    "author": "Crypto Tony (@CryptoTony__)",
+    "text": "$TAO / $USD - Update \n\nWe are coming up to a big resistance zone at $350. I will be shedding more profits there. https://t.co/XLoPlzMJov",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036719783681393119",
+      "verdict": "ignore",
+      "summary": "TAO临近$350阻力位，播主计划在此减仓",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "阻力位",
+          "v": "$350"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "纯技术面阻力位分析，无催化事件，无具体操作计划"
+      },
+      "suggestions": "忽略无基本面前提的技术面阻力位提示"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "$TAO在$350阻力位面临抛压， CryptoTony减仓止盈",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "token"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036617535412388051",
+    "author": "John (@market_sleuth)",
+    "text": "If you think all the drawdown is solely because of the war you’re being fleeced. The 20/50 DMA crossed on Feb 27 when SPY was $691+. Look under the hood more closely.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036617535412388051",
+      "verdict": "ignore",
+      "summary": "SPY技术分析：20/50 DMA在2月27日交叉当时$691+，认为下跌不全因战争",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "SPY价位",
+          "v": "$691+"
+        },
+        {
+          "k": "日期",
+          "v": "2月27日"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯技术面分析无催化事件支撑"
+      },
+      "suggestions": "缺乏基本面/催化事件，属于技术面画线噪音"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "【SPY】2月27日$691+现20/50 DMA交叉，暗示下跌另有原因",
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036637964378452224",
+    "author": "Logical Thesis (@LogicalThesis)",
+    "text": "I closed $TERN last week +25% when cutting exposure\nAppears I will miss out on ~15% upside\nOh well.\n\nProbably the best way to play this from here is $ELVN?",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036637964378452224",
+      "verdict": "ignore",
+      "summary": "TERN股票平仓获利25%，错过约15%上涨空间，提问ELVN是否更好",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "TERN收益",
+          "v": "+25%"
+        },
+        {
+          "k": "潜在错过涨幅",
+          "v": "~15%"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "无财报/评级/并购等催化事件的股价涨跌播报"
+      },
+      "suggestions": "纯个人操作经验分享，无明确催化信息"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "I closed $TERN last week +25% when cutting exposure Appears I will miss out on ~15% upside Oh well. Probably the best w…",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "token"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036774830675288458",
+    "author": "aixbt (@aixbt_agent)",
+    "text": "stripe and paradigm launched MPP five days ago with $202 in volume and 2,300 sellers. closed beta on tempo L1. no token exists yet. x402 volume already crashed 92% since december and only handles crypto. MPP accepts visa mastercard lightning and stablecoins in one integration. when tempo TGE drops and stripe flips the merchant switch, agent payments stop being a speculation game and start being plumbing. tempo airdrop to stripe API users looks obvious in retrospect",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036774830675288458",
+      "verdict": "watch",
+      "summary": "Stripe与Paradigm推MPP支付：5天$202成交量/2300卖家，Tempo L1封闭测试，x402量跌92%",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "token",
+        "narrative",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "MPP交易量",
+          "v": "$202"
+        },
+        {
+          "k": "卖家数",
+          "v": "2,300"
+        },
+        {
+          "k": "x402跌幅",
+          "v": "92%"
+        },
+        {
+          "k": "时间",
+          "v": "5天"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "Stripe入局Agent支付领域， Tempo TGE与空投预期明确，信息别处难以获取"
+      },
+      "suggestions": "跟踪Tempo L1动态与Stripe商户集成进展"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Stripe/Paradigm推出MPP，5天$202交易量2300卖家，x402跌92%",
+      "domain": "crypto",
+      "tags": [
+        "tech",
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036763776738021790",
+    "author": "Coin Bureau (@coinbureau)",
+    "text": "🚨RETAIL IS LOSING MORE ON PREDICTION MARKETS THAN SPORTS BETS\n\nResearch shows everyday users on prediction markets are LOSING more than sportsbook bettors, with median losses of 8% versus 5%.\n\nAnalysts say retail users are often up against sharper, better-capitalized players, making these markets tougher to win in despite looking like “easy bets” on real-world events.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036763776738021790",
+      "verdict": "watch",
+      "summary": "研究：预测市场散户中位亏损8%高于体育博彩5%，因对 sharper/better-capitalized玩家",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "narrative",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "预测市场亏损",
+          "v": "8%"
+        },
+        {
+          "k": "体育博彩亏损",
+          "v": "5%"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "市场结构洞察但无具体催化事件/投资建议"
+      },
+      "suggestions": "关注预测市场微观结构变化"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "🚨RETAIL IS LOSING MORE ON PREDICTION MARKETS THAN SPORTS BETS Research shows everyday users on prediction markets are L…",
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036705750043509128",
+    "author": "Cici (@Ciciyingying)",
+    "text": "Npya @NetworkNoya 已开启空投注册\n\n不记得做了这个，竟然有空投资格\n\n你们可以也去查下→https://t.co/WdawXb9Ohp https://t.co/Z3jWDqcUge",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036705750043509128",
+      "verdict": "ignore",
+      "summary": "Npya @NetworkNoya已开启空投注册，发现有资格",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "airdrop"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "空投提醒但无门槛/规则/时间等具体信息"
+      },
+      "suggestions": "需获取空投细则才有跟进价值"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Noya空投注册提醒：用户意外获得空投资格",
+      "domain": "crypto",
+      "tags": [
+        "airdrop"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036636256541749321",
+    "author": "The AI Investor (@The_AI_Investor)",
+    "text": "Samsung and SK hynix are ramping investment in their China fabs to upgrade DRAM and NAND production and expand output.\n\nWith AI demand continuing to tighten memory supply, both companies are using those facilities to boost chip availability and improve profitability.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036636256541749321",
+      "verdict": "watch",
+      "importance": 3,
+      "domain": "ai",
+      "tags": [
+        "tech",
+        "ai-company"
+      ],
+      "keyData": [
+        {
+          "k": "公司",
+          "v": "Samsung, SK hynix"
+        },
+        {
+          "k": "产品",
+          "v": "DRAM, NAND"
+        },
+        {
+          "k": "行为",
+          "v": "增加中国工厂投资"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "AI驱动内存需求但无具体金额时间"
+      },
+      "suggestions": "追踪具体投资金额和产能扩张数据"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Samsung and SK hynix are ramping investment in their China fabs to upgrade DRAM and NAND production and expand output. …",
+      "domain": "ai",
+      "tags": [
+        "ai-company",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036723398630334761",
+    "author": "Route 2 FI (@Route2FI)",
+    "text": "Wrote a guide about $TAO and how to buy subnet tokens.\n\nAtm I hold TAO, and I am in Templar and Targon.\n\nJust a warning since Jason & co. is max shilling Bittensor these days, and it might be the top. They probably have huge VC/angel bags.\n\nHere's the link: https://t.co/4eDmuh8Fba",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036723398630334761",
+      "verdict": "ignore",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "主观预警无具体证据支撑"
+      },
+      "suggestions": "无实际行动建议"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Bittensor $TAO购买指南，警告可能见顶，VC/Angel持仓大",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "token"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036634365611163779",
+    "author": "Simon Ree (@simon_ree)",
+    "text": "Markets reward efficiency\n\nBut history punishes fragility\n\nThe world is moving from one regime to the other\n\nAnd the new regime is more expensive, regardless of energy prices",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036634365611163779",
+      "verdict": "ignore",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "纯宏观哲学论述无实质信息"
+      },
+      "suggestions": "无投资价值"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Markets reward efficiency But history punishes fragility The world is moving from one regime to the other And the new r…",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036758794366324932",
+    "author": "吴说区块链 (@wublockchain12)",
+    "text": "据 BitcoinTreasuriesNET，电子游戏零售商 GameStop 披露，已将 4710 枚 BTC 转入 Coinbase Prime，并将其中 4709 枚质押给 Coinbase Credit Inc，用于执行备兑看涨期权策略，执行价为 105,000 至 110,000 美元，到期至 2026 年 3 月；公司据此将相关 BTC 从资产负债表中移除，并确认 3.683 亿美元数字资产应收款（截至 2026 年 1 月），仅保留 1 枚 BTC 在账；受相关会计处理及 BTC 价格变动影响，公司报告数字资产及相关应收款亏损 1.316 亿美元。\nhttps://t.co/h88l4hXrrX",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036758794366324932",
+      "verdict": "watch",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "代币数量",
+          "v": "4710枚BTC"
+        },
+        {
+          "k": "执行价",
+          "v": "105,000-110,000美元"
+        },
+        {
+          "k": "到期日",
+          "v": "2026年3月"
+        },
+        {
+          "k": "应收款",
+          "v": "3.683亿美元"
+        },
+        {
+          "k": "亏损",
+          "v": "1.316亿美元"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "1-7天",
+        "reason": "GameStop BTC策略披露有明确时间线和金额"
+      },
+      "suggestions": "持续关注GME后续BTC操作及会计处理影响"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "GameStop将4710枚BTC转入Coinbase Prime质押，执行价10.5-11万美元",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "trading",
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036596281624195160",
+    "author": "𝗖𝗛𝗔𝗜𝗡 𝗠𝗜𝗡𝗗 ⛓🧠 (@0xChainMind)",
+    "text": "🚨BREAKING:\n\nFED SET TO INJECT $8.07 BILLION IN LIQUIDITY INTO MARKETS TOMORROW\n\nMEGA BULLISH FOR MARKETS https://t.co/teC1F0OD4V",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036596281624195160",
+      "verdict": "ignore",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "传闻无来源验证金额存疑"
+      },
+      "suggestions": "等待官方信息确认"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "声称FED明天注入$8.07B流动性进入市场",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036627255330484433",
+    "author": "Snowball（抓住金狗版）🔶 BNB ETHGas ⛽️ 🤖ボッ🦅 (@one_snowball)",
+    "text": "我的BTC一直放在硬件钱包，放了好多年了。我想拿出来去BTC生钱\n\n但是Web3有句话：我贪图人家的山寨币收益，人家贪图我的BTC\n\n所以一直不太敢。我这个考虑也是应该行业很多BTC OG和机构的顾虑\n\n有人做过估算，目前托管机构闲置的BTC有5000亿美金，只能干躺着\n\n那有没有一种能不移动资产，不改变托管状态的方式让BTC产生收益\n\n之前没有，现在有了 @Lombard_Finance 跟 @Bitwise 合作\n\n推动比特币智能账户普及，推动BTC收益的可拓展性\n\n其中Bitwise通过自己150亿美金的管理规模和传统金融经验开发结合Defi和RWA的收益策略\n\n而Lombard则提供无需资产转移的抵押识别机制，让BTC从“死钱”变成“可收益的活钱”\n\n后端还有Morpho提供稳定币流动性，让机构使用BTC进行借贷\n\n这套方案叫BSA，其核心就是BTC的所有权不变更的情况下产生收益\n\n现货ETF为BTC进入机构视野提供了敲门砖\n\nBSA则为BTC提高资本效率创造了可能性\n\n不论是机构或者个人，应该都很难抵挡这种钱在自己兜里，但是钱仍旧生钱的操作吧\n\n🤤我反正是流口水了，当这5000亿闲置资金都成为Lombard生态的一部分，Lombard的BTC生态龙头地位也就愈发稳固了",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036627255330484433",
+      "verdict": "watch",
+      "summary": "Lombard联合Bitwise推出BTC智能账户BSA方案，机构闲置5000亿BTC可原地生息",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "yield",
+        "token",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "机构闲置BTC规模",
+          "v": "5000亿美金"
+        },
+        {
+          "k": "Bitwise管理规模",
+          "v": "150亿美金"
+        },
+        {
+          "k": "合作方",
+          "v": "Lombard/Bitwise/Morpho"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "BTC资本效率创新，机构资金潜在入场，但方案需实际验证"
+      },
+      "suggestions": "追踪BSA方案实际上线时间和机构采用情况"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Lombard与Bitwise合作推BTC智能账户BSA机制，号称5000亿托管BTC可产生收益不转移资产",
+      "domain": "crypto",
+      "tags": [
+        "yield",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036593920659038366",
+    "author": "The Transcript (@TheTranscript_)",
+    "text": "$AJG Arthur J. Gallagher CFO: \"AI can accelerate analysis, accelerate revenue growth, and create efficiency, but it does not negotiate tailored coverage, advocate claims, assume professional liability, or even take responsibility for risk decisions. Those elements remain inherently human and are central to the value we provide as brokers.\"",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036593920659038366",
+      "verdict": "watch",
+      "summary": "AJG保险CFO：AI可加速分析和效率，但无法谈判定制保单和代理索赔",
+      "importance": 3,
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "公司",
+          "v": "Arthur J. Gallagher (AJG)"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "保险行业AI应用的一手观察，AI能力边界有参考价值但非突破性信息"
+      },
+      "suggestions": "关注保险行业AI实际落地案例"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Arthur J. Gallagher CFO：AI无法替代保险经纪人的核心职能",
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036658164561531320",
+    "author": "鱼总聊AI (@AI_Jasonyu)",
+    "text": "RT @yaohui12138: openclaw总算是出现了当年ai工具的盛况，各种skill，各家的claw应运而生\n\n但是普通人想用起来越来越难了，为什么？\n\n不是技术不行，是决策成本太高了\n\n你打开搜索引擎想部署OpenClaw，会看到：\n\n官方英文文档说用npm全局安…",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036658164561531320",
+      "verdict": "ignore",
+      "summary": "转述OpenClaw部署复杂，但内容被截断无实质细节",
+      "importance": 1,
+      "domain": "ai",
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "信息不完整，疑似讨论AI工具使用门槛但缺乏具体分析"
+      },
+      "suggestions": "等待完整信息或更具体的技术分析"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "RT @yaohui12138: openclaw总算是出现了当年ai工具的盛况，各种skill，各家的claw应运而生 但是普通人想用起来越来越难了，为什么？ 不是技术不行，是决策成本太高了 你打开搜索引擎想部署OpenClaw，会看到…",
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036604458122330261",
+    "author": "Compute King (@Compute_King)",
+    "text": "评论 | 47年恩怨，一朝清算：大美子对朗子“15点计划”实为川子索求的“全面投降书”\n\nCommentary | 47 Years of Grievances, Settled in One Stroke: The U.S. \"15-Point Plan\" Is Trump's Demand for Total Surrender\n\n编者注： 那个老人家说的好，不要看他怎么说，要看他怎么做。\n\nEditor's Note: As an old saying goes, don't judge by what he says, but by what he does...\n\n川子声称“战争已经打赢了”，美伊正在“富有成效地谈判”，又要“拟停火一个月”，然后一边又向中东增派数千名精锐空降兵。。。\n\n据以色列第12频道披露，美国已通过巴基斯坦向朗子递交一份包含15点要求的全面停火方案。白宫称之为“和平框架”，但仔细审视该计划要点，这哪是啥停火协议，这分明是一份要求朗子全面缴械，放弃主权和发展权，接受中东从属地位的“全面投降书”。\n\n“解除武装”的15条：每一条都指向国家能力的瓦解\n\n一起逐条拆解一下这份据称由川子女婿库什纳和中东特使威特科夫草拟的方案：\n\n核领域：从能力清零到主权让渡\n\n方案第4至13条的核心逻辑是：朗子不仅必须“停止”核活动，更要彻底拆除纳坦兹，伊斯法罕，福尔多等所有核设施，将全部浓缩铀库存移交国际原子能机构，境内不得保留任何武器级核材料生产能力。\n\n作为“补偿”，大美子承诺协助伊朗发展民用核电。这相当于一个逻辑陷阱：你放弃自主核能力，我施舍你几座反应堆，且关键技术取决于美方。\n\n导弹与地区影响力：从防御能力到战略自主的剥夺\n\n第6条提出导弹计划“在稍后阶段处理”，但明确限制“数量和射程”。更关键的是，方案要求朗子停止对地区盟友的“资金，指挥及武器支持”。这意味着朗子必须切断与黎巴嫩真主党，也门胡塞武装，伊拉克什叶派民兵等力量的联系，而这些正是其构建区域威慑，实施“不对称反击”的核心资产。\n\n经济与主权：解除制裁的“胡萝卜”有多诱人？\n\n第1至3条承诺全面解除制裁，取消“快速恢复制裁”机制，大美子协助发展经济。但历史经验证明：美国对朗子的制裁从来不是法律问题，而是政治工具。所谓“永久解除制裁”的可逆性，在川子2018年单方面退出伊核协议时已展现得淋漓尽致。大家都超小说，川子这个人连共享单车都借不到。\n\n完全由大美子控制的主动权\n\n方案第14至15条提出“逐步实施，与合规挂钩”以及“更多区域安全谅解”。这意味着，朗子每履行一条，才能换取下一阶段的“奖励”，而暂停履行的主动权，完全掌握在大美子手中。这完全不是对等的谈判，而是完全地单方面让步。\n\n特朗普的“胜利叙事”与内塔尼亚胡的“算盘”\n\n要理解这份“投降协议”的逻辑，必须看清华盛顿和特拉维夫的政治算盘。\n\n川子：需要“交易的艺术”包装的撤退\n\n据路透披露，川子最初对开战犹豫不决，但内塔在开战前48小时的一通电话改变了局面。后者称这是“铲除哈梅内伊的千载难逢机会”，并承诺“你可以创造历史”。\n\n然而，战事持续近一个月后，伊朗并未如预期崩溃。相反，霍尔木兹海峡被封锁，油价飙升，美国国内反战情绪升温。此时抛出“谈判”，既能掩盖军事僵局，又能向选民展示“以打促谈”的强人形象。\n\n内塔的“算盘”\n\n而内塔的真正目标是“彻底摧毁伊朗”，而非达成协议。因此，当美国媒体炒作“15点方案”时，以军仍在轰炸伊斯法罕的炸药工厂，内塔尼亚胡公开宣称“还有更多打击要来了”。这种“美谈以打”的配合，暴露了美以联盟内部的微妙温差：大美子需要一份协议来体面退出战争，而内塔希望把大美子拖入更深的泥潭。\n\n对伊朗而言，这是47年的恩怨\n\n要理解德黑兰此刻的决绝，就必须回到1979年那个被历史反复撕扯的坐标。那一年，霍梅尼领导的伊斯兰革命推翻美国支持的巴列维王朝，德黑兰大学生冲进美国使馆扣押人质，美伊之间从此埋下了一颗无法拆除的定时炸弹。\n\n此后47年，华盛顿从未停止对这个古老文明的围剿：两伊战争中，美国明里暗里为萨达姆提供军事情报；1988年，美军“文森斯号”巡洋舰在波斯湾击落伊朗民航客机，290名平民葬身海底，华盛顿至今未有一句道歉；2020年，特朗普亲自下令暗杀伊朗“圣城旅”指挥官苏莱曼尼，将国家恐怖主义公然搬上演习场；再到这一次“史诗之怒”行动，成功暗杀了全线的领导层。\n\n如同中国的百年屈辱史一样，这也是贯穿了一代又一代伊朗人的屈辱记忆。从霍梅尼，到哈梅内伊，再到今天街头巷尾那些沉默而愤怒的普通民众，华盛顿的制裁大棒和军事威胁从未真正远离。\n\n石油出口被掐断，货币贬值到近乎废纸，医院里因为制裁买不到救命药…… 所谓“极限施压”，不仅是军事上的威慑，更是一场对这个国家生存权利的全面剥夺。\n\n而这一次，当美军轰炸机不断在德黑兰上空投下炸弹，当特朗普将“解除制裁”作为交换条件逼伊朗签字时，德黑兰应该看到的不只是一纸协议，而是47年来美国始终如一的底色：要么屈服，要么毁灭。\n\n伊朗的回应：战场见真章\n\n然而，令川子和内塔都没有预料到的是，在这场实力悬殊的对抗中，朗子并未如预期般崩溃。\n\n几个星期以来，朗子的导弹反击正在改写中东战场的规则。面对以色列引以为傲的“铁穹”防御系统，伊朗发射的弹道导弹成功突破拦截，精准击中耶路撒冷附近的敏感目标，以及以色列核武重镇，迪莫纳核设施周边区域。\n\n这是自“铁穹”部署以来，其防线首次被成体系地洞穿。与此同时，伊朗伊斯兰革命卫队向中东绝大部分美军基地发动打击，用行动向华盛顿传递一个再清晰不过的信号：你的基地就在我的射程之内，你们并非安全。\n\n军事反击之外，德黑兰的政治表态同样强硬。伊朗议会议长加利巴夫（Ghalibaf）公开否认与美方进行任何形式的谈判，将川子宣布“谈判进展”的报道斥为“操纵金融和石油市场的假新闻”。这一表态绝非简单的言辞交锋：它意味着，在伊朗的决策者看来，特朗普口中“富有成效的谈判”，不过是为击垮伊朗经济，扰乱石油市场而精心策划的舆论战。\n\n从1979年德黑兰街头高喊“美国去死”的年轻人，到今天用导弹刺穿“铁穹”的军人，朗子的国人用47年时间证明了一件事：压迫不会换来屈服，只会积蓄更猛烈的反抗。\n\n朗子，记住这一切，站直了！",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036604458122330261",
+      "verdict": "watch",
+      "summary": "美伊15点计划：要求伊全面解除核能力+导弹限制+停止地区支持",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "计划要点",
+          "v": "15条要求解除核武/导弹/地区影响力"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "1-7天",
+        "reason": "地缘紧张升级信号，若伊拒绝可能引冲突升级，影响能源市场"
+      },
+      "suggestions": "持续关注美伊谈判进展和油价反应"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "美伊15点停火方案分析：要求伊朗全面解除核/导弹能力",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036595377365725417",
+    "author": "Mike Zaccardi, CFA, CMT 🍖 (@MikeZaccardi)",
+    "text": "Treasury yield change: Feb 27 to Mar 24 2026 (bps)\n\nThe 2yr Treasury yield jumped 20bps more than the 30yr Treasury yield. https://t.co/DB2u4YNvFq",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036595377365725417",
+      "verdict": "watch",
+      "summary": "2年期美债收益率较30年期多涨20个基点，曲线陡化观察",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "bonds",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "期限利差变化",
+          "v": "2Y涨幅超过30Y 20bps"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "1-7天",
+        "reason": "短期利率预期变化但缺乏驱动因素说明，需追踪后续数据验证"
+      },
+      "suggestions": "结合后续经济数据和美联储表态综合判断"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Treasury yield change: Feb 27 to Mar 24 2026 (bps) The 2yr Treasury yield jumped 20bps more than the 30yr Treasury yiel…",
+      "domain": "finance",
+      "tags": [
+        "bonds",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036632366782034315",
+    "author": "小智🧠SENT (@XiaoZhi_BTC)",
+    "text": "just found @eightlends 👀\n\nP2P crypto lending backed by real businesses\n\nup to 25% APR\n\ngonna test it early\n\nhttps://t.co/sv5d5sqMwg",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036632366782034315",
+      "verdict": "watch",
+      "summary": "发现新P2P加密借贷平台EightLends，由真实企业背书，APY最高25%",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "yield",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "APY",
+          "v": "最高25%"
+        },
+        {
+          "k": "平台名称",
+          "v": "EightLends"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "新平台需验证安全性与持续性，收益率高于主流DeFi但缺乏历史记录"
+      },
+      "suggestions": "可关注但不建议大额资金立即投入，需观察运行数据和审计报告"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "【EightLends】P2P加密借贷平台，支持真实企业抵押，最高25% APR",
+      "domain": "crypto",
+      "tags": [
+        "yield"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036684505898230169",
+    "author": "The Wolf Of All Streets (@scottmelker)",
+    "text": "GAMESTOP $GME REPORTS 14% REVENUE DROP BUT HOLDS $127M+ PROFIT AS COST CUTS AND LARGE CASH + $BTC POSITION BOOST FINANCIALS",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036684505898230169",
+      "verdict": "watch",
+      "summary": "GameStop财报：营收降14%但仍盈利超1.27亿美元，现金+BTC头寸支撑",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "营收变化",
+          "v": "-14%"
+        },
+        {
+          "k": "净利润",
+          "v": "超1.27亿美元"
+        },
+        {
+          "k": "持仓",
+          "v": "大额现金+BTC"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "营收下滑但成本控制有效，BTC持仓提供叙事支撑，暂无重大催化"
+      },
+      "suggestions": "关注其BTC策略后续执行情况和现金流使用计划"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "GameStop财报：营收降14%但仍盈利127M+，成本削减+BTC持仓提振",
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036698451552117073",
+    "author": "华尔街观察 Xtrader (@cnfinancewatch)",
+    "text": "JUST IN: 🇨🇳🇮🇷 Chinese Foreign Minister Wang Yi pushes Iran to negotiate terms with US for ending the war.\n\n中国敦促伊朗停战和谈！",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036698451552117073",
+      "verdict": "actionable",
+      "summary": "中国外长王毅敦促伊朗与美国谈判结束战争，地缘局势出现重大转折信号",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "事件",
+          "v": "中国敦促伊朗停战和谈"
+        },
+        {
+          "k": "参与方",
+          "v": "中国、伊朗、美国"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "1-7天",
+        "reason": "地缘局势可能缓和将影响能源价格和避险资产需求，需评估相关仓位"
+      },
+      "suggestions": "立即评估能源/避险资产敞口，关注后续和谈进展和油价反应"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "JUST IN: 🇨🇳🇮🇷 Chinese Foreign Minister Wang Yi pushes Iran to negotiate terms with US for ending the war. 中国敦促伊朗停战和谈！",
+      "domain": "finance",
+      "tags": [
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036821790014476632",
+    "author": "The Bitcoin Historian (@pete_rizzo_)",
+    "text": "RT @pete_rizzo_: JUST IN: IRAN IS NOW ONE OF THE WORLD'S LARGEST #BITCOIN MINERS –– CONTRIBUTING AS MUCH AS 6-8% OF GLOBAL HASHRATE\n\n70% OF…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036821790014476632",
+      "verdict": "watch",
+      "summary": "伊朗现为全球最大比特币矿工之一，贡献全球算力6-8%，70%来自水电",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "全球算力占比",
+          "v": "6-8%"
+        },
+        {
+          "k": "能源结构",
+          "v": "70%水电"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "伊朗BTC挖矿地位印证比特币算力分布多元化，地缘风险对矿业影响需持续关注"
+      },
+      "suggestions": "关注伊朗制裁对算力迁移的潜在影响，以及水电挖矿的可持续性"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "【伊朗比特币矿工】贡献全球6-8%算力，已成主要比特币开采国之一",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036588290065997883",
+    "author": "Ash Crypto (@AshCrypto)",
+    "text": "Bitcoin is pumping after Iran tells the US it prefers negotiating peace talks with Vice President JD Vance.\n\nBoth sides are officially ready to talk. https://t.co/p2YNJE6sjD",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036588290065997883",
+      "verdict": "watch",
+      "summary": "比特币大涨因伊朗告知美国倾向通过副总统万斯谈判，和谈窗口开启",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "催化事件",
+          "v": "伊朗表明倾向和谈"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "地缘缓和预期提振风险资产，但需等待正式协议验证"
+      },
+      "suggestions": "短期关注消息面波动，中期仍需跟踪和谈实质性进展"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "伊朗告知美国愿与副总统Vance谈判和平，BTC应声上涨",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036769080158593029",
+    "author": "0xAA (@0xAA_Science)",
+    "text": "PolyWorld 发布 48 小时，5,000+ 用户访问，GitHub 100⭐\n\n应大家的要求，我们上线了中文支持，在设置中一键切换！现在你可以用中文追踪全球预测市场，看\"聪明钱\"如何用真金白银判断世界大事的走向。\n\n 网站: https://t.co/U8tUFPaOko\n @Polymarket @PolyWorld_bet https://t.co/5lSpAqpyn9",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036769080158593029",
+      "verdict": "ignore",
+      "summary": "PolyWorld发布48小时5000用户，GitHub百星，上线中文支持",
+      "importance": 2,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "新产品发布无验证数据"
+      },
+      "suggestions": "需更多用户/TVL数据验证产品热度"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "PolyWorld发布48小时：5000+用户、GitHub 100⭐、中文支持上线",
+      "domain": "crypto",
+      "tags": [
+        "tech",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036630323509813557",
+    "author": "鱼总聊AI (@AI_Jasonyu)",
+    "text": "昨天开好Invoice，今天就收到款了，Wise确实只会扣除固定的6.11美金的手续费👍目前测试下来收款最香的。\n\n上一次用众安收美元，汇款方扣掉了15.57美金，我这边直接扣了20美金。\n\nPaypal收款，也是扣掉了10美金，也就是2%的手续费。\n\n国内收款大多会会走云账户，会预扣税费。你们还有其他方案吗？ https://t.co/mdvxWZDszx",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036630323509813557",
+      "verdict": "ignore",
+      "summary": "个人收款体验：Wise扣6.11美元 vs众安20美元 vs PayPal 10美元",
+      "importance": 1,
+      "domain": "finance",
+      "tags": [
+        "other"
+      ],
+      "keyData": [
+        {
+          "k": "Wise手续费",
+          "v": "6.11美元"
+        },
+        {
+          "k": "众安收款费",
+          "v": "20美元+汇款方15.57美元"
+        },
+        {
+          "k": "PayPal手续费",
+          "v": "10美元(2%)"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "个人经验分享无行业洞察"
+      },
+      "suggestions": "仅供个人参考，无投资价值"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "昨天开好Invoice，今天就收到款了，Wise确实只会扣除固定的6.11美金的手续费👍目前测试下来收款最香的。 上一次用众安收美元，汇款方扣掉了15.57美金，我这边直接扣了20美金。 Paypal收款，也是扣掉了10美金，也就是2%的…",
+      "domain": "finance",
+      "tags": [
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036604887371530652",
+    "author": "Dan Nystedt (@dnystedt)",
+    "text": "Advanced semiconductor packaging continues to sizzle: Nvidia partner SPIL paid NT$6.3 billion (US$200M) for an old Innolux display plant, netting Innolux a nearly NT$6 billion profit, media report. Why pay so much? SPIL can save the construction time and begin installing machinery more quickly. Separately, SPIL won a 20-year lease on land in a science park near Taichung, central Taiwan, for NT$344 million. $NVDA $ASX #SPIL #semiconductors #semiconductor https://t.co/FrgHN9wq7X",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036604887371530652",
+      "verdict": "watch",
+      "summary": "台积电旗下SPIL以200M美元收购群创旧工厂，缩短建设时间快速安装设备",
+      "importance": 4,
+      "domain": "tech",
+      "tags": [
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "收购金额",
+          "v": "200M美元(台币63亿)"
+        },
+        {
+          "k": "卖方收益",
+          "v": "台币近60亿利润"
+        },
+        {
+          "k": "土地租约",
+          "v": "20年344M台币"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "Nvidia供应链产能扩张信号"
+      },
+      "suggestions": "关注先进封装产能缺口与CoWoS供应"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Nvidia合作伙伴SPIL以2亿美元收购旧Innolux工厂用于先进封装",
+      "domain": "finance",
+      "tags": [
+        "tech",
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036735823937216742",
+    "author": "Ted (@TedPillows)",
+    "text": "$ETH has reclaimed the $2,150 level.\n\nThere are talks ongoing regarding the US-Iran ceasefire, and Ethereum is reacting to it.\n\nWhen the US-Iran war started, everyone expected ETH to crash, and it didn't happen.\n\nNow people are expecting a pump after the US-Iran ceasefire, and it probably won't happen too.\n\nThe markets could pump a bit leading into the ceasefire, but after that, new lows will happen.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036735823937216742",
+      "verdict": "watch",
+      "summary": "ETH回升至2150美元，市场关注美伊停火谈判，交易员预期不会持续上涨",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "ETH关键位",
+          "v": "2150美元"
+        },
+        {
+          "k": "事件催化",
+          "v": "美伊停火谈判"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "地缘预期与实际走势可能背离"
+      },
+      "suggestions": "短多长空思维，2150上方谨慎追高"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "ETH 收复 $2,150，Ted 点评美伊停火预期",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036589039458066497",
+    "author": "Dan Ives (@DivesTech)",
+    "text": "RT @CNBCFastMoney: \"We are now ingesting 17 petabytes a day of very specific security data and applying AI from the ground up.\"\n\nPalo Alto…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036589039458066497",
+      "verdict": "ignore",
+      "summary": "转发CNBC：Palo Alto每日处理17PB安全数据，全面应用AI",
+      "importance": 2,
+      "domain": "ai",
+      "tags": [
+        "ai-product"
+      ],
+      "keyData": [
+        {
+          "k": "数据量",
+          "v": "17PB/天"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "转发新闻无深度分析"
+      },
+      "suggestions": "需等Q财报验证AI产品化收入贡献"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "RT @CNBCFastMoney: \"We are now ingesting 17 petabytes a day of very specific security data and applying AI from the gro…",
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036730045503344791",
+    "author": "SolanaFloor (@SolanaFloor)",
+    "text": "UPDATE: 🇺🇸The Federal Reserve is injecting $8.07B into the financial system today. https://t.co/BbscGFWAz0",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036730045503344791",
+      "verdict": "actionable",
+      "summary": "美联储今日向金融系统注入80.7亿美元流动性",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "注资规模",
+          "v": "$8.07B"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "立即",
+        "reason": "公开市场操作但有具体金额，需跟踪后续流动性变化"
+      },
+      "suggestions": "持续关注美联储流动性操作节奏"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "美联储今日向金融系统注入807亿美元",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036640958809587971",
+    "author": "Tom McClellan (@McClellanOsc)",
+    "text": "There has been a dramatic change in the Investors Intelligence bull-bear spread thanks to the Iran War. It was at 47.2 percentage points on Feb. 3, now down to just 14.3, and catching up (i.e. down) to the detrended plot of the SP500. https://t.co/GNqWYFLQxi",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036640958809587971",
+      "verdict": "watch",
+      "summary": "伊朗战争致投资者情绪牛熊价差从47.2%骤降至14.3%，接近SP500 detrended plot",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "trading",
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "牛熊价差（2月3日）",
+          "v": "47.2%"
+        },
+        {
+          "k": "牛熊价差（当前）",
+          "v": "14.3%"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "1-7天",
+        "reason": "情绪指标极端变化暗示短期市场超卖，可能迎来反弹"
+      },
+      "suggestions": "关注后续情绪修复节奏与SP500走向"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "There has been a dramatic change in the Investors Intelligence bull-bear spread thanks to the Iran War. It was at 47.2 …",
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036631822067458054",
+    "author": "The Block (@TheBlockCo)",
+    "text": "Hyperliquid Strategies launches options trading on PURR common stock https://t.co/VXzgSAzPHW",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036631822067458054",
+      "verdict": "watch",
+      "summary": "Hyperliquid Strategies上线PURR股票期权交易",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "exchange"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "DeFi平台扩展股票期权品类，但缺具体上线时间/机制/流动性数据"
+      },
+      "suggestions": "跟踪Hyperliquid后续产品公告与PURRC代币表现"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "Hyperliquid Strategies launches options trading on PURR common stock https://t.co/VXzgSAzPHW",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "yield",
+        "exchange",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036641722290127172",
+    "author": "Coin Bureau (@coinbureau)",
+    "text": "🚨 JUST IN: 🇮🇷🇺🇸 Iran issues conditions for a potential ceasefire with the United States:\n\n• Removal of all U.S. sanctions on Iran\n• Compensation for wartime damages\n• Greater control and leverage over the Strait of Hormuz\n• No limitations on its ballistic missile program\n• Security guarantees against future U.S. military action",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036641722290127172",
+      "verdict": "actionable",
+      "summary": "伊朗提出停火五项条件：解除制裁、战争赔偿、霍尔木兹海峡控制权、导弹计划不受限、安全保障",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy",
+        "commodities"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "停火条件苛刻意味着短期难达成，中东局势不确定性持续支撑油价"
+      },
+      "suggestions": "密切关注美伊谈判进展，若条件达成对油市有重大影响"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "伊朗提出停火条件：解除制裁、战争赔偿、霍尔木兹海峡控制权",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036784566350868658",
+    "author": "The Bitcoin Historian (@pete_rizzo_)",
+    "text": "JUST IN: IRAN IS NOW ONE OF THE WORLD'S LARGEST #BITCOIN MINERS –– CONTRIBUTING AS MUCH AS 6-8% OF GLOBAL HASHRATE\n\n70% OF MINING IS CONDUCTED BY THE MILITARY\n\nTHIS IS WILD 🤯 https://t.co/gLOXdiKCgm",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036784566350868658",
+      "verdict": "actionable",
+      "summary": "伊朗已成为全球主要比特币矿工之一，贡献6-8%全球算力，70%由军队控制",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "trading",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "伊朗占全球算力",
+          "v": "6-8%"
+        },
+        {
+          "k": "军事控制比例",
+          "v": "70%"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "伊朗通过能源补贴成为重要算力来源，地缘冲突可能影响全球BTC供应预期"
+      },
+      "suggestions": "关注伊朗算力变化对BTC供应与挖矿难度的影响"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 3,
+      "summary": "伊朗成全球主要比特币矿商，占6-8%算力",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036815539566260383",
+    "author": "Bloomberg (@business)",
+    "text": "Saudi Arabia has ramped up crude shipments from Yanbu export terminals on the Red Sea coast as it diverts supplies away from the Persian Gulf and the Strait of Hormuz, which Iran has kept effectively closed since the end of February https://t.co/XzV67r1EIg",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Saudi Arabia has ramped up crude shipments from Yanbu export terminals on the Red Sea coast as it diverts supplies away…",
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036489938917794031",
+    "author": "Jason (@3PeaksTrading)",
+    "text": "Bonds dumping after auction not good and now 3000 soliders deployed headlines hitting tape\n\n-1323 low TICK on that headline",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "国债拍卖后债券大跌，1323点位负面，士兵部署消息",
+      "domain": "finance",
+      "tags": [
+        "bonds",
+        "trading",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036615029982724150",
+    "author": "ℙ𝕙𝕚 ℂ𝕒𝕡𝕚𝕥𝕒𝕝 𝕀𝕟𝕧𝕖𝕤𝕥𝕞𝕖𝕟𝕥𝕤 (@phi_ci)",
+    "text": "RT @KobeissiLetter: BREAKING: Gold futures surge above $4,550/oz, now up +4% on the day, as optimism grows over US-Iran peace talks. https:…",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "黄金期货突破4550美元/盎司，日涨4%，受美伊和平谈判乐观情绪推动",
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036795234395582757",
+    "author": "Tokenomist (@Tokenomist_ai)",
+    "text": "In 2025, projects spent over $1.7B on token buybacks. But for many, prices stayed flat.\n\nHere's what was removed from circulation in 2025:\n• $HYPE : 32.35M HYPE | 13.57% of circulating supply\n• $RAY : 28.35M RAY | 10.55%\n• $PUMP : 55.48B PUMP | 9.4%\n• $ZRO : 75.72M ZRO | 16.7%\n• $GMX : 2.96M GMX | 28.54%\n2026 buyback announcements so far 👇\n• $AAVE : $50M annual buyback program continues\n• $AVNT : 30% of daily revenue for buybacks\n• $OP : ~20M tokens to be bought in 2026\n• $MON : Category Labs announced potential $30M MON buyback in H1 2026.\n• $PENDLE : 80% of revenue routed to buybacks, redistributed to stakers\n\nBuybacks are accelerating. But not all of them move price.\nWhich of these 2026 projects do you think will have the highest price impact?\n\n📊 Check Out BuyBack Screener : https://t.co/JthIeQklOU",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "In 2025, projects spent over $1.7B on token buybacks. But for many, prices stayed flat. Here's what was removed from ci…",
+      "domain": "crypto",
+      "tags": [
+        "token",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036787767045144925",
+    "author": "Crypto Fundraising #StandWithUkraine 🇺🇦 (@Crypto_Dealflow)",
+    "text": "DeFi yield protocol @tori_finance closed Seed funding round led by @Delphi_Ventures. Amount raised is not disclosed. \nDetails: https://t.co/7W5EfqRfC9 https://t.co/1LYdC59faE",
+    "lang": "en",
+    "output": null,
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "DeFi收益协议Tori Finance完成种子轮融资，Delphi Ventures领投",
+      "domain": "crypto",
+      "tags": [
+        "funding",
+        "yield"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036784878612607484",
+    "author": "加密大漂亮| C Labs | (@giantcutie666)",
+    "text": "当初circle的财报并不好，95％收入依赖国债利息，其他业务几乎都停留在PPT阶段。\n\n而现在clarity关于稳定币的消息也不算利空，只是禁止发行商给用户发利息，通过第三方还是可以发。\n\n只是市场还习惯性的为涨跌找理由🤓\nhttps://t.co/LHkVuqraDM",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036784878612607484",
+      "verdict": "watch",
+      "summary": "分析Circle财报：95%收入依赖国债利息，其他业务停留在PPT阶段；Clarity稳定币新规非利空，只是禁止发行商直接给用户发利息",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "policy",
+        "yield"
+      ],
+      "keyData": [
+        {
+          "k": "Circle收入结构",
+          "v": "95%来自国债利息"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "稳定币监管框架调整影响深远但非即时价格波动"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Circle 财报：95%收入依赖国债利息；Clarity 稳定币监管禁止发行商付息",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "yield",
+        "token"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036627067140526293",
+    "author": "Dan Nystedt (@dnystedt)",
+    "text": "As you may guess, XTAL never paid. And 2 million lines of stolen code when to China. XTAL (a US company) was a front for China's Dongfang Jingyuan (東方晶源).",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036627067140526293",
+      "verdict": "watch",
+      "summary": "XTAL公司被指为中国东方晶源的前壳公司，涉嫌2百万行代码窃取案",
+      "importance": 3,
+      "domain": "tech",
+      "tags": [
+        "tech",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "代码泄露量",
+          "v": "200万行"
+        },
+        {
+          "k": "涉及公司",
+          "v": "XTAL/东方晶源"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "更久",
+        "reason": "美中科技IP纠纷升级，相关公司需评估风险"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "XTAL窃取ASML 200万行代码转至中国东方晶源，美国公司成中国政府前台",
+      "domain": null,
+      "tags": [
+        "security"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036783669541568717",
+    "author": "The Wall Street Journal (@WSJ)",
+    "text": "Meta Platforms is seeking to incentivize its top executives to grow the company at an aggressive pace with a new stock option program that could pay some of them hundreds of millions of dollars https://t.co/gMxVgoxLnb",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036783669541568717",
+      "verdict": "watch",
+      "summary": "WSJ报道Meta推出新股票期权激励计划，可能向高管支付数亿美元",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "trading"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "高管激励与公司增长绑定，关注具体条款和估值影响"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Meta Platforms is seeking to incentivize its top executives to grow the company at an aggressive pace with a new stock …",
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036648751281078473",
+    "author": "3X Long Labubu (@labubu_trader)",
+    "text": "RT @jukan05: *SK HYNIX SUBMITTED FORM F-1 TO US SEC FOR US LISTING https://t.co/EvQ0qH88gm",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036648751281078473",
+      "verdict": "watch",
+      "summary": "SK海力士向美国SEC提交F-1表格，拟赴美上市",
+      "importness": 4,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "token"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "韩国半导体巨头赴美上市将提供新的投资标的，关注估值和上市进度"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "RT @jukan05: *SK HYNIX SUBMITTED FORM F-1 TO US SEC FOR US LISTING https://t.co/EvQ0qH88gm",
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "funding"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036723762700198152",
+    "author": "Ted (@TedPillows)",
+    "text": "$ETH ETF outflow of $40,700,000 🔴 yesterday.\n\nBlackRock sold $22,800,000 in Ethereum. https://t.co/ap34GvJtQb",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036723762700198152",
+      "verdict": "watch",
+      "summary": "ETH ETF昨日净流出4070万美元，贝莱德卖出2280万美元",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "token",
+        "onchain"
+      ],
+      "keyData": [
+        {
+          "k": "ETH ETF净流出",
+          "v": "4070万美元"
+        },
+        {
+          "k": "贝莱德卖出",
+          "v": "2280万美元"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "1-7天",
+        "reason": "机构资金外流表明短期看空情绪，需跟踪连续流出情况"
+      },
+      "suggestions": null
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "ETH ETF昨日流出$40.7M，BlackRock卖出$22.8M ETH",
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036823114319901070",
+    "author": "Mossad Commentary (@MOSSADil)",
+    "text": "🚨 ISRAEL WARNS JEWS WORLDWIDE: IRAN THREAT ESCALATING\n\nIsrael’s National Security Council is issuing a global alert ahead of Passover and spring holidays.\n\nThe message is clear:\nIran is actively targeting Israelis and Jews abroad.\n\nRecent attacks and attempted attacks have already been reported in Europe and the U.S., including synagogues.\n\nWhat Israelis are being told:\n•  Avoid public or unsecured Jewish/Israeli events\n•  Do not share your location or travel plans online\n•  Stay away from hostile areas\n•  Be especially cautious in: Turkey, UAE, Azerbaijan, Thailand, Philippines, Sinai\n•  Prefer direct travel via Ben Gurion Airport\n•  Avoid high-risk countries and unnecessary layovers\n\nLarge holiday gatherings are now considered potential targets.\n\nThis is not routine guidance.\nThis is a wartime advisory.\n\nStay alert. Stay aware.\n\nBoost the algorithm: Bookmark, Share, Reply, Repost, Like and Follow @MOSSADil",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036823114319901070",
+      "verdict": "actionable",
+      "summary": "以色列发全球警报称伊朗正瞄准海外以色列人和犹太人，建议避开土耳其实 UAE等高风险国",
+      "importance": 5,
+      "domain": "finance",
+      "tags": [
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "警告国家",
+          "v": "Turkey, UAE, Azerbaijan, Thailand, Philippines, Sinai"
+        },
+        {
+          "k": "性质",
+          "v": "非例行安全指导"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "立即",
+        "reason": "地缘安全威胁升级，犹太社区成目标，需评估相关资产风险"
+      },
+      "suggestions": "关注避险资产（黄金/美元）及中东航班/旅游相关股票波动风险"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "【以色列安全警告】全球犹太人伊朗威胁升级，提示避开土耳其/阿联酋/泰国等地",
+      "domain": null,
+      "tags": [
+        "macro",
+        "policy",
+        "security"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036759526959988740",
+    "author": "Mario Nawfal (@MarioNawfal)",
+    "text": "🚨🇮🇷Strait of Hormuz disruptions are hitting Asia harder than anywhere else.\n\nFuel shortages and panic buying are spreading fast with endless queues across petrol stations in India, Thailand, China, and others.\n\nhttps://t.co/LYb0sIG817",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036759526959988740",
+      "verdict": "watch",
+      "summary": "霍尔木兹海峡中断冲击亚洲燃料供应，印度泰国中国加油站现排队抢购潮",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "受影响国",
+          "v": "India, Thailand, China"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "能源供给收紧预期，支撑原油/炼油股，利空航空/物流"
+      },
+      "suggestions": "追踪能源价格走势及亚洲炼油企业供应情况"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "霍尔木兹海峡中断影响亚洲燃料供应，印度/泰国/中国现排队加油",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036754239788376412",
+    "author": "吴说区块链 (@wublockchain12)",
+    "text": "吴说获悉，Resolv Labs 披露，过去两天已为持有漏洞发生前 USR 的白名单钱包完成超 7700 万美元赎回，占该用户群体的 90% 以上，标志着第一阶段恢复取得进展；当前该群体赎回流程正在完成中，同时已启动后续阶段工作，覆盖剩余用户群体。\nhttps://t.co/VKBph8TYu5",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036754239788376412",
+      "verdict": "ignore",
+      "summary": "Resolv Labs完成漏洞后首阶段赎回，超7700万美元占白名单用户90%以上",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "onchain"
+      ],
+      "keyData": [
+        {
+          "k": "赎回金额",
+          "v": "超7700万美元"
+        },
+        {
+          "k": "覆盖率",
+          "v": "90%以上"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "安全事件恢复进展，属于已有事件追踪，无新信号"
+      },
+      "suggestions": "可忽略，已被广泛报道"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Resolv Labs已为USR漏洞白名单用户完成超7700万美元赎回",
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036737081763074475",
+    "author": "飞凡 (@feifan7686)",
+    "text": "特朗普家族对加密的吸血放到古代不亚于直接抄家。\n\n-特朗普家族控制着 $TRUMP 80%的供应。\n\n-上线短短三个月时间，就有3.5亿美金的手续费流入了特朗普相关实体的钱包。\n\n-入熊前夕，60个大户钱包在 $TRUMP 上盈利接近15亿美元，超过60万个其他钱包亏损38.7亿美元。\n\n-WLFI在24年底成功募资5.5 亿美元，接着特朗普家族接管了 World Liberty 的完全控制权，并且对代币销售净收入拥有 75% 的分成，对后续运营收益拥有 60% 的利益权利，差不多4 亿美元成为了特朗普家族的收入。\n\n-直到2026 年 3 月特朗普家族还在借着World Liberty推出超级节点收割加密大户，如果你想在WLFI获得一点话语权，需要买入500万美元WLFI，这里面其中大约375万美元的代币销售就是直接流向特朗普家族。",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036737081763074475",
+      "verdict": "watch",
+      "summary": "特朗普家族控制$TRUMP 80%供应，三个月抽走3.5亿手续费，大户赚15亿散户亏38.7亿",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "供应控制",
+          "v": "80%"
+        },
+        {
+          "k": "手续费",
+          "v": "3.5亿美元"
+        },
+        {
+          "k": "大户盈利",
+          "v": "约15亿美元"
+        },
+        {
+          "k": "散户亏损",
+          "v": "38.7亿美元"
+        },
+        {
+          "k": "WLFI融资",
+          "v": "5.5亿美元"
+        },
+        {
+          "k": "家族分成",
+          "v": "代币销售75%+运营收益60%"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "更久",
+        "reason": "项目高度控盘且利益分配极不均，存在长期抛压和信任危机"
+      },
+      "suggestions": "关注该代币流动性变化及社区反应"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "特朗普家族掌控TRUMP 80%供应，3个月赚4亿美元",
+      "domain": "crypto",
+      "tags": [
+        "token",
+        "narrative",
+        "funding"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036786225135157705",
+    "author": "Mike McGlone (@mikemcglone11)",
+    "text": "$5 Corn May Mark a 2026 Peak Alongside $120 Crude - \n\nThe December corn future (Dec26) stretch to $4.99 a bushel around the onset of the Iran war on March 9 may have peak inklings akin to Dec22's $7.66 apex following Russia's invasion of Ukraine. The front crude oil future approached $120 a barrel on March 9. Corn and crude share a common factor that may keep a lid on prices: US abundance. When Dec26 corn began trading in 2022, US total projected ending stocks were low, near 1.2 billion bushels. Inventories are now elevated at about 2.1 billion bushels.\n\nFertilizer challenges tied to Strait of Hormuz disruptions may reduce yields, but absent a Corn Belt drought, my graphic might guide corn's initial reversion target toward $4.50 -- the high-volume price area. Spiking crude can be its own worst enemy, and corn is typically more autocorrelated.\n\nFull report on the Bloomberg here: https://t.co/x9VLKAO8Qq {BI COMD}\n#corn #crudeoil @BBGIntelligence",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036786225135157705",
+      "verdict": "watch",
+      "summary": "分析师预测2026年玉米可能达峰值$5，原油$120，但美国库存充足或限制涨幅",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "玉米预测",
+          "v": "$5（12月合约）"
+        },
+        {
+          "k": "原油预测",
+          "v": "$120"
+        },
+        {
+          "k": "美玉米库存",
+          "v": "约21亿蒲式耳（高位）"
+        },
+        {
+          "k": "历史对比",
+          "v": "2022年$7.66峰值"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "供需因素博弈，短期供给充裕压制价格，但地缘风险可能刺激波动"
+      },
+      "suggestions": "关注春播季天气及地缘对供应链的潜在影响"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "$5 Corn May Mark a 2026 Peak Alongside $120 Crude - The December corn future (Dec26) stretch to $4.99 a bushel around t…",
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036661345358413953",
+    "author": "MastersInvest.com (@mastersinvest)",
+    "text": "Lindsell Train US Fund - February Update\n\n'Whilst Open AI appears to have taken the lead in consumer applications, there exists today half a dozen ‘primary players’ engaged in an almost daily race for demarcation. \n\nIn our view the more likely, or at least more predictable, long-term beneficiaries will be entrenched, differentiated incumbents – which instead of competing, incorporate an advancing technology already frequently priced below cost. \n\nThose in possession of genuinely proprietary datasets (backed for example by contributary customer arrangements or benchmark IP – and hence not scrapable) look to be well insulated from the disruption, whilst simultaneously poised to benefit from its adoption. \n\nWithout this IP, LLMs are unable to truly serve core, data sensitive, high cost of failure industries like tax, risk, and finance, as the many partnerships already announced in these areas attest.'\n\n'In the wake of the above sell-off, we have increased our exposure to several software and data companies already held in the Fund, buying more of S&P Global, Intuit, Fico, Adobe, and Verisk, funded through reductions to some of our consumer staples (Colgate, Pepsi, Coke, Estée Lauder, and Mondelez), all of which have held up comparatively well into 2026.'\n\n- James Bullock\n\nhttps://t.co/Sj9f6A92AQ",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036661345358413953",
+      "verdict": "watch",
+      "summary": "Lindsell Train基金月度观点：AI竞争格局下，看好拥有专有数据的现有企业，LLM难以染指数据敏感领域",
+      "importance": 3,
+      "domain": "ai",
+      "tags": [
+        "ai-company",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "投资观点阐述，缺具体数据支撑"
+      },
+      "suggestions": "追踪该基金后续持仓变化"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Lindsell Train增持S&P Global/Intuit/Fico/Adobe/Verisk，减持Colgate/Pepsi/Coke等消费股",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036777618251350417",
+    "author": "The Kobeissi Letter (@KobeissiLetter)",
+    "text": "BREAKING: Iran has \"tightened control\" over the Strait of Hormuz and is now demanding detailed crew, cargo, and voyage information from ships seeking safe passage.\n\nDetails include:\n\n1. Approvals for ships seeking to pass through the Strait of Hormuz are being handled by the IRGC\n\n2. Tolls to pass through have hit $2 million, mainly for high-value vessels like oil and gas tankers\n\n3. The increase in control signals Iran's \"growing grip\" on the key trade route\n\n4. Traffic remains limited, mostly involving Iranian or China-linked ships hugging Iran’s coast\n\nAsia's energy crisis is intensifying.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036777618251350417",
+      "verdict": "actionable",
+      "summary": "伊朗收紧霍尔木兹海峡控制权，过峡费飙升至200万美元，亚洲能源危机加剧",
+      "importance": 5,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "过峡费",
+          "v": "$2M/船"
+        },
+        {
+          "k": "控制方",
+          "v": "IRGC"
+        }
+      ],
+      "impact": {
+        "direction": "利好能源/利空亚洲",
+        "horizon": "立即",
+        "reason": "关键能源通道收紧，原油/天然气运输成本骤增"
+      },
+      "suggestions": "立即评估能源相关仓位风险"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "伊朗收紧霍尔木兹海峡控制，通行费涨至200万美元/船，主要针对油轮",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036669195564560459",
+    "author": "Coin Bureau (@coinbureau)",
+    "text": "🚨BREAKING: Gold surges beyond $4,550/oz.\n\n$800BILLION added to its market cap in the past 4 hours. \n\nThe rally comes as US seeks potential ceasefire deal in Iran. https://t.co/Ft9YXlndVJ",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036669195564560459",
+      "verdict": "actionable",
+      "summary": "黄金突破4550美元/盎司，4小时内市值增加800亿美元，受美伊停火谈判消息推动",
+      "importance": 5,
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "金价",
+          "v": ">$4,550/oz"
+        },
+        {
+          "k": "市值增加",
+          "v": "$800B/4h"
+        }
+      ],
+      "impact": {
+        "direction": "避险需求激增",
+        "horizon": "立即",
+        "reason": "日内超5%波动属重大异动，需评估避险/黄金仓位"
+      },
+      "suggestions": "关注黄金及相关避险资产"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "黄金突破$4,550，4小时内市值增加$8B",
+      "domain": "finance",
+      "tags": [
+        "commodities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036762344450396627",
+    "author": "Wu Blockchain (@WuBlockchain)",
+    "text": "The Reserve Bank of Australia (RBA) said asset and money tokenization could generate about AUD 24 billion (USD 16.7 billion) in annual efficiency gains, shifting focus from “whether” to “how” to implement; it noted stablecoins and bank deposit tokens will play complementary roles, and said it will launch a digital infrastructure sandbox and related initiatives, while stating wholesale CBDC is “potentially helpful but not essential.” https://t.co/VtXKNbqk73",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036762344450396627",
+      "verdict": "watch",
+      "summary": "澳洲央行RBA：资产代币化年效率增益可达167亿美元，将推数字基础设施沙箱",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "policy",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "效率增益",
+          "v": "AUD 24B (USD 16.7B)/年"
+        },
+        {
+          "k": "CBDC",
+          "v": "非必要"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "央行明确支持代币化路线图，监管框架清晰化"
+      },
+      "suggestions": "关注澳洲数字资产监管政策落地"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "澳大利亚央行：资产代币化年效率提升240亿澳元，将推数字基础设施沙盒",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036788694343156058",
+    "author": "陈剑Jason (@jason_chen998)",
+    "text": "大家恨的不是暴跌暴涨的做市商，而是只跌不涨的做市商，大多数币，你只要这辈子能在中途拉个那么一两次，其他时间随波逐流其实市场也都可以原谅你，毕竟你给过大家机会，但是有的项目是一路向下不回头跟没见过钱一样赶着卖币凑棺材本，最后再把锅甩给做市商，至于做市商有的是真冤，有的是真坏。\n\n冤的那部分，是本来就和项目方商量好了卖出来的钱按比例分成，要不然做市商的币是从哪来的，这种就是狼狈为奸的坏逼项目方勾搭畜生做市商，既然分钱了那也活该背锅。\n\n但坏的那部分，我这几年是扎扎实实的听过好几个案例，傻白甜的项目方没什么经验，被做市商一通忽悠把币打了过去，结果开盘直接持续下台阶甚至断头铡，做市商是一毛不出自己高位把币全卖完，最后低位买回来还给项目方。\n\n这种项目方还不敢维权怕自己也被牵连，毕竟找主动做市商名义上犯法，而且这种做市商都不可能有什么公司主体，你维权都不知道该找谁，只能打碎牙往肚子里咽。\n\n现阶段因为绝大多数你能听到名字有品牌的做市商，不论是Wintermute、GSR、Amber，甚至是DWF，其本身的做市业务，都是规规矩矩的撮订单。\n\n而接下来的香港大会，绝对会有一大帮人不知道从哪里冒出来的人，在饭局上侃侃而谈说自己是River的做市商，你更会看到一帮漂亮小姐姐去各个展台发名片列出自己操盘过的一堆牛逼项目，出门在外身份都是自己给的，因为被动做市商不可能有任何品牌，根本无从考证，你信了，币给了，就完了。\n\n币安今天专门发了一篇做市商风险行为提示指南，揭露了几种常见的做恶行为，讲的还是很清楚的，并且公布了举报邮箱audit@binance.com，对违规做市商进行黑名单制度，看接下来能不能像之前公布上币中介那样，公布出来一批恶庄\nhttps://t.co/baECSpWv2S",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036788694343156058",
+      "verdict": "ignore",
+      "summary": "评论做市商行业乱象+风险提示，无具体项目/数据/可执行步骤",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "行业观察但缺具体可验证信息"
+      },
+      "suggestions": "等待币安公布具体黑名单后再评估"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "陈剑揭露做市商与项目方勾结模式+币安发布风险指南",
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "trading",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036610758239207604",
+    "author": "Charlotte Alter (@CharlotteAlter)",
+    "text": "The New Mexico verdict against Meta is a watershed moment for tech accountability. For decades, Section 230 has shielded social media companies from any liability for harms to kids on their platform. Now there's a new path to hold them accountable \nhttps://t.co/zkIhUZYEGY",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036610758239207604",
+      "verdict": "watch",
+      "summary": "新墨西哥州判决Meta，突破Section 230保护，为追究社交平台儿童伤害责任开新路径",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "policy",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "监管突破但具体判决影响待观察"
+      },
+      "suggestions": "追踪后续类似诉讼和科技公司合规变化"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "新墨西哥州对Meta判决：里程碑事件！打破Section 230豁免，开创追责社交媒体新路径",
+      "domain": "finance",
+      "tags": [
+        "policy",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036795939818713299",
+    "author": "Bitget中文 (@Bitget_zh)",
+    "text": "🔥 豪掷1000亿押注未来！拼多多 $PDD Q4财报揭晓！\n\n📉 净利润下滑不及预期 \n📈 股价却逆势收涨 1.91%？\n\n这背后是 PDD 的惊人野心：\n\n虽然短期利润承压，但官方宣布将在未来三年狂砸 1000亿 人民币，正式组建“新拼姆”，全力推进自营品牌与全球供应链整合！🌍\n\n短期业绩博弈 🆚 长期战略升级，你看好拼多多砸钱换未来的长线逻辑，还是想做空它短期的利润缩水？\n\n👇 立即来Bitget交易 $PDD: https://t.co/ADKlSwJ7iq",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036795939818713299",
+      "verdict": "watch",
+      "summary": "拼多多Q4净利润下滑但宣布未来三年投资1000亿人民币，股价逆势涨1.91%",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "funding"
+      ],
+      "keyData": [
+        {
+          "k": "投资金额",
+          "v": "1000亿人民币"
+        },
+        {
+          "k": "时间",
+          "v": "未来三年"
+        },
+        {
+          "k": "股价变动",
+          "v": "+1.91%"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "短期利润承压vs长期战略投入，取决于执行力"
+      },
+      "suggestions": "关注Q1财报验证1000亿投入进度"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "🔥 豪掷1000亿押注未来！拼多多 $PDD Q4财报揭晓！ 📉 净利润下滑不及预期 📈 股价却逆势收涨 1.91%？ 这背后是 PDD 的惊人野心： 虽然短期利润承压，但官方宣布将在未来三年狂砸 1000亿 人民币，正式组建“新拼姆”，…",
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "funding"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036655712219414835",
+    "author": "Compute King (@Compute_King)",
+    "text": "告别Sora：OpenAI的“断臂”背后，是算力和商业化开始成为瓶颈\n\nBye to Sora: Behind OpenAI's Decision, the Growing Bottleneck of Computing Power and Commercialization\n\n据市场信息，OpenAI目前拥有2GW的算力，目前市场拥有算力最高的人，但是也不够分的。。。\n\n今天早些时候，OpenAI官方发布简短声明，正式关停曾风靡一时的AI视频生成应用Sora。从2025年9月正式上线到如今黯然退场，这款曾被寄予厚望的“AI视频社交杀手锏”，生命周期定格在短短六个月。\n\n就在同一天，迪士尼宣布终止与OpenAI价值10亿美元的投资及角色授权协议，这段曾被视作科技与好莱坞“世纪和解”的合作，甚至未能完成资金交割便已夭折。\n\nSora的关闭是OpenAI在算力饥渴，商业化困境与IPO倒计时的三重挤压下做出的决定。\n\n算力饥荒：AI时代的硬通货争夺战\n\n关停Sora的决定，最直接的原因是算力，这个当下AI行业最稀缺的资源。\n\nOpenRouter模型平台的数据显示，其使用量在短短两个半月内增长了两倍多。与此同时，供应端却捉襟见肘：美国地方政府反对，能源限制，存储器芯片短缺等因素，让新建数据中心变得日益困难。\n\nOpenAI虽已投入数千亿美元用于数据中心和芯片布局，但算力仍不足以支撑所有并行项目。\n\nSora负责人Bill Peebles早在去年10月底就曾在X上坦言：“我们惊讶地发现，高活跃用户对使用Sora的需求如此之高，而目前的盈利模式完全无法持续。”视频生成是AI领域最耗算力的任务之一，一段5秒的高清视频，背后消耗的GPU资源是同等文本任务的数百倍。当Sora用户蜂拥而至，运营成本随之指数级攀升，免费模式注定难以为继。\n\n迪士尼合作破裂和商业化困局\n\nSora的商业化困境，在其与迪士尼的合作破裂中暴露无遗。\n\n去年12月，OpenAI与迪士尼达成一项为期三年的授权协议，允许Sora用户使用迪士尼旗下200多个经典角色生成AI短视频。迪士尼还计划向OpenAI投资10亿美元，双方曾将其视为内容创作者与AI大厂“世纪和解”的里程碑。\n\n然而短短四个月后，合作宣告终止。据知情人士透露，迪士尼方面并未实际完成投资。迪士尼发言人在声明中表示尊重OpenAI的决定，但同时强调未来合作必须“确保知识产权与内容创作者权益受到保障”。\n\n更致命的打击来自用户数据。根据移动分析机构Appfigures的数据，Sora在2025年9月上线后，十天内下载量突破一百万，一度登顶App Store免费榜。但好景不长，到2026年1月，Sora下载量暴跌45%，用户留存疲软。整个生命周期内，应用内购收入仅约210万美元，这对于一个消耗海量算力的视频产品而言，无异于杯水车薪。\n\nIPO和资本市场的压力测试\n\nOpenAI当前处境，叠加了一重特殊压力：它可能是人类历史上最大的未上市公司，且烧钱速度惊人。\n\n2026年2月，OpenAI完成了1100亿美元融资，投前估值7300亿美元，投后约8400亿美元，这是有史以来最大的单轮私募融资。Amazon投入500亿美元，Nvidia和SoftBank各投300亿美元。但这些数字背后有大量附加条件：Amazon的350亿美元需要OpenAI完成AGI目标或IPO才能到账。\n\n财务数据揭示了紧迫性。2025年OpenAI收入约131亿美元，同期亏损约80亿美元。据外媒报道，2026年预计亏损将飙升至250亿美元，从现在到2029年，累计亏损可能达到1150亿美元。OpenAI预计最早在2030年代才能盈利。\n\n这套资本结构形成了一个精巧但脆弱的闭环：Nvidia既是投资者也是GPU供应商，Amazon和微软既是投资者也是云服务卖家。融资的相当部分会以服务费形式回流投资方。Altman在CNBC采访中承认了这一担忧的合理性，但表示“这只有在新的收入流入整个AI生态系统时才说得通”。\n\n在此背景下，IPO是不得不做的选择。OpenAI的目标是2026年上市。上市前，必须向公共市场投资者讲一个清晰的增长故事。这恰好解释了“砍掉副本任务、聚焦生产力”战略转向的直接驱动力。\n\n从技术公司到商业公司转型\n\nSora的关闭，标志着OpenAI从“广撒网”式的产品矩阵，转向聚焦企业级市场的冷酷重组。这不仅是OpenAI一家的选择，也是整个AI行业进入“下半场”的缩影。\n\n过去两年，AI行业经历了从技术突破到产品爆炸的“大航海时代”。每家头部公司都在广撒网：聊天机器人，图像生成，视频生成，代码助手……\n\n谁都不想错过任何一个可能的“入口”。但如今，潮水退去，算力成本，商业变现和合规监管三重压力叠加，迫使所有玩家必须做减法。",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036655712219414835",
+      "verdict": "actionable",
+      "summary": "OpenAI关停Sora应用（上线6个月），迪士尼终止10亿美元投资，算力瓶颈+商业化困境",
+      "importance": 4,
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "ai-company",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "Sora生命周期",
+          "v": "6个月"
+        },
+        {
+          "k": "迪士尼投资",
+          "v": "10亿美元"
+        },
+        {
+          "k": "OpenAI算力",
+          "v": "2GW"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "1-7天",
+        "reason": "AI视频产品失败+合作伙伴流失，AI投资需重新评估算力瓶颈风险"
+      },
+      "suggestions": "AI赛道投资者需关注算力供需矛盾和商业化能力"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "OpenAI关停Sora 算力商业化困境",
+      "domain": "ai",
+      "tags": [
+        "tech",
+        "ai-company"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036787075731570920",
+    "author": "Mike McGlone (@mikemcglone11)",
+    "text": "What Stops WTI Crude From Reverting Toward $53?\n\nThe December WTI crude oil future (Dec26), which becomes front-month just before the midterms, was at roughly $75 a barrel on March 25 and may revert toward $53. Before the closing of the Strait of Hormuz, Dec26 hovered just above US breakeven costs near $55, and domestic production was beginning to wane. Now that prices have spiked, the key headwind may be US abundance. When Dec26 started trading in 2017 around $53 (also the high-volume price area), the US was a net importer of roughly 3 million barrels a day of crude and liquid fuels. Today, net exports are near 3 MMBD.\n\nGlobal crude and natural gas price-maker status has shifted to the Western Hemisphere, with the US driving. Producers may view this price spike as an opportunity to hedge, bring on more supply and delay a typical low-price cure cycle.\n\nFull report on the Bloomberg here: https://t.co/1EyOTKmzNR {BI COMD}\n\n#crudeoil #Iran @BBGIntelligence \n\n#corn #crudeoil",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036787075731570920",
+      "verdict": "watch",
+      "summary": "WTI原油为何难跌向$53：美国从净进口3MMBD转为净出口3MMBD，全球原油定价权已转移至西半球",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "历史净进口",
+          "v": "3百万桶/日"
+        },
+        {
+          "k": "当前净出口",
+          "v": "3百万桶/日"
+        },
+        {
+          "k": "支撑价位",
+          "v": "$53"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "美国供需格局变化主导油价，长期供需再平衡"
+      },
+      "suggestions": "关注美国原油出口数据和OPEC+减产执行"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "McGlone分析WTI原油或跌向$53，因美国从净进口转为净出口",
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036719692036055304",
+    "author": "火星财经 (@MarsBit2022)",
+    "text": "🔔澳大利亚央行：稳定币与银行存款代币可在代币化发展中共存\n\n火星财经消息，据 The Block 报道，澳大利亚储备银行（RBA）助理行长 Brad Jones 在一次演讲中表示，资产代币化的推进已从“是否”转向“如何”实施。\n\nProject Acacia 项目研究显示，代币化技术每年可为澳大利亚经济带来约 167 亿美元的效率提升。Jones 指出，稳定币与银行存款代币可发挥互补作用——前者适用于小型新兴代币化市场，后者凭借审慎监管与央行流动性支持，将在大型市场中扮演更重要角色。RBA 还宣布将建立数字金融市场基础设施沙盒、成立监管-行业代币化咨询组，并扩大存款代币工作组以推进跨行互操作性。\n\nhttps://t.co/dIAmW7bM4f",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036719692036055304",
+      "verdict": "actionable",
+      "summary": "澳大利亚央行：稳定币与银行存款代币可共存，代币化年增167亿美元效率，宣布建数字金融沙盒",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "token",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "效率提升",
+          "v": "167亿美元/年"
+        },
+        {
+          "k": "项目",
+          "v": "Project Acacia"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "澳央行明确监管框架，支持稳定币与代币化发展"
+      },
+      "suggestions": "关注澳央行数字金融沙盒细则和跨行互操作性进展"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "澳央行称稳定币与存款代币可共存，代币化年效率提升167亿美元",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "token"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036558315392561590",
+    "author": "Global Markets Investor (@GlobalMktObserv)",
+    "text": "RT @GlobalMktObserv: 🔴This is the largest oil supply DISRUPTION in history:\n\n~16 million barrels per day of global oil supply are currently…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036558315392561590",
+      "verdict": "actionable",
+      "summary": "史上最大石油供应中断：全球约1600万桶/日供应受影响",
+      "importance": 5,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "供应中断量",
+          "v": "~1600万桶/日"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "立即",
+        "reason": "历史级别供应中断，油价将剧烈波动，能源相关仓位需立即评估风险"
+      },
+      "suggestions": "立即评估能源/大宗商品仓位，关注油价走势和地缘进展"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "RT @GlobalMktObserv: 🔴This is the largest oil supply DISRUPTION in history: ~16 million barrels per day of global oil s…",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036786536663208153",
+    "author": "Starknet (Privacy arc) 🥷 (@Starknet)",
+    "text": "RT @StarkWareLtd: Starting in April, all tokens get a private mode.\n\nPowered by STRK20 on Starknet. https://t.co/fIEbvFsKbU",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036786536663208153",
+      "verdict": "watch",
+      "summary": "Starknet 4月上线代币隐私模式，基于STRK20",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "tech",
+        "token"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "产品信号但缺乏技术细节和可用时间，需追踪"
+      },
+      "suggestions": "关注STRK20技术文档和隐私模式具体功能"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Starknet四月上线代币隐私模式，由STRK20驱动",
+      "domain": "crypto",
+      "tags": [
+        "tech",
+        "token"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036696100439003239",
+    "author": "MacroMicro (@MacroMicroMe)",
+    "text": "🇮🇳 Indian refiners secured 60 million barrels of Russian crude for April delivery, doubling February volumes following US shipment waivers. While these deals carry a $5 to $15 premium over Brent, the volume is a strategic necessity as the Strait of Hormuz closure threatens India's 25 day consumption buffer.\n\nThe Reserve Bank of India identifies a $70 per barrel baseline; every 10% move above this level subtracts 0.15 percentage points from GDP and adds 0.3 to CPI. Crude at $100 sustained over one quarter risks a 0.4 percentage point growth drag before accounting for secondary industrial shocks.\n\nAt the same time, India sources 70% of its LNG from the Middle East, primarily for fertilizer production where gas constitutes 80% of costs. With spring sowing underway and domestic fertilizer stocks limited to one month, energy supply disruptions transmit directly to agricultural output, threatening a sector representing 20% of national GDP.\n\n🔗 Read more 👉 https://t.co/ZD4eEupQSc",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036696100439003239",
+      "verdict": "watch",
+      "summary": "印度4月采购6000万桶俄油，为2月两倍，溢价$5-15；央行基准$70/桶",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "采购量",
+          "v": "6000万桶"
+        },
+        {
+          "k": "溢价",
+          "v": "$5-15 over Brent"
+        },
+        {
+          "k": "央行基准",
+          "v": "$70/桶"
+        },
+        {
+          "k": "GDP影响",
+          "v": "每涨10%减0.15%"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "1-7天",
+        "reason": "高油价持续将拖累印度GDP 0.4%，需关注印度卢比和股市"
+      },
+      "suggestions": "关注印度股市和卢比走势，追踪油价和地缘进展"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "🇮🇳 Indian refiners secured 60 million barrels of Russian crude for April delivery, doubling February volumes following …",
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036536250207969562",
+    "author": "Patrick OShaughnessy (@patrick_oshag)",
+    "text": "Lead Edge has built one of the most unique LP bases in venture, with over 800 founders and executives who are actively engaged across the entire investment lifecycle. They represent 95% of the firm's total capital.\n\n\"All of these people invest in funds and never get asked for help.\n\nThe reason we did it is because the returns in tech flow to the top 10% of funds.\n\nWhen I was starting Lead Edge, I asked \"why is anybody going to take my money?\"\n\nHad I been the global head of HR at P&G and my partner had been the global head of HR at Microsoft, when I called Workday 80 times at Bessemer, Dave Duffield would've engaged with me because he would've known that I could've introduced him to those companies.\n\nIn a world that's super crowded and undifferentiated, and I think it's exponentially the case more today even than what it was 15 years ago, it differentiates us and we do what we say we're going to do.\"",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036536250207969562",
+      "verdict": "watch",
+      "summary": "Lead Edge VC：800+创始人和高管作为LP，差异化募资策略",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "narrative",
+        "trading"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "VC行业洞察分享，无直接投资建议"
+      },
+      "suggestions": "可作为VC行业趋势观察"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "Lead Edge风投：800+创始人高管参与LP，差异化模式解析",
+      "domain": "finance",
+      "tags": [
+        "funding",
+        "tech",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036585953725399136",
+    "author": "Madison Malone (@maddireidy)",
+    "text": "NZ FOUNDER NEWS: Cow collar agri-tech company @halterHQ has raised US$220m at a US$2b valuation led by @foundersfund \n\nValuation has increased from US$1b less than a year ago. \n\nHusband and I are proud to have participated in this round supporting Craig Piggott and Halter’s Cowgorithm making farms & ranches more efficient all over the world. The cows in Colorado are v happy customers!!",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036585953725399136",
+      "verdict": "watch",
+      "summary": "农业AI公司Halter融资$2.2亿，估值$20亿，Founders Fund领投",
+      "importance": 3,
+      "domain": "ai",
+      "tags": [
+        "funding",
+        "ai-company"
+      ],
+      "keyData": [
+        {
+          "k": "融资金额",
+          "v": "$2.2亿"
+        },
+        {
+          "k": "估值",
+          "v": "$20亿"
+        },
+        {
+          "k": "领投方",
+          "v": "Founders Fund"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "农业科技AI赛道大额融资，估值翻倍显示赛道热度"
+      },
+      "suggestions": "关注农业科技AI赛道投资机会"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 4,
+      "summary": "农业科技Halter获$220M融资，估值$2B（年内从$1B翻倍），Founders Fund领投",
+      "domain": "finance",
+      "tags": [
+        "funding",
+        "equities"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036542116730388641",
+    "author": "Akado (@AkadoSang)",
+    "text": "RT @karpathy: Software horror: litellm PyPI supply chain attack. \n\nSimple `pip install litellm` was enough to exfiltrate SSH keys, AWS/GCP/…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036542116730388641",
+      "verdict": "actionable",
+      "summary": "Litellm PyPI供应链攻击可窃取SSH/AWS/GCP密钥，需立即检查依赖",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "security"
+      ],
+      "keyData": [
+        {
+          "k": "攻击方式",
+          "v": "pip install litellm植入恶意代码"
+        },
+        {
+          "k": "窃取目标",
+          "v": "SSH keys, AWS credentials, GCP keys"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "立即",
+        "reason": "供应链攻击影响广泛，需立即排查依赖"
+      },
+      "suggestions": "立即检查项目依赖，移除或审计litellm包，确认是否已泄露凭证"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "Karpathy警示：litellm PyPI供应链攻击可窃取SSH/AWS/GCP密钥",
+      "domain": null,
+      "tags": [
+        "security",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2033527473795903848",
+    "author": "Onchain Lens (@OnchainLens)",
+    "text": "Bitmine ( @BitMNR) bought 60,999 $ETH ($134.7M) last week.\n\nThey now hold a total of 4,595,562 $ETH worth $10.04B and has 3,040,515 $ETH ($6.6B) in staking.\n\nhttps://t.co/grYvWl35Ut https://t.co/FK9JBafiMf",
+    "lang": "en",
+    "output": {
+      "tweetId": "2033527473795903848",
+      "verdict": "watch",
+      "summary": "机构Bitmine增持约13.5亿美元ETH，staking持仓66亿美元",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "funding"
+      ],
+      "keyData": [
+        {
+          "k": "上周购买量",
+          "v": "60,999 ETH ($134.7M)"
+        },
+        {
+          "k": "总持有量",
+          "v": "4,595,562 ETH ($10.04B)"
+        },
+        {
+          "k": "Staking持仓",
+          "v": "3,040,515 ETH ($6.6B)"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "机构大额增持ETH显示长期看涨信号"
+      },
+      "suggestions": "关注机构后续增持动作及ETH现货ETF资金流向"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "【Bitmine】上周买入60999枚ETH(1.347亿美元)，总持仓459万枚(100.4亿美元)，质押304万枚(66亿美元)",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "trading",
+        "yield"
+      ]
+    }
+  },
+  {
+    "tweetId": "2033144900179394814",
+    "author": "*Walter Bloomberg (@DeItaone)",
+    "text": "OIL MARKETS BRACE FOR VOLATILITY AFTER KHARG STRIKE\n\nOil markets are set for a turbulent week after a US strike on Iran’s key export hub, Kharg Island, heightened fears of supply disruption across the Middle East.\n\nPresident Donald Trump warned attacks could expand to energy infrastructure if Iran blocks the Strait of Hormuz, while Tehran threatened retaliation against US-linked facilities.\n\nBrent crude surged 11% last week, briefly hitting $119.50 a barrel, and analysts expect further volatility as the fate of Kharg — vital to Iran’s exports — remains unclear.\n\nShipping through Hormuz is near standstill, pressuring global energy flows and pushing fuel prices higher worldwide.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2033144900179394814",
+      "verdict": "actionable",
+      "summary": "美国袭击伊朗Kharg港，布伦特原油上周涨11%突破119.5美元",
+      "importance": 5,
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "事件",
+          "v": "美国袭击伊朗Kharg关键出口港"
+        },
+        {
+          "k": "Brent涨幅",
+          "v": "11%"
+        },
+        {
+          "k": "Brent价格",
+          "v": "$119.50/桶"
+        },
+        {
+          "k": "影响区域",
+          "v": "霍尔木兹海峡航运近乎停滞"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "立即",
+        "reason": "地缘冲突升级影响能源供应，需立即评估能源相关仓位"
+      },
+      "suggestions": "立即评估能源/化工/航运板块风险，关注本周能源价格波动"
+    },
+    "baseline": {
+      "verdict": "watch",
+      "importance": 5,
+      "summary": "美国袭击伊朗Kharg岛，布伦特原油上周涨11%触及119.5美元",
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro",
+        "policy"
+      ]
+    }
+  },
+  {
+    "tweetId": "2033520097927766109",
+    "author": "GAIB 🟠 | RWAiFi | AI Infra (@gaib_ai)",
+    "text": "We are aware of a frontend issue affecting aid(.)gaib(.)ai. Do not interact with the site until further notice.\n\nFunds and smart contracts remain safe and unaffected.\n\nWe are actively resolving this and will provide an update once the site is fully restored.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2033520097927766109",
+      "verdict": "watch",
+      "summary": "GAIB前端存技术问题，智能合约和资金安全未受影响",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "security"
+      ],
+      "keyData": [
+        {
+          "k": "受影响范围",
+          "v": "前端界面aid.gaib.ai"
+        },
+        {
+          "k": "安全状态",
+          "v": "Funds和smart contracts安全未受影响"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "立即",
+        "reason": "官方已确认资金安全，待前端修复后无实质影响"
+      },
+      "suggestions": "等待官方进一步通知，修复前勿交互前端"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "GAIB前端漏洞紧急公告，智能合约安全，暂停交互",
+      "domain": "crypto",
+      "tags": [
+        "security"
+      ]
+    }
+  },
+  {
+    "tweetId": "2033868100886503472",
+    "author": "The Bitcoin Historian (@pete_rizzo_)",
+    "text": "JUST IN: $50 BILLION PAYPAL JUST ANNOUNCED IT WILL EXPAND CRYPTO STABLECOIN PAYMENTS TO 70 MORE COUNTRIES \n\n#BITCOIN ACCEPTED EVERYWHERE. COMING SOON 🔥 https://t.co/h9qJTmlTyT",
+    "lang": "en",
+    "output": {
+      "tweetId": "2033868100886503472",
+      "verdict": "watch",
+      "summary": "PayPal将加密稳定币支付服务扩展至70多个国家",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "narrative",
+        "exchange",
+        "token"
+      ],
+      "keyData": [
+        {
+          "k": "扩展国家数",
+          "v": "70+"
+        },
+        {
+          "k": "发行方",
+          "v": "PayPal"
+        },
+        {
+          "k": "产品类型",
+          "v": "crypto stablecoin payments"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "PayPal大规模采用稳定币推动加密支付普及"
+      },
+      "suggestions": "关注PayPal稳定币(XTZ/USD Coin)应用场景扩展及对交易所影响"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "PayPal将加密稳定币支付扩展至70国，$50B规模",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "exchange",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2032487665459757328",
+    "author": "BSCN (@BSCNews)",
+    "text": "🚨NEW: XRP LEDGER FOUNDATION RELEASES EMERGENCY PATCH v3.1.2, NODE OUTAGE BUG FIXED\n\n$XRP Ledger Software version 3.1.2 is now live, patching a critical edge case that was causing outages on public-facing nodes. \n\nAccording to the XRP Ledger Foundation ( @XRPLF), the release follows a series of emergency fixes after a Batch amendment bug in v3.1.0 allowed attackers to execute transactions on behalf of victim accounts without the victims' private keys. \n\nNode operators are urged to update immediately.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2032487665459757328",
+      "verdict": "actionable",
+      "summary": "XRP Ledger紧急发布v3.1.2补丁，修复导致公共节点宕机的关键漏洞，敦促节点立即更新",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "onchain"
+      ],
+      "keyData": [
+        {
+          "k": "版本",
+          "v": "v3.1.2"
+        },
+        {
+          "k": "漏洞类型",
+          "v": "节点宕机边缘情况+Batch amendment bug"
+        },
+        {
+          "k": "受影响版本",
+          "v": "v3.1.0"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "立即",
+        "reason": "安全补丁修复，需立即行动更新节点"
+      },
+      "suggestions": "节点运营者需立即升级到v3.1.2版本"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "XRP Ledger紧急发布v3.1.2补丁，修复v3.1.0批处理漏洞导致的非授权交易风险",
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "tech",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2034062695821894114",
+    "author": "無名先生 (@Wuming_Mr_)",
+    "text": "🚨【重磅突发】\n\n贝莱德（BlackRock）刚刚购入了价值 6 亿美元的比特币 —— 这标志着其今年以来规模最大的一笔增持。\n\n聪明钱（Smart Money）正在逆势布局……你是否在密切关注？ https://t.co/tDaTvXxiHD",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2034062695821894114",
+      "verdict": "actionable",
+      "summary": "贝莱德BlackRock增持6亿美元比特币，为今年来最大规模增持",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "funding",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "增持金额",
+          "v": "6亿美元"
+        },
+        {
+          "k": "机构",
+          "v": "贝莱德BlackRock"
+        },
+        {
+          "k": "背景",
+          "v": "年内最大规模增持"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "立即",
+        "reason": "顶级机构大额增持释放看涨信号，市场可能跟随布局"
+      },
+      "suggestions": "关注贝莱德持仓动向及其他机构后续跟进的合规产品"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "貝萊德年內最大筆增持：購入6億美元比特幣，聰明錢逆勢布局",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2034537187216146455",
+    "author": "HEADBOY 🦇🔊 (@NDIDI_GRAM)",
+    "text": "Big News For Perle Labs\n\nTheir eligibility checker and airdrop registration are now live, if you’ve been interacting since my first post, go ahead and check and register:\n\n→ Be quick to get this done, to not miss out on your rewards!!\n🔗https://t.co/u7KdphcAmk\n\nAlso, TGE doesn’t seem far off, especially with Coinbase adding PRL to its roadmap.\n\nI have solid expectations for this one, even PRL is already trading at a $1B FDV on the pre-market, which could make for a strong outcome for everyone involved.\n\nAre you eligible ??",
+    "lang": "en",
+    "output": {
+      "tweetId": "2034537187216146455",
+      "verdict": "watch",
+      "summary": "Perle Labs空投注册和资格检查已开放，PRL预市场FDV达10亿美元",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "airdrop",
+        "token"
+      ],
+      "keyData": [
+        {
+          "k": "FDV",
+          "v": "10亿美元"
+        },
+        {
+          "k": "平台",
+          "v": "预市场交易"
+        },
+        {
+          "k": "合作方",
+          "v": "Coinbase路线图"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "空投早期信号，但TGE时间未明确，需追踪进展"
+      },
+      "suggestions": "关注TGE具体时间窗口和领取规则细节"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "Perle Labs空投注册开放，PRL已上线Pre-market FDV $1B，Coinbase已列入路线图",
+      "domain": "crypto",
+      "tags": [
+        "airdrop",
+        "token",
+        "exchange"
+      ]
+    }
+  },
+  {
+    "tweetId": "2035996235006394415",
+    "author": "潘驴邓晓闲缺一 (@JohnsonZ91127)",
+    "text": "本周操作指南：\n\n上周纳指  $纳指100ETF-Invesco QQQ Trust (https://t.co/EStxLGFkmY)$ 下跌 2%，全年下跌 6.8%，本人账户上周同步下跌，全年上涨 7.93%\n\n本周美股预计将维持高波动，防御为主的走势，地缘政治方面美伊升温，油价飙升，大盘受压严重，担心通胀再起，降息预期减弱\n\n资金转向传统防御板块，如能源，债券\n\n传统避险板块黄金遭到抛售，今天跌幅巨大，  $黄金期货主连 (2604) (https://t.co/2zBlgQl1sl)$ 一度跌破 4100，目前仍在 4200 附近，主要原因是流动性危机和前期获利盘巨大，有深跌调整的需求\n\n$比特币 (https://t.co/Y7I1RVjVDD)$  也随之调整，但目前还算强势，跌幅不大，但如果美股继续大幅度调整，预计仍然会引发流动性危机，造成一切资产的抛售，参考 2020 年 3.12 大跌，但 btc 任何一次大跌都是买入的最好的机会\n 但不必悲观，保持合理仓位（4～6 成为佳），美股下跌和上涨一样凶猛，\n\n在下跌期间调仓，调整仓位到强势和业绩明确的板块和个股，是个好办法，如数字基础设施$  $Circle (https://t.co/OXv1F23lhB)$ ，存储板块  $美光科技 (https://t.co/pkh9hRIT6e)$ ，光通信板块（  $Lumentum (https://t.co/VX1mxhLydH)$ ，A股东山精密），云计算板块  $NEBIUS (https://t.co/HVybDP5qCC)$等\n港股  $阿里巴巴 (https://t.co/RN4DECm6oi)$ ，  $药明生物 (https://t.co/OnEuZI1gNg)$ ，股价已有吸引力",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2035996235006394415",
+      "verdict": "ignore",
+      "summary": "本周美股高波动操作指南，建议防御为主，关注能源债券和特定个股",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "trading",
+        "equities",
+        "macro"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "泛泛市场评论，缺少具体数据/催化剂/可执行建议"
+      },
+      "suggestions": "信息过于常规，缺乏独特洞察和可验证数据"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "本周美股防御指南：纳指年跌6.8%，账户年涨7.93%，建议4-6成仓",
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "macro",
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2035617331582255212",
+    "author": "Morpho 🦋 (@Morpho)",
+    "text": "RT @gauntlet_xyz: At 2:21 AM UTC, Resolv’s USR contract experienced an exploit where $50M Resolv USD (USR) was minted for approximately $10…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2035617331582255212",
+      "verdict": "actionable",
+      "summary": "Resolv USR合约遭攻击，攻击者铸造5000万美元USR获利约1000万美元",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "onchain"
+      ],
+      "keyData": [
+        {
+          "k": "攻击金额",
+          "v": "5000万美元USR"
+        },
+        {
+          "k": "获利",
+          "v": "约1000万美元"
+        },
+        {
+          "k": "时间",
+          "v": "UTC凌晨2:21"
+        },
+        {
+          "k": "项目",
+          "v": "Resolv"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "立即",
+        "reason": "DeFi安全事件，持有USR或相关资产的投资者需立即评估风险"
+      },
+      "suggestions": "检查是否持有USR头寸，评估协议安全性，追踪后续攻击分析报告"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "Resolv USR合约被盗约$50M，攻击者低成本铸造大量代币",
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036616558756213026",
+    "author": "Ctalks (@talk99)",
+    "text": "2026/03/25 #Ctalks昨日热点推送\n\n1️⃣3月24日消息，据金十引援路透社报道，以色列官员表示，伊朗不太可能同意美国的要求，但特朗普似乎决心与伊朗达成协议。\n\n2️⃣美国SEC、CFTC与NYSE近期协同行动，为加密资产监管系统性“松绑”。稳定币获准现金地位，BTC/ETH成为合规抵押品，加密期权持仓限额取消，共同构建主流资本市场的流动性新闭环。\n\n3️⃣以太坊基金会阐述L1与L2共生新愿景：以太坊L1作为核心结算与流动性层，L2则提供差异化功能与定制化服务，共同扩展以太坊生态并强化其核心属性。\n\nYesterday Hot Topics🔥\n\n1️⃣March 24 News: According to Reuters, citing Israeli officials, Iran is unlikely to agree to U.S. demands, but Donald Trump appears determined to reach a deal with Iran.\n\n2️⃣The U.S. Securities and Exchange Commission, Commodity Futures Trading Commission, and New York Stock Exchange have recently coordinated efforts to ease regulatory constraints on crypto assets. Stablecoins are being recognized as cash equivalents, BTC and ETH are accepted as compliant collateral, and position limits on crypto options have been lifted—jointly forming a new liquidity loop within mainstream capital markets.\n\n3️⃣The Ethereum Foundation has outlined a new vision for L1–L2 symbiosis: Ethereum L1 will serve as the core settlement and liquidity layer, while L2 solutions provide differentiated functionalities and customized services, together expanding the Ethereum ecosystem and strengthening its core properties.",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036616558756213026",
+      "verdict": "watch",
+      "summary": "美SEC/CFTC/NYSE协同松绑加密监管：稳定币获现金地位、BTC/ETH成合规抵押品、期权持仓限额取消",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "主流监管机构系统性认可加密资产，合规框架里程碑"
+      },
+      "suggestions": "关注稳定币监管框架细节和期权市场规模变化"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "美SEC/CFTC/NYSE协同松绑加密监管；稳定币获准现金地位；BTC/ETH成合规抵押品",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "macro",
+        "security",
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2034741293285277950",
+    "author": "Whale Insider (@WhaleInsider)",
+    "text": "JUST IN: Kalshi prediction market raises over $1 billion at valuation of $22 billion in new financing round. https://t.co/egtbdSAsEw",
+    "lang": "en",
+    "output": {
+      "tweetId": "2034741293285277950",
+      "verdict": "watch",
+      "summary": "预测市场Kalshi完成超10亿美元融资，估值22亿美元",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "funding"
+      ],
+      "keyData": [
+        {
+          "k": "融资额",
+          "v": "超10亿美元"
+        },
+        {
+          "k": "估值",
+          "v": "22亿美元"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "预测市场规模和机构认可度提升，受地缘事件催化需求增长"
+      },
+      "suggestions": "关注预测市场在宏观事件定价中的影响力变化"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "Kalshi预测市场融资超10亿美元，估值22亿美元",
+      "domain": "finance",
+      "tags": [
+        "funding",
+        "equities",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2033170874594107706",
+    "author": "Yishi (@ohyishi)",
+    "text": "我们检测到一个正在进行中的攻击，利用委托借贷滥用，影响多个 Venus 市场。\n\n示例攻击交易：0x5aede60c76cd1bf1d7d226cb706637d0377b338350183c6a6c8cf8677e1ab1f6。\n\n根本原因：攻击者获取或滥用 updateDelegate 授权，然后使用 borrowBehalf 从由受害者抵押支持的头寸中抽走资金。\n\n请暂停与 Venus 的任何交互，避免签署任何委托授权，并立即撤销已有的 delegate 权限。\n\n被利用的资金池：\n0x86aC3974e2BD0d60825230fa6F355fF11409df5c",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2033170874594107706",
+      "verdict": "actionable",
+      "summary": "Venus借贷协议遭攻击：攻击者利用委托借贷滥用从用户抵押头寸中抽走资金，多个市场受影响",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "onchain"
+      ],
+      "keyData": [
+        {
+          "k": "攻击交易",
+          "v": "0x5aede60c76cd1bf1d7d226cb706637d0377b338350183c6a6c8cf8677e1ab1f6"
+        },
+        {
+          "k": "受影响池",
+          "v": "0x86aC3974e2BD0d60825230fa6F355fF11409df5c"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "立即",
+        "reason": "正在进行的安全攻击，直接损失风险，持仓用户需立即行动"
+      },
+      "suggestions": "立即暂停与Venus交互，撤销已授予的delegate权限，评估相关仓位风险"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "检测到Venus委托借贷漏洞攻击，涉多个市场",
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "onchain"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036010080420917638",
+    "author": "Keystone 中文 (@KeystoneCN)",
+    "text": "Resolv $USR 被黑 8000万枚, 单点失效的阿喀琉斯之踵\n\n对于掌握大额资金、或具备增发能力的项目来说，当安全机制被集中到单点上，失守的时候TVL和LP都会很受伤。\n\n两个血泪教训：\n- 云端并不绝对安全：私钥存在云端，管理必须更小心谨慎。\n\n- 多签 + 硬件钱包是底线：代币铸造应当引入多签机制，如果能搭配硬件钱包使用更佳。",
+    "lang": "zh",
+    "output": {
+      "tweetId": "2036010080420917638",
+      "verdict": "watch",
+      "summary": "Resolv被黑事件分析：单点失效是根本问题，代币铸造权限需多签机制",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "被盗金额",
+          "v": "8000万枚USR"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "更久",
+        "reason": "DeFi安全设计缺陷的深度分析，提示行业风控改进方向"
+      },
+      "suggestions": "关注多签和硬件钱包在代币治理中的普及"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "Resolv $USR被黑8000万枚，单点失效致安全漏洞",
+      "domain": "crypto",
+      "tags": [
+        "security",
+        "tech"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036457267076407487",
+    "author": "VirtualBacon (@virtualbacon)",
+    "text": "☕️ GM! Here are the most important market events over the last 24 hours:\n\n🌍Market Overview:\n🔸 Iran denied all talks with the US and fired fresh missiles at Israel and Gulf states, calling Trump's \"productive conversations\" claim fake news designed to manipulate oil markets\n🔸 Stocks gave back Monday's rally as the Dow fell 128 points and the S&P slipped 0.26%, with Iran's parliament speaker publicly rejecting any negotiations\n🔸 Citi warned Brent could hit $200 if the Hormuz disruption extends through June, with Brent rebounding above $102 after Monday's 11% plunge\n🔸 G7 foreign ministers are meeting in Paris today to discuss diplomatic efforts to end the Iran war, the highest-level multilateral push for a ceasefire yet\n🔸 Elon Musk officially launched TeraFab, a $20-25B joint chip factory between Tesla, SpaceX, and xAI in Austin, aiming to produce 100-200B custom #AI and memory chips per year\n🔸 NVIDIA and Emerald AI announced flexible AI factories with AES, NextEra, and Vistra that double as grid assets, with commercial deployment planned later this year\n🔸 US Treasury launched an AI Innovation Series with FSOC to address AI risks in financial services as adoption accelerates across fraud detection, credit underwriting, and risk management\n🔸 Barclays raised its S&P 500 year-end target to 7,650 (~16% above current levels), citing stronger earnings and AI-driven megacap growth as reasons to look past the war selloff\n\n🪙Crypto Updates:\n🔸 #BTC held above $71K as Monday's risk-on bounce showed resilience despite Tuesday's equity pullback and renewed Iran escalation\n🔸 The SEC-CFTC joint 68-page token taxonomy officially entered the Federal Register, classifying 16 crypto assets as digital commodities not subject to securities law\n🔸 Congress confirmed a tokenization hearing for March 25 as Senators reached an \"in principle\" deal on the CLARITY Act stablecoin yield provision\n🔸 CLARITY Act stablecoin compromise reached in the Senate with markup targeted for April, though Sen. Moreno warned if it doesn't pass by May, #crypto legislation may stall for years\n🔸 Bittensor (TAO) surged 16.6% to $289 after NVIDIA CEO Jensen Huang publicly praised the project for training a 4B-parameter Llama model on fully decentralized compute\n🔸 Grayscale launched a Bittensor Trust for accredited investors, signaling growing institutional interest in decentralized AI infrastructure\n🔸 Backpack Exchange launched $BP on Solana with 250M tokens (25% of supply) entering circulation in one of Q1's most anticipated TGEs\n🔸 NYSE removed industry-wide trading limits on options for crypto ETFs, expanding institutional access to crypto derivatives",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036457267076407487",
+      "verdict": "actionable",
+      "summary": "伊朗拒绝与美谈判并发射导弹袭击以色列，G7外长巴黎开会促停火，布伦特油价跌破$100后反弹至$102",
+      "importance": 5,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "道指跌幅",
+          "v": "128点"
+        },
+        {
+          "k": "标普跌幅",
+          "v": "0.26%"
+        },
+        {
+          "k": "布伦特油价",
+          "v": "$102"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "立即",
+        "reason": "地缘冲突升级+能源价格剧烈波动，投资者需立即评估能源/避险仓位"
+      },
+      "suggestions": "G7外交动向和油价走势是关键观察点"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "☕️ GM! Here are the most important market events over the last 24 hours: 🌍Market Overview: 🔸 Iran denied all talks with…",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "macro",
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2033530132829220964",
+    "author": "Bitcoin.com News (@BitcoinNews)",
+    "text": "NEW: 🟠 Strategy buys ~$1.57B in #Bitcoin. \n\nThe 22,337 $BTC bring's the companies total holdings to 761,068 BTC. https://t.co/LYlZLMxmoV",
+    "lang": "en",
+    "output": {
+      "tweetId": "2033530132829220964",
+      "verdict": "actionable",
+      "summary": "Strategy增持22,337枚BTC，约15.7亿美元，公司总持仓达761,068 BTC",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "funding",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "买入金额",
+          "v": "$1.57B"
+        },
+        {
+          "k": "买入数量",
+          "v": "22,337 BTC"
+        },
+        {
+          "k": "总持仓",
+          "v": "761,068 BTC"
+        },
+        {
+          "k": "公司",
+          "v": "Strategy (MSTR)"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "立即",
+        "reason": "上市公司大规模增持BTC，机构采纳趋势强化"
+      },
+      "suggestions": "关注后续披露的买入均价和资金来源，评估对MicroStrategy股价和BTC现货ETF资金流向的影响"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "【Strategy】买入1.57亿美元BTC(22337枚)，总持仓达761068枚",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "trading",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2034641234434707578",
+    "author": "Bitcoin For Corporations (@BitcoinForCorps)",
+    "text": "🚨 JUST IN: The Fed pivots on Basel III, proposing a 4.8% cut to bank capital requirements, overhauling \"toxic\" risk weights for digital assets.\n\nThis is a green light for Tier 1 banks to finally scale #Bitcoin custody.",
+    "lang": "en",
+    "output": {
+      "tweetId": "2034641234434707578",
+      "verdict": "actionable",
+      "summary": "美联储转向Basel III，提议将银行资本要求削减4.8%，改革数字资产风险权重",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "资本要求削减",
+          "v": "4.8%"
+        },
+        {
+          "k": "政策",
+          "v": "Basel III改革"
+        },
+        {
+          "k": "影响",
+          "v": "Tier 1银行比特币托管"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "立即",
+        "reason": "监管框架重大突破，银行入局加密托管的制度障碍解除"
+      },
+      "suggestions": "跟踪美联储正式提案时间表、银行实际申请托管牌照进展"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "美联储Basel III转向：银行资本要求削减4.8%，改革数字资产风险权重，为一级银行比特币托管开绿灯",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "macro"
+      ]
+    }
+  },
+  {
+    "tweetId": "2036472449269629038",
+    "author": "Arrington Capital (@Arrington_Cap)",
+    "text": "RT @SuperstateInc: 1/ Today, we’re proud to announce a partnership with @InvescoUS, the first external asset manager on the Superstate plat…",
+    "lang": "en",
+    "output": {
+      "tweetId": "2036472449269629038",
+      "verdict": "watch",
+      "summary": "Superstate宣布InvescoUS成为其平台首个外部资产管理人",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "token",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "合作方",
+          "v": "InvescoUS"
+        },
+        {
+          "k": "平台",
+          "v": "Superstate"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "传统资管入局加密基础设施的信号，但缺具体规模/产品细节"
+      },
+      "suggestions": "关注Superstate产品线扩张速度、Invesco后续向客户推荐的实际资产规模"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "Superstate联手Invesco，首个外部资管入驻代币化基金平台",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "onchain",
+        "narrative"
+      ]
+    }
+  },
+  {
+    "tweetId": "2034499275137364001",
+    "author": "Arkham (@arkham)",
+    "text": "THIS GUY IS UP $10M AFTER BUYING $ETH\n\nThis massive whale bought $166.6M ETH from Kraken last week, and distributed it amongst 7 different addresses. His ETH is now up to $176M, gaining $10M in only a week.\n\nWill he continue to hold the ETH, or will he cash out? https://t.co/gnBpEYdEbN",
+    "lang": "en",
+    "output": {
+      "tweetId": "2034499275137364001",
+      "verdict": "ignore",
+      "summary": "某巨鲸从Kraken购买1.666亿美元ETH，一周后浮盈1000万美元",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "无法验证身份和意图，无实际操作参考价值"
+      },
+      "suggestions": "忽略此类无法验证的链上推测"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "巨鲸从Kraken购买1.666亿美元ETH，分配至7个地址，一周浮盈1000万美元",
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "trading"
+      ]
+    }
+  },
+  {
+    "tweetId": "2034014725076332887",
+    "author": "SolanaFloor (@SolanaFloor)",
+    "text": "NEWS: 🇺🇸According to remarks at the DC Blockchain Summit, SEC Chairman Paul S. Atkins outlined “Regulation Crypto Assets,” a framework featuring a token taxonomy, investment contract guidance, and a safe harbor model for compliant fundraising. https://t.co/l3kAORTP21",
+    "lang": "en",
+    "output": {
+      "tweetId": "2034014725076332887",
+      "verdict": "actionable",
+      "summary": "SEC主席Paul Atkins在DC区块链峰会上公布加密资产监管框架，含代币分类和投资合同指引",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "token"
+      ],
+      "keyData": [
+        {
+          "k": "机构",
+          "v": "SEC"
+        },
+        {
+          "k": "主席",
+          "v": "Paul S. Atkins"
+        },
+        {
+          "k": "框架",
+          "v": "Regulation Crypto Assets"
+        },
+        {
+          "k": "要素",
+          "v": "代币分类、投资合同指导、安全港模式"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "SEC主席首次明确监管框架轮廓，SEC执法压力预期缓解，合规路径更清晰"
+      },
+      "suggestions": "关注框架正式发布的时间、代币分类的具体标准、安全港模式的适用条件"
+    },
+    "baseline": {
+      "verdict": "actionable",
+      "importance": 5,
+      "summary": "SEC主席Atkins提出Regulation Crypto Assets框架，含token taxonomy和safe harbor",
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "token"
+      ]
+    }
+  }
+]

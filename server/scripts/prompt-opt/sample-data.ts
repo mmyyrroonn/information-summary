@@ -31,20 +31,35 @@ function parseArgs() {
   return args;
 }
 
-async function sampleClassification(count: number, days: number) {
+async function sampleClassification(count: number, days: number, excludeFile?: string) {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  // 目标分布：按 importance 分层，确保高分推文充分覆盖
-  const targetPerLevel: Record<number, number> = { 1: 4, 2: 5, 3: 8, 4: 8, 5: 5 };
+  // 加载排除列表（用于泛化验证时排除训练集）
+  let excludeIds = new Set<string>();
+  if (excludeFile) {
+    const excludePath = path.resolve(__dirname, excludeFile);
+    if (fs.existsSync(excludePath)) {
+      const excludeData = JSON.parse(fs.readFileSync(excludePath, 'utf-8'));
+      excludeIds = new Set(excludeData.map((t: any) => t.tweetId));
+      console.log(`  Excluding ${excludeIds.size} tweets from ${excludeFile}`);
+    }
+  }
 
-  type TweetWithInsight = Awaited<ReturnType<typeof prisma.tweet.findMany>>[0] & {
-    insights: NonNullable<Awaited<ReturnType<typeof prisma.tweet.findMany>>[0]['insights']>;
-  };
-  const selected: TweetWithInsight[] = [];
+  // 目标分布：偏重判断难度高的区间（importance 3-4），减少显而易见的噪音
+  const targetPerLevel: Record<number, number> = { 1: 5, 2: 10, 3: 20, 4: 15, 5: 10 };
+  // 泛化验证时按比例放大到 count
+  const scale = count / 60;
+  const scaledTarget: Record<number, number> = {};
+  for (const [k, v] of Object.entries(targetPerLevel)) {
+    scaledTarget[Number(k)] = Math.round(v * scale);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const selected: any[] = [];
 
   // 分组查询，每个 importance 等级独立取样
-  for (const [level, target] of Object.entries(targetPerLevel)) {
+  for (const [level, target] of Object.entries(scaledTarget)) {
     const imp = Number(level);
     const tweets = await prisma.tweet.findMany({
       where: {
@@ -52,6 +67,7 @@ async function sampleClassification(count: number, days: number) {
         abandonedAt: null,
         insights: { importance: imp },
         tweetedAt: { gte: since },
+        ...(excludeIds.size > 0 ? { tweetId: { notIn: [...excludeIds] } } : {}),
       },
       include: { insights: true },
       orderBy: { tweetedAt: 'desc' },
@@ -59,7 +75,7 @@ async function sampleClassification(count: number, days: number) {
     });
     // 随机打乱后取目标数量
     const shuffled = tweets
-      .filter((t): t is TweetWithInsight => t.insights !== null)
+      .filter((t) => t.insights !== null)
       .sort(() => Math.random() - 0.5);
     selected.push(...shuffled.slice(0, target));
     console.log(`  importance=${imp}: found ${tweets.length}, selected ${Math.min(shuffled.length, target)}`);
@@ -95,11 +111,12 @@ async function main() {
   const count = Number(args.count) || 30;
   const days = Number(args.days) || 7;
 
+  const exclude = args.exclude; // e.g. --exclude data/sample-classification.json
   console.log(`Sampling ${count} items for ${type}, last ${days} days...`);
 
   let data: unknown;
   if (type === 'classification') {
-    data = await sampleClassification(count, days);
+    data = await sampleClassification(count, days, exclude);
   } else {
     console.error(`Unknown type: ${type}. Supported: classification`);
     process.exit(1);
@@ -108,7 +125,8 @@ async function main() {
   const outDir = path.resolve(__dirname, 'data');
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
-  const outPath = path.resolve(outDir, `sample-${type}.json`);
+  const outName = args.output ?? `sample-${type}.json`;
+  const outPath = path.resolve(outDir, outName);
   fs.writeFileSync(outPath, JSON.stringify(data, null, 2));
 
   const items = Array.isArray(data) ? data.length : 0;

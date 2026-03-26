@@ -1,13 +1,32 @@
 [
   {
     "tweetId": "2036768768312160264",
-    "authorName": "MaiMaiTi",
-    "authorScreen": "MaiMaiTi778",
+    "author": "MaiMaiTi (@MaiMaiTi778)",
     "text": "最近理财是真的多，\n\nBg也存了，\nedgex也存了，\nusdgo也存了，\n币安u也存了，\n超级赚币也存了， \n\n对应的维权群也都加一下吧，以防万一。",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/MaiMaiTi778/status/2036768768312160264",
-    "tweetedAt": "2026-03-25T11:34:50.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036768768312160264",
+      "verdict": "watch",
+      "summary": "提及多个DeFi理财平台(Bg/edgex/usdgo/币安/超级赚币)存币，建议加维权群防风险",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "yield",
+        "security"
+      ],
+      "keyData": [
+        {
+          "k": "平台",
+          "v": "Bg, edgex, usdgo, 币安, 超级赚币"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "泛泛风险提示，无具体事件/证据"
+      }
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 1,
       "summary": "最近理财是真的多， Bg也存了， edgex也存了， usdgo也存了， 币安u也存了， 超级赚币也存了， 对应的维权群也都加一下吧，以防万一。",
@@ -19,13 +38,26 @@
   },
   {
     "tweetId": "2036784465566126490",
-    "authorName": "Morph",
-    "authorScreen": "MorphNetwork",
+    "author": "Morph (@MorphNetwork)",
     "text": "If you could remove one point of friction from moving money, what would it be?\n\nDrop it below ↓",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/MorphNetwork/status/2036784465566126490",
-    "tweetedAt": "2026-03-25T12:37:12.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036784465566126490",
+      "verdict": "ignore",
+      "summary": "Morph协议关于资金流动摩擦力的调研问卷",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯开放式问题，无具体信息"
+      }
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 1,
       "summary": "If you could remove one point of friction from moving money, what would it be? Drop it below ↓",
@@ -37,13 +69,26 @@
   },
   {
     "tweetId": "2036770123013579041",
-    "authorName": "比特欧 Elvin",
-    "authorScreen": "DRbitcoin36",
+    "author": "比特欧 Elvin (@DRbitcoin36)",
     "text": "有钱人啥都不怕，就怕死。\n没钱人啥都怕，就不怕死。\n\n中产就有点尴尬了，啥都怕。",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/DRbitcoin36/status/2036770123013579041",
-    "tweetedAt": "2026-03-25T11:40:13.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036770123013579041",
+      "verdict": "ignore",
+      "summary": "关于不同财富群体心态的泛泛评论，与行业无关",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯情绪/哲学表述，无任何数据"
+      }
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 1,
       "summary": "有钱人啥都不怕，就怕死。 没钱人啥都怕，就不怕死。 中产就有点尴尬了，啥都怕。",
@@ -55,13 +100,26 @@
   },
   {
     "tweetId": "2036787132384305596",
-    "authorName": "Bitman",
-    "authorScreen": "BitmanTW",
+    "author": "Bitman (@BitmanTW)",
     "text": "RT @BitmanTW: Today’s mint 🔥\n\n@cmai_agent by @jgonzalezferrer \n\nWho’s ready? https://t.co/vwB3YZiKiu",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/BitmanTW/status/2036787132384305596",
-    "tweetedAt": "2026-03-25T12:47:48.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036787132384305596",
+      "verdict": "ignore",
+      "summary": "转发某NFTmint活动预告，无具体细节",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "仅转发预告，无时间/价格/机制"
+      }
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 1,
       "summary": "RT @BitmanTW: Today’s mint 🔥 @cmai_agent by @jgonzalezferrer Who’s ready? https://t.co/vwB3YZiKiu",
@@ -73,13 +131,26 @@
   },
   {
     "tweetId": "2036766647260745995",
-    "authorName": "vooi",
-    "authorScreen": "vooi_io",
+    "author": "vooi (@vooi_io)",
     "text": "@HyperliquidX hyperliquid",
     "lang": "da",
-    "tweetUrl": "https://twitter.com/vooi_io/status/2036766647260745995",
-    "tweetedAt": "2026-03-25T11:26:24.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036766647260745995",
+      "verdict": "ignore",
+      "summary": "仅提及Hyperliquid平台名，无任何实质信息",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "无内容，仅提平台名"
+      }
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 1,
       "summary": "@HyperliquidX hyperliquid",
@@ -91,13 +162,28 @@
   },
   {
     "tweetId": "2036657433733382256",
-    "authorName": "海阔天空",
-    "authorScreen": "wshngknshji1",
+    "author": "海阔天空 (@wshngknshji1)",
     "text": "《华尔街日报》报道，伊朗提出了结束战争的要求：\n\n关闭所有位于海湾地区的美国军事基地；\n做出不再发动袭击的铁的保证；\n立即停止以色列对真主党的袭击；\n全面解除所有制裁并提供具有约束力的经济保证；\n巨额战争赔款；\n对伊朗导弹计划不设任何限制；\n核计划不可剥夺；\n船只通过霍尔木兹海峡需向伊朗支付通行费。\n……\n\n看来，伊朗是不想好好谈判了。😂😂😂\n\n美伊双方提出的诉求相差十万八千里。\n\n现在是以色列和伊朗都想继续打下去，美国就是想停也停不下来。\n\n美国一直是劝架的，现在变成了打架的。\n\n如何是好？😂😀✌️",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/wshngknshji1/status/2036657433733382256",
-    "tweetedAt": "2026-03-25T04:12:26.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036657433733382256",
+      "verdict": "watch",
+      "summary": "伊媒称结束战争条件：关闭海湾美军基地、停止援以、全面解除制裁、巨额战争赔款、导弹计划不设限、核计划不可剥夺、霍尔木兹海峡通行费",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "地缘冲突升级风险影响能源/供应链和市场情绪"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 2,
       "summary": "《华尔街日报》报道伊朗结束战争要求：关闭美军基地、停止制裁、赔偿等",
@@ -110,13 +196,28 @@
   },
   {
     "tweetId": "2036629453460078788",
-    "authorName": "Aelia Capitolina",
-    "authorScreen": "Areskapitalon",
+    "author": "Aelia Capitolina (@Areskapitalon)",
     "text": "如果华尔街日报说的是真的，那么事实就是川普完全在撒谎，周四的谈判90%可能不会举行，因为伊朗设定的举行前提门槛极高。\n\n万斯压根没出发，很可能要等伊朗确认会派人才会出发，但现在看来，伊朗方面不会派人。这场谈判可能并不会发生。",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/Areskapitalon/status/2036629453460078788",
-    "tweetedAt": "2026-03-25T02:21:15.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036629453460078788",
+      "verdict": "watch",
+      "summary": "分析称华尔街日报报道若属实，则特朗普完全撒谎，伊朗谈判前提门槛极高，谈判90%可能不会举行",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "美伊谈判破裂风险影响中东局势和油价预期"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 2,
       "summary": "推测谈判可能不会举行伊朗设极高门槛",
@@ -128,13 +229,33 @@
   },
   {
     "tweetId": "2036687077845393636",
-    "authorName": "哈世链闻",
-    "authorScreen": "HashNewsHK",
+    "author": "哈世链闻 (@HashNewsHK)",
     "text": "比特币或已触底反弹，年底有望涨至15万美元\n\n伯恩斯坦分析师表示，比特币可能已经触底，未来几个月有望迎来反弹。年尾时，价格可能达到15万美元的水平。这一预测引发了市场的关注，部分投资者对后市表示乐观，暗示可能出现新的上涨周期。 #比特币 #投资趋势",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/HashNewsHK/status/2036687077845393636",
-    "tweetedAt": "2026-03-25T06:10:13.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036687077845393636",
+      "verdict": "watch",
+      "summary": "伯恩斯坦分析师：比特币可能已触底，未来几个月有望反弹，年尾或达15万美元",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "trading",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "目标价",
+          "v": "15万美元"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "机构看多但仅为预测，需验证催化剂"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 2,
       "summary": "伯恩斯坦分析师：比特币可能触底反弹，年底望达15万美元",
@@ -147,13 +268,27 @@
   },
   {
     "tweetId": "2036728796028498065",
-    "authorName": "@BTV_Michael",
-    "authorScreen": "BTV_CN",
+    "author": "@BTV_Michael (@BTV_CN)",
     "text": "OpenAI 把 Sora 关了。\n\n理由：担心深度伪造视频。\n翻译：怕被告死，先跑路。\n\n当初发布的时候怎么不收费？\n现在满大街都是 AI 黄片了，你来说担心？\n\n当初发布的时候直接开收费，现在的币圈至于一堆账号用 AI 生成美女图片，大搞擦边？\n\n今天\"AI 女友\"，明天\"虚拟女神\"。\n粉丝涨到几十万，然后开始接广告。\n\n最后呢？\n不是卖课，就是带单。\n要么就是拉你进\"密码社群\"。\n\n这就是 2026 年的互联网。\nAI 在装道德，crypto 在装正经。\n其实都在割韭菜，用擦边吸引流量，用知识付费收割。",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/BTV_CN/status/2036728796028498065",
-    "tweetedAt": "2026-03-25T08:56:00.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036728796028498065",
+      "verdict": "ignore",
+      "summary": "批评OpenAI关停Sora并泛论AI和crypto行业割韭菜现象，无具体信息",
+      "importance": 1,
+      "domain": "ai",
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯情绪宣泄，无实质内容"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 2,
       "summary": "批评OpenAI关闭Sora，质疑道德立场",
@@ -166,13 +301,27 @@
   },
   {
     "tweetId": "2036729538051232003",
-    "authorName": "Crypto Tony",
-    "authorScreen": "CryptoTony__",
+    "author": "Crypto Tony (@CryptoTony__)",
     "text": "$ETH / $USD - Update \n\nRetest and pump ? Could it be that easy https://t.co/eVimYN0XId",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/CryptoTony__/status/2036729538051232003",
-    "tweetedAt": "2026-03-25T08:58:57.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036729538051232003",
+      "verdict": "ignore",
+      "summary": "简短期货价格询问，未提供任何数据或分析",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "trading"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "纯技术面询问，无催化剂无数据"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 2,
       "summary": "ETH支撑位测试猜测",
@@ -184,13 +333,33 @@
   },
   {
     "tweetId": "2036662891940905023",
-    "authorName": "Paper Gains",
-    "authorScreen": "PaperGainsInc",
+    "author": "Paper Gains (@PaperGainsInc)",
     "text": "RT @MOSSADil: ‼️ JUST IN: \nAccording to Faytuks, Iran’s demands to end the war: shut down all U.S. bases in the Gulf, guarantee no future a…",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/PaperGainsInc/status/2036662891940905023",
-    "tweetedAt": "2026-03-25T04:34:07.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036662891940905023",
+      "verdict": "watch",
+      "summary": "伊朗结束战争需求：关闭海湾所有美国基地并保证未来不再有军事行动",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "伊朗需求",
+          "v": "关闭海湾所有美国基地"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "地缘政治冲突可能影响能源供应和市场情绪"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 2,
       "summary": "RT @MOSSADil: ‼️ JUST IN: According to Faytuks, Iran’s demands to end the war: shut down all U.S. bases in the Gulf, gu…",
@@ -203,13 +372,27 @@
   },
   {
     "tweetId": "2036660813511942256",
-    "authorName": "borovik",
-    "authorScreen": "3orovik",
+    "author": "borovik (@3orovik)",
     "text": "A hypothetical Bitcoin prediction: $300k in 2027\n\nHow I could see this happening:\n\n- Kevin Warsh cuts interest rates\n- Everyone prepares for the next halving\n- Saylor buys like another trillion BTC\n- Pray that it’s a bull market year https://t.co/fb9EtNKNZH",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/3orovik/status/2036660813511942256",
-    "tweetedAt": "2026-03-25T04:25:51.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036660813511942256",
+      "verdict": "ignore",
+      "summary": "比特币假设性预测：2027年达30万美元，含降息/Saylor购买/牛市年等假设",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "纯假设性预测，无可验证数据和具体催化剂"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 2,
       "summary": "用户预测BTC 2027年达30万美金，列4个假设条件",
@@ -221,13 +404,27 @@
   },
   {
     "tweetId": "2036768750968430779",
-    "authorName": "0xSammy",
-    "authorScreen": "0xSammy",
+    "author": "0xSammy (@0xSammy)",
     "text": "RT @0xSammy: TAO was less than $175 when we released our @KhalaResearch Bittensor report - it’s now up 2x\n\nHow many of you read it? \n\nSince…",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/0xSammy/status/2036768750968430779",
-    "tweetedAt": "2026-03-25T11:34:46.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036768750968430779",
+      "verdict": "ignore",
+      "summary": "自我宣传贴：称TAO低于175美元时发布报告，现已涨2倍",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "事后自我宣传，无新信息无具体操作建议"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "ignore",
       "importance": 2,
       "summary": "TAO从$175至今涨幅2倍，提及研究报告",
@@ -240,13 +437,28 @@
   },
   {
     "tweetId": "2036743193975558417",
-    "authorName": "HashKey Group",
-    "authorScreen": "HashKeyGroup",
+    "author": "HashKey Group (@HashKeyGroup)",
     "text": "The shift to on-chain finance is a fundamental change in financial infrastructure. Today, value moves through layers of intermediaries:\n\nBank ➡️ Clearing ➡️ Custody ➡️ Settlement\n\nEach step adds friction.\n\nOn-chain, this stack collapses into a single layer:\n\n⛓️ Blockchain + smart contracts.\n\n💡 This is the structural shift behind tokenisation. Read more from our Senior Researcher Tim Sun @TiezhuCrypto in his latest for @FTChinese:\nhttps://t.co/Y4jmEciyzp",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/HashKeyGroup/status/2036743193975558417",
-    "tweetedAt": "2026-03-25T09:53:12.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036743193975558417",
+      "verdict": "watch",
+      "summary": "HashKey：链上金融是基础设施结构性转变，传统金融堆栈被区块链+智能合约单层取代",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "narrative",
+        "tech"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "结构性趋势分析，有专业机构背书但非即时可交易信息"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 2,
       "summary": "The shift to on-chain finance is a fundamental change in financial infrastructu…",
@@ -258,13 +470,27 @@
   },
   {
     "tweetId": "2036717518807822700",
-    "authorName": "浪老湿",
-    "authorScreen": "LanngCrypto",
+    "author": "浪老湿 (@LanngCrypto)",
     "text": "抢到了Binance Ai Pro的公测资格，然后我给他了500U，让他不管用什么办法将这500U通过7天的BTC交易变成1000U，他现在已经在执行了，兄弟们我是不是要发财了？ https://t.co/oPzv47zqBr",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/LanngCrypto/status/2036717518807822700",
-    "tweetedAt": "2026-03-25T08:11:11.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036717518807822700",
+      "verdict": "ignore",
+      "summary": "用户称用500U在Binance AI Pro测试版做BTC套利，期望7天翻倍",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "无法验证真实性，无任何策略细节，纯盲目乐观"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 2,
       "summary": "用户测试Binance AI Pro，500U 7天翻倍实盘实验",
@@ -277,13 +503,42 @@
   },
   {
     "tweetId": "2036607175620173875",
-    "authorName": "Faye",
-    "authorScreen": "Faye24750313",
+    "author": "Faye (@Faye24750313)",
     "text": "RT @7warroom: 美国国税局刚刚交出了一张底牌。\n+389亿美元，对决-425亿美元。\n这是2023年美国各州财富转移的真实账单。\n\n投给川普的红州，净流入389亿。\n选了哈里斯的蓝州，血亏425亿。\n财富正在全速逃离民主党的地盘。\n\n为什么？\n因为觉醒文化和高税收变…",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/Faye24750313/status/2036607175620173875",
-    "tweetedAt": "2026-03-25T00:52:43.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036607175620173875",
+      "verdict": "watch",
+      "summary": "美国税局数据：红州净流入389亿美元，蓝州净流出425亿美元。分析归因于税收与政策差异",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "红州净流入",
+          "v": "389亿美元"
+        },
+        {
+          "k": "蓝州净流出",
+          "v": "425亿美元"
+        },
+        {
+          "k": "统计周期",
+          "v": "2023年"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "政治叙事类信息，无直接市场催化，宏观影响需观察"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "美国各州2023年财富转移：红州净流入389亿，蓝州净流出425亿",
@@ -296,13 +551,28 @@
   },
   {
     "tweetId": "2036642361967571132",
-    "authorName": "Boring_Business",
-    "authorScreen": "BoringBiz_",
+    "author": "Boring_Business (@BoringBiz_)",
     "text": "Former Goldman Sachs CEO Lloyd Blankfein on the difference between running a public company and a private partnership\n\nFrom his conversation with Andrew Ross Sorkin from 92W\n\n\"In a private partnership, you get wealthy if you work there by your capital count rising. You do not care if you make it all in a 10 year cycle, or make it in 3 years and tread water for the other 7\n\nYou can make it evenly or make money in one year and lose money in the next. As long as after the 10 years, you have got it there\n\nIn a public company, its about your stock price. Your stock price is a function of your earnings times a multiple. And that multiple is predicated, in part, by the reliability of your earnings.\"",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/BoringBiz_/status/2036642361967571132",
-    "tweetedAt": "2026-03-25T03:12:32.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036642361967571132",
+      "verdict": "ignore",
+      "summary": "前高盛CEO Blankfein论述公私公司经营逻辑差异：无 earnings/ multiples具体数据",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "narrative",
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯商业观点分享，无具体公司/投资建议"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "前高盛CEO谈上市公司与私营合伙企业区别：激励机制和关注点不同",
@@ -314,13 +584,28 @@
   },
   {
     "tweetId": "2036776306369839258",
-    "authorName": "Mr.理想三旬| 🐬TermMax|(FREE,WON)MemeMax⚡️",
-    "authorScreen": "Li888Real",
+    "author": "Mr.理想三旬| 🐬TermMax|(FREE,WON)MemeMax⚡️ (@Li888Real)",
     "text": "多数投资者对「 $RIVER 」@RiverdotInc @River4fun 的认知仍停留在内容挖矿的表层，却忽视了其底层流动性基建的暗流涌动。\n\n当市场目光聚焦于积分获取时，跨链协议的打通正在重塑其资产流动性版图。这究竟是单纯的技术升级，还是更庞大生态扩张的序曲？\n\n____🌊 ____🌊 ____🌊 ____🌊 ____🌊 ____🌊____\n\n『流动性孤岛的消解与跨链资产网络』\n\n依托 StargateFinance 协议的底层支持，「 $RIVER 」已正式实现 Ethereum、Base 与 BNB Chain 之间的资产无缝流转。\n\n这一技术动作打破了单一公链的流动性壁垒，构建起多链资产互通的网络。开发团队在底层架构上的持续迭代，反映出其对资本留存率和跨链交易深度的精准把控。\n\n____🌊 ____🌊 ____🌊 ____🌊 ____🌊 ____🌊____\n\n『内容激励机制与生态基本面的重估』\n\n基于上述底层协议的打通，进一步审视其生态结构即可发现，创作者获取「@River4fun」积分的机制仅是前端流量漏斗。\n\n真正支撑其估值模型的，是团队在拓展网络与筹备外部合作上的高执行力。这种前端捕获与后端扩张的双轨并行策略，正加速项目向既定蓝图靠拢，显露出核心的战略卡位意图。\n\n____🌊 ____🌊 ____🌊 ____🌊 ____🌊 ____🌊____",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/Li888Real/status/2036776306369839258",
-    "tweetedAt": "2026-03-25T12:04:47.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036776306369839258",
+      "verdict": "ignore",
+      "summary": "对River项目生态分析：跨链协议+内容挖矿，但缺TVL/用户/收入等可验证数据",
+      "importance": 1,
+      "domain": "crypto",
+      "tags": [
+        "narrative",
+        "tech"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "项目分析但无验证数据，营销性质明显"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "RIVER依托Stargate实现Eth/Base/BNB跨链流转，定位内容挖矿+流动性基建双重路径",
@@ -334,13 +619,29 @@
   },
   {
     "tweetId": "2036687500899758369",
-    "authorName": "LIKWID",
-    "authorScreen": "likwid_fi",
+    "author": "LIKWID (@likwid_fi)",
     "text": "AI Agents will make 1 million times more payments than humans, and they will use crypto.\n\nFew understand.\n\nThe volume is coming — but scale only works if agents can safely discover who to pay, verify trust on-chain, and then autonomously execute complex DeFi actions afterwards.\n\nThat’s the exact stack we’re building at @likwid_fi on @base :  \n\nERC-8004 for verifiable identity + reputation, x402 for payments, and oracle-free execution (swaps, margin, lending, hedging).\n\nWhen agents can trust, pay, and act without humans in the loop — that’s when the 1M× multiplier becomes real.\n\nWho else is building for this future? 🚀",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/likwid_fi/status/2036687500899758369",
-    "tweetedAt": "2026-03-25T06:11:54.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036687500899758369",
+      "verdict": "watch",
+      "summary": "LIKWID阐述AI Agents×Crypto支付栈：ERC-8004身份+x402支付+无预言机执行，1M×增量预期",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "tech",
+        "trading",
+        "ai-product"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "概念性叙事，提出AI代理支付增量逻辑，但缺实际数据/采用进度"
+      },
+      "suggestions": "关注协议实际进展与AI Agent采用率数据"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "LIKWID：AI Agents将进行百万倍支付，侧重加密货币安全支付与链上执行",
@@ -354,13 +655,29 @@
   },
   {
     "tweetId": "2036646469890195589",
-    "authorName": "JH",
-    "authorScreen": "CRUDEOIL231",
+    "author": "JH (@CRUDEOIL231)",
     "text": "Statement issued moments ago by the IRGC spokesperson:\n\nIn the name of God, the Most Gracious, the Most Merciful.\n\nThe strategic power you boasted about has turned into a strategic defeat.\n\nThe world's superpower claimant, if it could have escaped the predicament, it would have done so by now.\n\nDo not call your defeat an agreement. The era of your promises is over. Today in the world, there are two fronts: truth and falsehood. And every free truth-seeker is not seduced by your media waves.\n\nHave your internal conflicts reached the stage of negotiating with yourselves?\n\nNeither will your investments in the region materialize, nor will you see the previous prices of energy and oil, until you understand: stability in the region is guaranteed by the powerful hand of our armed forces. Stability comes through power.\n\nWe explicitly declare:\n\nUntil our will prevails, no situation will return to the previous state; this will occurs when the thought of action against the Iranian nation is completely erased from your filthy minds.\n\nOur first and last word from day one has been, is, and will be: No one like us will come to terms with anyone like you. Not now, and never.\n\nAnd victory is only from God, the Almighty, the Wise.\n\n#oott #iran",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/CRUDEOIL231/status/2036646469890195589",
-    "tweetedAt": "2026-03-25T03:28:52.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036646469890195589",
+      "verdict": "watch",
+      "summary": "伊朗革命卫队发言人声明：称美战略努力已失败，区域稳定取决于武装力量，涉石油制裁预期",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy",
+        "commodities"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利空",
+        "horizon": "立即",
+        "reason": "伊朗官方强硬表态，地缘风险升级信号，能源市场短期波动风险"
+      },
+      "suggestions": "关注原油/黄金短期波动"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "伊朗IRGC警告美国：战略失败，能源/石油供应风险",
@@ -373,13 +690,28 @@
   },
   {
     "tweetId": "2036722279925870907",
-    "authorName": "@BTV_Michael",
-    "authorScreen": "BTV_CN",
+    "author": "@BTV_Michael (@BTV_CN)",
     "text": "昨天刚刚在新加坡跟Meta高管聊到Manus！其实Meta 并没有很重视Manus 也就是花点小钱消除了竞争，在应用层拿些中国用户数据，这个收购的钱，大概率会变成他们出国的赎身费！两孩子还是太天真，钱会变成他们的催命符，在他们财政吃紧的时候！",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/BTV_CN/status/2036722279925870907",
-    "tweetedAt": "2026-03-25T08:30:06.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036722279925870907",
+      "verdict": "watch",
+      "summary": "传Meta收购Manus AI产品，但来源不明的闲聊内容，含负面猜测，无官方确认",
+      "importance": 2,
+      "domain": "ai",
+      "tags": [
+        "ai-company",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "传闻无验证，涉及AI并购叙事但可信度低"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "Meta高管对Manus不重视，收购或是消竞争+获数据",
@@ -392,13 +724,29 @@
   },
   {
     "tweetId": "2036649339632955659",
-    "authorName": "3X Long Labubu",
-    "authorScreen": "labubu_trader",
+    "author": "3X Long Labubu (@labubu_trader)",
     "text": "Heard the rumor that Trump Xi meeting will be at the end of April. \nBought back some FXI calls today but don’t have the balls to go big.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/labubu_trader/status/2036649339632955659",
-    "tweetedAt": "2026-03-25T03:40:16.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036649339632955659",
+      "verdict": "watch",
+      "summary": "传闻特朗普习近平4月底会面，买入少量FXI看涨期权但仓位小",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "forex",
+        "trading"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "4月底会面若成真将影响宏观预期，FXI为直接关联标的"
+      },
+      "suggestions": "关注4月底G7/中美官方动态，FXI为交易标的但需明确催化"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "Heard the rumor that Trump Xi meeting will be at the end of April. Bought back some FXI calls today but don’t have the …",
@@ -411,13 +759,27 @@
   },
   {
     "tweetId": "2036619455971864846",
-    "authorName": "Matt Wolfe",
-    "authorScreen": "mreflow",
+    "author": "Matt Wolfe (@mreflow)",
     "text": "Google just made their own version of WebSim using Gemini 3.1 Flash-Lite (but without the actually memory).",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/mreflow/status/2036619455971864846",
-    "tweetedAt": "2026-03-25T01:41:31.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036619455971864846",
+      "verdict": "ignore",
+      "summary": "Google用Gemini 3.1 Flash-Lite做类WebSim产品，无功能细节/发布时间的简单提及",
+      "importance": 2,
+      "domain": "ai",
+      "tags": [
+        "ai-product"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "产品提及无具体信息，无benchmark/可用时间，无法评估价值"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "Google用Gemini 3.1 Flash-Lite推出WebSim类似工具",
@@ -430,13 +792,29 @@
   },
   {
     "tweetId": "2036769170348806368",
-    "authorName": "Crypto Winkle",
-    "authorScreen": "CryptoWinkle",
+    "author": "Crypto Winkle (@CryptoWinkle)",
     "text": "Fake activity is breaking onchain incentives.\n\nAirdrop farming, inflated TVL, mercenary capital; none of it reflects real users.\n\nThis is where @zerufinance changes the game:\n• Zaps score real onchain behavior (LPing, staking, governance)\n• Quality > volume (no reward for spam)\n• Dynamic incentives → good actors earn more, extractive ones get filtered\n\nIf this works, protocols stop rewarding noise and start scaling real usage.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/CryptoWinkle/status/2036769170348806368",
-    "tweetedAt": "2026-03-25T11:36:26.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036769170348806368",
+      "verdict": "watch",
+      "summary": "CryptoWinkle分析链上激励问题：虚假活动破坏生态，介绍Zerufinance的Zaps机制筛选真实行为",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "onchain",
+        "yield",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "若Zerufinance方案有效，可改善链上激励真实性，但方案刚推出需验证"
+      },
+      "suggestions": "关注Zerufinance TVL变化及真实用户留存数据"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "Zerufinance 试图通过 Zaps 评分机制筛选真实链上行为，取代刷量激励",
@@ -450,13 +828,37 @@
   },
   {
     "tweetId": "2036609462501523568",
-    "authorName": "The AI Investor",
-    "authorScreen": "The_AI_Investor",
+    "author": "The AI Investor (@The_AI_Investor)",
     "text": "Google Introducing TurboQuant: a\nnew compression algorithm that reduces LLM key-value cache memory by at least 6x and delivers up to 8x speedup, all with zero accuracy loss.\n\nDont fall for another deepseek event for memory!\n\njevons paradox",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/The_AI_Investor/status/2036609462501523568",
-    "tweetedAt": "2026-03-25T01:01:48.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036609462501523568",
+      "verdict": "watch",
+      "summary": "Google推TurboQuant压缩算法：KV cache减6x、推理快8x、零精度损失，对标DeepSeek内存效率",
+      "importance": 4,
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "KV cache压缩比",
+          "v": "6x"
+        },
+        {
+          "k": "推理加速",
+          "v": "8x"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "Google新算法若实测零精度损失且6x压缩，可降低LLM部署成本，有明确技术参数"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "Google发布TurboQuant压缩算法：内存降低6倍、提速8倍",
@@ -469,13 +871,33 @@
   },
   {
     "tweetId": "2036609094929600925",
-    "authorName": "The Spectator Index",
-    "authorScreen": "spectatorindex",
+    "author": "The Spectator Index (@spectatorindex)",
     "text": "BREAKING: Oil prices down by over 5%",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/spectatorindex/status/2036609094929600925",
-    "tweetedAt": "2026-03-25T01:00:21.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036609094929600925",
+      "verdict": "watch",
+      "summary": "原油价格跌幅超5%，具体原因和价位未披露",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro"
+      ],
+      "keyData": [
+        {
+          "k": "跌幅",
+          "v": ">5%"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "能源价格波动影响通胀预期和风险资产情绪"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "油价跌幅超5%",
@@ -487,13 +909,36 @@
   },
   {
     "tweetId": "2036660141941256464",
-    "authorName": "First Squawk",
-    "authorScreen": "FirstSquawk",
+    "author": "First Squawk (@FirstSquawk)",
     "text": "Freshpet Inc. sees its price target reduced to $66 from $80 by JPMorgan, reflecting a more cautious outlook.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/FirstSquawk/status/2036660141941256464",
-    "tweetedAt": "2026-03-25T04:23:11.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036660141941256464",
+      "verdict": "watch",
+      "summary": "摩根大通下调Freshpet目标价至66美元（降幅18%）",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "目标价",
+          "v": "$66（原$80）"
+        },
+        {
+          "k": "调整机构",
+          "v": "摩根大通"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "更久",
+        "reason": "机构下调反映对公司前景谨慎，但缺财报/业务催化剂"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "JPMorgan下调Freshpet目标价至$66（从$80）",
@@ -505,13 +950,27 @@
   },
   {
     "tweetId": "2036645546052755967",
-    "authorName": "Brett Adcock",
-    "authorScreen": "adcock_brett",
+    "author": "Brett Adcock (@adcock_brett)",
     "text": "Hark has the world’s best consumer electronics designers - Abs, Jonathan, Andrew, and team\n\nWe’re still using pre-AI devices; phones and laptops designed decades ago\n\nThey weren’t built for systems that can use computers and reason \n\nA new era of computing is coming",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/adcock_brett/status/2036645546052755967",
-    "tweetedAt": "2026-03-25T03:25:11.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036645546052755967",
+      "verdict": "ignore",
+      "summary": "Hark公司设计师团队评价，属于泛泛行业展望",
+      "importance": 1,
+      "domain": "ai",
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "无具体产品/发布/数据，仅主观评价"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "Brett Adcock：Hark拥有世界最佳消费电子设计师，新计算时代即将到来",
@@ -524,13 +983,37 @@
   },
   {
     "tweetId": "2036655086445740093",
-    "authorName": "Daniel Romero",
-    "authorScreen": "HyperTechInvest",
+    "author": "Daniel Romero (@HyperTechInvest)",
     "text": "$AVAV has just announced its new directed energy C-UAS\n\nImportant to note that $AVAV already has one system installed near El Paso Airport, Texas\n\nWe’re probably going to see much more of this\n\nPrecise, and at a $5 cost compared to a $100k+ missile\n\nhttps://t.co/esOWIsDnW8",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/HyperTechInvest/status/2036655086445740093",
-    "tweetedAt": "2026-03-25T04:03:06.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036655086445740093",
+      "verdict": "watch",
+      "summary": "AVAV发布新型定向能反无人机系统，已有部署案例",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "系统成本",
+          "v": "$5 vs 导弹$100k+"
+        },
+        {
+          "k": "部署地",
+          "v": "El Paso机场"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "成本优势显著，国防预算优化空间大，商用前景可期"
+      },
+      "suggestions": "关注C-UAS订单进展及国防预算周期"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "$AVAV宣布新型定向能C-UAS系统，已在德州El Paso机场部署",
@@ -543,13 +1026,37 @@
   },
   {
     "tweetId": "2036773238970491139",
-    "authorName": "哈世链闻",
-    "authorScreen": "HashNewsHK",
+    "author": "哈世链闻 (@HashNewsHK)",
     "text": "Ark Invest昨日重磅购入约1634万美元Circle股权\n\n来龙去脉：不过，Circle的股价却在此消息发布当天大跌20%。这使得投资者对这笔交易的预期产生了不同的看法。\n关键点：不过，Circle的股价却在此消息发布当天大跌20%。\n影响与展望：尽管Ark Invest在加密领域的影响力不小，但市场反应显示出对Circle未来表现的担忧，可能与近期市场波动及机构持股策略有关。 $USDC",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/HashNewsHK/status/2036773238970491139",
-    "tweetedAt": "2026-03-25T11:52:36.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036773238970491139",
+      "verdict": "watch",
+      "summary": "Ark Invest昨日重仓购入约1634万美元Circle股权，但股价当日大跌20%",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "funding",
+        "onchain"
+      ],
+      "keyData": [
+        {
+          "k": "投资金额",
+          "v": "$1634万"
+        },
+        {
+          "k": "股价当日跌幅",
+          "v": "20%"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "机构购入但市场暴跌，凸显估值分歧，关注$USDC生态影响"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "Ark Invest 昨日购入约 $1634万 Circle 股权，Circle 股价当天大跌 20%",
@@ -563,13 +1070,28 @@
   },
   {
     "tweetId": "2036615743828328523",
-    "authorName": "ゆっぴ｜宇宙に夢中",
-    "authorScreen": "yupidcom",
+    "author": "ゆっぴ｜宇宙に夢中 (@yupidcom)",
     "text": "スペースX、今週にもIPO申請を目指す\n\n楽しみ🚀今後SpaceXの決算や詳細も見れるのか、幸せ",
     "lang": "ja",
-    "tweetUrl": "https://twitter.com/yupidcom/status/2036615743828328523",
-    "tweetedAt": "2026-03-25T01:26:46.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036615743828328523",
+      "verdict": "watch",
+      "summary": "SpaceX本周将提交IPO申请，具体时间明确，属重大融资事件",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "IPO意味着股权融资扩张，估值可能达数千亿美元"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "SpaceX本周将申请IPO，期待能查看其财务数据",
@@ -582,13 +1104,27 @@
   },
   {
     "tweetId": "2036759268397912417",
-    "authorName": "0xSammy",
-    "authorScreen": "0xSammy",
+    "author": "0xSammy (@0xSammy)",
     "text": "Unsure where to start for TAO? \n\nIt's ok, you have time; this has a 10 yr+ outlook\n\nUse this Bittensor eco map as an initial indicator of which 128 subnets to direct your attention\n\nThere are useful tools in the market like: @taostats (h/t @mogmachine) & @CryptoZPunisher Magellan Map\n\nIf you want more comprehensive analysis or thesis driven research then check out:\n\ni) Unsupervised Capital reports, inc @bloomberg_seth @Old_Samster pinned article\nii) @stillcorecap \"State of TAO\" report from @rob_svrn  @markjeffrey @Jason et al.\niii) @YumaGroup two reports on fundamentals for subnet valuations; honestly great follows are @EvanMalanga @GSchvey @jeff_schvey @BarrySilbert \niv) @0xJeff & @tengyanAI reports via Newsletter & CoT, respectively\nv) @DreadBong0 goes w/o saying has shining light on TAO for as long as I can remember\nvi) @dsvfund's \"Revenue Search\" pods has always been super interesting to see the teams behind the subnets (h/t @SiamKidd & @MarkCreaser)\nvii) @supercyclepod has and will continue to provide TAO insights from an investor lens, ft. @haitzu - recent pods with Yuma, Stillcore + several subnets\n\nHonestly the list can go on but these will keep you busy for the next few weeks - i'll append more resources below so drop them in the comments\n\nWe (@KhalaResearch) have new tooling coming soon, so drop a follow and turn notis on",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/0xSammy/status/2036759268397912417",
-    "tweetedAt": "2026-03-25T10:57:05.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036759268397912417",
+      "verdict": "ignore",
+      "summary": "Bittensor生态资源分享帖，含工具/报告/人物列表，无新数据",
+      "importance": 2,
+      "domain": "crypto",
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "纯内容汇总，无具体价格/项目进展/链上数据"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "TAO学习资源清单：Unsupervised/Stillcore/Yuma报告、subnet生态图、7+研究播客/账号",
@@ -602,13 +1138,28 @@
   },
   {
     "tweetId": "2036601488454328791",
-    "authorName": "Common Sense Investor (CSI)",
-    "authorScreen": "commonsenseplay",
+    "author": "Common Sense Investor (CSI) (@commonsenseplay)",
     "text": "War is crushing bonds right now…\n\nBut I’m still bullish on $TLT.\n\nAnd most people are missing why.\n\nSince the Iran conflict escalated:\n\n• Energy prices ↑\n• Inflation fears ↑\n• Yields ↑\n• Bonds ↓\n\nClassic inflation shock.\n\nThat’s why bonds AND stocks are both struggling - the exact weakness of the 60/40 portfolio that we hear from every financial advisor out there.\n\nHistory is clear:\nWar is bad for bonds!\n\nBecause:\n- Governments spend aggressively\n- Debt explodes\n- Inflation rises\n- Central banks stay tight\n\nBondholders get crushed.\n\nSo why am I long $TLT?\n\nBecause the market is focused on the present… while bonds price the future.\n\nRight now everyone is pricing:\n• Higher-for-longer rates\n• Sticky inflation\n• Endless deficits\n\nBut in my opinion that is not how this cycle ends.\n\nEvery inflation shock eventually breaks something.\n\nAnd when it does?\n\nWe don’t get inflation…we get demand destruction.\n\nThat’s when everything will flip:\n- Inflation collapses (accelerated by AI)\n- Growth slows hard\n- Central banks are forced to cut\n\nAnd THAT is when long-duration bonds rip.\nThis is the part most people forget:\n- Bonds don’t bottom when things look safe\n- Bonds bottom when things look the worst\n\nI positioned for this already.\n\nAt the end of 2025:\n• I rotated heavily into long-duration bonds\n• ~60% allocation\n\nWhile everyone else was still chasing equities.\n\nSo far in 2026?\n\n- Bonds are already outperforming stocks\n- The “unpopular trade” is starting to work\n\nAnd we’re still early.\n\nAlso -  don’t ignore market structure:\n$TLT has been:\n- Heavily shorted\n- Pushed down into auctions\n- Used to lock in higher yields for big money\n\nThat trade unwinds fast when it turns.\n\nWhen the pivot hits, it won’t be gradual.\n\nIt’ll be violent.\nShort covering plus rate cuts plus recession fears = vertical move in $TLT\n\nThe setup is simple:\n- War → inflation shock → pressure builds\n- Pressure → something breaks\n- Something breaks → recession\n- Recession → bonds win\n\nSo yes - bonds look terrible today.\nThat’s exactly why I’m bullish.\n\nYou don’t buy $TLT when it feels safe.\nYou buy it when nobody wants it!",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/commonsenseplay/status/2036601488454328791",
-    "tweetedAt": "2026-03-25T00:30:07.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036601488454328791",
+      "verdict": "watch",
+      "summary": "看多TLT债券逻辑：战争通胀→需求破坏→央行宽松→长债上涨",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "bonds",
+        "macro"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "宏观逻辑推导但缺具体数据验证，2025年底布局说无第三方确认"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "War is crushing bonds right now… But I’m still bullish on $TLT. And most people are missing why. Since the Iran conflic…",
@@ -621,13 +1172,27 @@
   },
   {
     "tweetId": "2036614187451847073",
-    "authorName": "Aaron Burnett",
-    "authorScreen": "aaronburnett",
+    "author": "Aaron Burnett (@aaronburnett)",
     "text": "RT @tbpn: Sequoia’s @shaunmmaguire wrote a private hardware manifesto arguing that over the next 25 years, most of the money will be made i…",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/aaronburnett/status/2036614187451847073",
-    "tweetedAt": "2026-03-25T01:20:35.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036614187451847073",
+      "verdict": "ignore",
+      "summary": "仅转推Sequoia硬件宣言，文章内容未披露，无实质信息",
+      "importance": 1,
+      "domain": "finance",
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "仅引用外部内容，无内部洞察或数据"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "Sequoia合伙人发布硬件宣言，认为未来25年硬件投资将产生回报",
@@ -640,13 +1205,28 @@
   },
   {
     "tweetId": "2036671921224298980",
-    "authorName": "Solana Daily",
-    "authorScreen": "solana_daily",
+    "author": "Solana Daily (@solana_daily)",
     "text": "🚨@moonpay executive reveals upcoming Headless Apple Pay integration\nAt Solana Accelerate Fintech Series, a MoonPay executive reveals upcoming Headless Apple Pay integration\nThis happened live during the event in New York, hinting at a new payment integration direction on Solana.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/solana_daily/status/2036671921224298980",
-    "tweetedAt": "2026-03-25T05:10:00.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036671921224298980",
+      "verdict": "watch",
+      "summary": "MoonPay在Solana活动上宣布将整合Headless Apple Pay支付",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "tech",
+        "exchange"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "Solana生态支付便利化，Apple Pay整合有助用户增长"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 3,
       "summary": "MoonPay在Solana活动透露将集成Headless Apple Pay",
@@ -659,13 +1239,37 @@
   },
   {
     "tweetId": "2036551389778792581",
-    "authorName": "amit",
-    "authorScreen": "amitisinvesting",
+    "author": "amit (@amitisinvesting)",
     "text": "BREAKING: The United States has sent a 15-point agreement with terms to a one month ceasefire to Iran, as per the New York Times.\n\nThe exact terms have not been disclosed but broad ideas are around Iran giving up full control of their nuclear weapons and the US lifting sanctions. https://t.co/8WHkuhAQAY",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/amitisinvesting/status/2036551389778792581",
-    "tweetedAt": "2026-03-24T21:11:03.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036551389778792581",
+      "verdict": "watch",
+      "summary": "美国向伊朗发送15点停火协议，要求一个月 ceasefire，条款含伊放弃核武控制、美解除制裁，消息来源于NYT",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [
+        {
+          "k": "协议条款数",
+          "v": "15点"
+        },
+        {
+          "k": "停火期限",
+          "v": "一个月"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "1-7天",
+        "reason": "美伊停火若实现可能影响石油供应和全球市场情绪"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "美国向伊朗发送15点协议寻求1个月停火，伊朗弃核控制+美解除制裁（NYT）",
@@ -678,13 +1282,29 @@
   },
   {
     "tweetId": "2036571121642877115",
-    "authorName": "investing",
-    "authorScreen": "DollarCostAvg",
+    "author": "investing (@DollarCostAvg)",
     "text": "$CRCL just got its business model punched in the face.😭\n\nSenate draft bill targeting stablecoin yields = direct hit to USDC revenue. No yield, no edge, no growth story.\n\nAnd if stablecoins get kneecapped, that hits the bigger narrative too —> $ETH as the “stablecoin settlement layer” starts to crack.\n\nIf $ETH rolls over from here, don’t be surprised to see $BMNR and $BMNU follow. Possible $Hood as well. \n\n$BTC $ETH $IREN $SOL $BNB \n\nThis isn’t a dip. It’s a warning.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/DollarCostAvg/status/2036571121642877115",
-    "tweetedAt": "2026-03-24T22:29:27.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036571121642877115",
+      "verdict": "watch",
+      "summary": "参议院草案限制稳定币收益直击USDC收入，ETH作为稳定币结算层叙事受威胁，ETH走弱可能联动BMNR/BMNU/Hood",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "trading",
+        "narrative"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利空",
+        "horizon": "更久",
+        "reason": "若稳定币收益受限将削弱ETH叙事价值和链上活动"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "参议院草案针对稳定币收益将直接冲击USDC收入，ETH作为稳定币结算层叙事受压",
@@ -698,13 +1318,32 @@
   },
   {
     "tweetId": "2036602160171901387",
-    "authorName": "🦄 Fund.Drone.DefenseTech.Photonics $LPTH $UMAC 🐋",
-    "authorScreen": "fundmyfund",
+    "author": "🦄 Fund.Drone.DefenseTech.Photonics $LPTH $UMAC 🐋 (@fundmyfund)",
     "text": "RT @FirstSquawk: SpaceX is reportedly preparing for an IPO filing as early as this week, says The Information.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/fundmyfund/status/2036602160171901387",
-    "tweetedAt": "2026-03-25T00:32:47.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036602160171901387",
+      "verdict": "watch",
+      "summary": "SpaceX据报道准备最早本周提交IPO文件，来源于The Information",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "IPO时间",
+          "v": "本周"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "SpaceX IPO是重大市场事件，相关概念股可能受追捧"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "SpaceX最早本周提交IPO文件，The Information报道",
@@ -717,13 +1356,37 @@
   },
   {
     "tweetId": "2036539181518954796",
-    "authorName": "The Spectator Index",
-    "authorScreen": "spectatorindex",
+    "author": "The Spectator Index (@spectatorindex)",
     "text": "BREAKING: Israel's Channel 12 reports that US negotiators are working on a one-month ceasefire with Iran, during which talks will be held over 15 items.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/spectatorindex/status/2036539181518954796",
-    "tweetedAt": "2026-03-24T20:22:32.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036539181518954796",
+      "verdict": "watch",
+      "summary": "以色列Channel 12报道美谈判代表正在推动与伊朗一个月停火协议，期间就15个议题进行谈判",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [
+        {
+          "k": "停火期限",
+          "v": "一个月"
+        },
+        {
+          "k": "谈判议题数",
+          "v": "15个"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "立即",
+        "reason": "美伊停火进展是重大地缘政治事件，影响能源和大宗商品市场"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "以色列 Channel 12：美方正推动伊朗一个月停火协议，含15项谈判议题",
@@ -736,13 +1399,37 @@
   },
   {
     "tweetId": "2036542183462044116",
-    "authorName": "The AI Investor",
-    "authorScreen": "The_AI_Investor",
+    "author": "The AI Investor (@The_AI_Investor)",
     "text": "OpenAI COO Brad Lightcap warned at the Hill and Valley Forum that memory chip shortages, especially high-bandwidth memory (HBM), and US energy supply limits could hinder AI infrastructure scaling, as demand outpaces production.\n\nSome industry reports suggested HBM shortages are expected to continue through 2030, with global supply trailing AI-driven demand by 20%, according to SK Group, potentially raising costs and delaying deployments for companies like OpenAI.\n\nBut the market is selling $MU!",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/The_AI_Investor/status/2036542183462044116",
-    "tweetedAt": "2026-03-24T20:34:28.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036542183462044116",
+      "verdict": "watch",
+      "summary": "OpenAI COO警告HBM内存芯片短缺将阻碍AI基建扩张，SK Group称短缺或持续至2030，供应落后需求20%，市场却在抛售MU",
+      "importance": 4,
+      "domain": "ai",
+      "tags": [
+        "ai-company",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "HBM短缺持续时间",
+          "v": "至2030年"
+        },
+        {
+          "k": "全球供应缺口",
+          "v": "20%"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "更久",
+        "reason": "芯片短缺制约AI发展但市场已过度反映短期波动"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "OpenAI COO Brad Lightcap warned at the Hill and Valley Forum that memory chip shortages, especially high-bandwidth memo…",
@@ -755,13 +1442,37 @@
   },
   {
     "tweetId": "2036574980289470527",
-    "authorName": "Jim Bianco",
-    "authorScreen": "biancoresearch",
+    "author": "Jim Bianco (@biancoresearch)",
     "text": "The day the war started (Feb 28), Fed fund futures were pricing in 2.5 rate Fed CUTS for 2026.\n\nNow they are pricing in 0.2 of a Fed rate HIKE for the rest of the year. https://t.co/kZikoSqzqz",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/biancoresearch/status/2036574980289470527",
-    "tweetedAt": "2026-03-24T22:44:47.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036574980289470527",
+      "verdict": "watch",
+      "summary": "Fed基金期货定价剧变：从战争日开始预期2.5次降息转为0.2次加息",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "policy"
+      ],
+      "keyData": [
+        {
+          "k": "2024年2月28日预期",
+          "v": "2.5次降息"
+        },
+        {
+          "k": "当前预期",
+          "v": "0.2次加息（2025年剩余）"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "宏观利率预期急剧转向，影响风险资产定价"
+      },
+      "suggestions": "关注美联储政策路径预期变化对股债市的连锁影响"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "Fed预期从2026年降息2.5次转为今年剩余时间加息0.2次",
@@ -773,13 +1484,42 @@
   },
   {
     "tweetId": "2036508273290125597",
-    "authorName": "Yin.银哥",
-    "authorScreen": "YingeAI",
+    "author": "Yin.银哥 (@YingeAI)",
     "text": "CRCL暴跌原因：今天CRCL大跌超22%，是由最新的稳定币监管法案条款引发的。\n\n3月24日（周一），加密行业从业者在华盛顿国会山参加了一次闭门审查会议，首次看到了参议院《数字资产市场清晰法案》修订版中关于稳定币收益的最新条款。 这份条款的内容令业界震惊，直接引发市场恐慌。\n\n3月24日曝光的《Clarity Act》最新草案，核心限制有三条：\n\n禁止因\"单纯持有稳定币余额\"而支付收益——用户把USDC放在账户里，平台不能再给你\"躺赚\"的利息。\n\n任何奖励机制，在形式或效果上不得类似银行存款利息。\n\n仅允许基于用户实际活动（如交易、转账等行为）产生的奖励。\n\n这个条款是加密行业与银行业长期博弈后的折中结果——银行业主张稳定币不能和银行存款竞争，压力极大。\n\n为什么这直接打击Circle（CRCL）\n\n这里要理解一个关键机制的演变：\n\nGENIUS法案已经明确禁止稳定币发行方（即Circle本身）直接向用户支付收益。\n\n但有一个漏洞：Coinbase等第三方交易所仍可以用自己的名义向持有USDC的用户发放\"奖励\"，本质上还是利息。\n\nClarity Act新条款的目的，就是堵死这个\"三方模式\"漏洞，连交易所也不能再给用户稳定币收益。\n\n这对Circle的打击是双重的：\n影响层面具体后果USDC需求减少用户持有USDC没有收益，吸引力大降，USDC流通量可能萎缩合作伙伴收入断裂。\n\nCoinbase靠稳定币奖励收入2025年Q3就达3.55亿美元，若被禁，与Circle的合作价值大幅缩水。\n\n​商业模式受压Circle靠USDC储备规模吃美债息差，规模萎缩直接砍营收。\n\n银行业推手\n3200多名银行家联名写信给参议院，要求把收益禁令从\"仅限发行方\"扩展到\"所有第三方中介\"。 众议院金融服务委员会主席French Hill也明确表态：\"稳定币就是支付工具，不应该支付收益\"。 这场银行业的游说，最终写进了Clarity Act草案。",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/YingeAI/status/2036508273290125597",
-    "tweetedAt": "2026-03-24T18:19:43.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036508273290125597",
+      "verdict": "watch",
+      "summary": "CRCL暴跌22%：稳定币监管草案禁止第三方向USDC持有者支付收益",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "token",
+        "yield"
+      ],
+      "keyData": [
+        {
+          "k": "Coinbase稳定币奖励收入（2025Q3）",
+          "v": "3.55亿美元"
+        },
+        {
+          "k": "联名游说银行家数",
+          "v": "3200+"
+        },
+        {
+          "k": "法案名称",
+          "v": "Clarity Act/ GENIUS Act"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "1-7天",
+        "reason": "监管明确打击稳定币收益模式，Circle/USDC商业模式受压"
+      },
+      "suggestions": "关注USDC流通量变化及Circle应对策略"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "Clarity Act新草案禁止稳定币收益，USDC需求和Circle合作价值将受冲击",
@@ -792,13 +1532,36 @@
   },
   {
     "tweetId": "2036538856309436582",
-    "authorName": "Kaushik",
-    "authorScreen": "WisemanCap",
+    "author": "Kaushik (@WisemanCap)",
     "text": "$BRZE nice guide\n\nFY2027 revenue $884-889M, Est $858M",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/WisemanCap/status/2036538856309436582",
-    "tweetedAt": "2026-03-24T20:21:15.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036538856309436582",
+      "verdict": "ignore",
+      "summary": "$BRZE FY2027收入指引884-889M，预期858M",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "equities"
+      ],
+      "keyData": [
+        {
+          "k": "FY2027收入指引",
+          "v": "884-889M"
+        },
+        {
+          "k": "市场预期",
+          "v": "858M"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "简单财务数据播报，无投资洞察"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "$BRZE FY2027 收入指引 884-889M，高于预期 858M",
@@ -810,13 +1573,42 @@
   },
   {
     "tweetId": "2036594385983512591",
-    "authorName": "Wall St Engine",
-    "authorScreen": "wallstengine",
+    "author": "Wall St Engine (@wallstengine)",
     "text": "SK Hynix is seeking a U.S. listing through ADRs and has confidentially filed with the SEC. The company is targeting a listing by the end of 2026 as it looks to raise more capital to keep expanding into the AI memory boom. https://t.co/B3YPRdQls6",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/wallstengine/status/2036594385983512591",
-    "tweetedAt": "2026-03-25T00:01:54.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036594385983512591",
+      "verdict": "watch",
+      "summary": "SK Hynix秘密提交SEC申请美股上市，目标2026年底融资",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "funding",
+        "tech"
+      ],
+      "keyData": [
+        {
+          "k": "目标上市时间",
+          "v": "2026年底"
+        },
+        {
+          "k": "募资用途",
+          "v": "AI内存业务扩张"
+        },
+        {
+          "k": "公司",
+          "v": "SK Hynix"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "AI内存龙头上市可增强融资能力，提升行业估值锚点"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "【SK海力士】已秘密提交SEC文件拟通过ADR在美上市，年底前完成融资扩张AI内存",
@@ -829,13 +1621,38 @@
   },
   {
     "tweetId": "2036530374944399417",
-    "authorName": "The Spectator Index",
-    "authorScreen": "spectatorindex",
+    "author": "The Spectator Index (@spectatorindex)",
     "text": "BREAKING: Some ships have paid as much as $2 million to Iran to safely pass through the Gulf, according to Financial Times report.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/spectatorindex/status/2036530374944399417",
-    "tweetedAt": "2026-03-24T19:47:32.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036530374944399417",
+      "verdict": "watch",
+      "summary": "船只向伊朗支付高达200万美元过境费以通过海湾",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "narrative",
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "过境费最高",
+          "v": "200万美元"
+        },
+        {
+          "k": "地区",
+          "v": "Gulf（霍尔木兹海峡）"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "地缘风险溢价上升，能源供应安全担忧；消息源为FT报道"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "船舶通过波斯湾向伊朗支付最高$200万通行费",
@@ -848,13 +1665,41 @@
   },
   {
     "tweetId": "2036500987070857560",
-    "authorName": "Space Investor",
-    "authorScreen": "SpaceInvestor_D",
+    "author": "Space Investor (@SpaceInvestor_D)",
     "text": "$KTOS: Kratos scores $447M Space Force award for missile tracking ground system\n\nThe Space Force now is planning a \"base\" constellation of about 30 Resilient MWT MEO satellites. The program is one of three separate missile warning/tracking efforts being managed by the service, all of which are supporting the Trump administration’s ambitious Golden Dome initiative.\n\nThe award to Kratos is a follow-on to an original $55 million task order awarded to Parsons Corporation in April 2023 “to develop hardware and software solutions” and “outfit” the Space Operations Center to “enable an Epoch 1 initial launch capability,” an SSC spokesperson told Breaking Defense in an email.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/SpaceInvestor_D/status/2036500987070857560",
-    "tweetedAt": "2026-03-24T17:50:46.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036500987070857560",
+      "verdict": "watch",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "funding",
+        "tech",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "合同金额",
+          "v": "$447M"
+        },
+        {
+          "k": "原始订单金额",
+          "v": "$55M"
+        },
+        {
+          "k": "卫星数量",
+          "v": "约30颗"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "Kratos获大型防务合同，支撑导弹跟踪系统建设"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "Kratos获得4.47亿美元Space Force合同，用于导弹追踪地面系统，计划部署约30颗MEO卫星支持Golden Dome计划",
@@ -868,13 +1713,32 @@
   },
   {
     "tweetId": "2036486857559580897",
-    "authorName": "Brad Setser",
-    "authorScreen": "Brad_Setser",
+    "author": "Brad Setser (@Brad_Setser)",
     "text": "The thing is -- \n\nThere has been NO dollar reserve accumulation in aggregate over the last ten years.\n\nAnd there was a ton of dollar reserve accumulation during the preceding 10ys (way more than needed for precautionary purposes) https://t.co/GGry0kCOk2",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/Brad_Setser/status/2036486857559580897",
-    "tweetedAt": "2026-03-24T16:54:37.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036486857559580897",
+      "verdict": "watch",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "forex"
+      ],
+      "keyData": [
+        {
+          "k": "观察周期",
+          "v": "过去10年"
+        }
+      ],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "美元储备长期未增长，机构观点需交叉验证"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "Brad Setser：过去10年无美元储备积累，之前10年有大量积累",
@@ -887,13 +1751,32 @@
   },
   {
     "tweetId": "2036496959318663370",
-    "authorName": "Kaushik",
-    "authorScreen": "WisemanCap",
+    "author": "Kaushik (@WisemanCap)",
     "text": "$TTD Buy the weakness - Benchmark\n\n- We are buyers of TDD shares on related weakness\n- Suspects Publicis and Omnicom are desiring to bring attention to TTD issues with transparency on fees \"to divert from their own historically opaque pricing and margin pools that are increasingly under the microscope...\"",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/WisemanCap/status/2036496959318663370",
-    "tweetedAt": "2026-03-24T17:34:46.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036496959318663370",
+      "verdict": "watch",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "标的",
+          "v": "$TTD"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "更久",
+        "reason": "机构看多TTD，质疑竞争对手转移视线"
+      },
+      "suggestions": "需等待具体买入价位和风控参数才可行动"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "Benchmark上调$TTD评级建议买入，目标价隐含上涨空间",
@@ -905,13 +1788,38 @@
   },
   {
     "tweetId": "2036544240889586023",
-    "authorName": "Ripster",
-    "authorScreen": "ripster47",
+    "author": "Ripster (@ripster47)",
     "text": "🚨Market Going Bonkers After hours 🚨\nSilver , Gold, S&amp;P , $QQQ All higher\n\nUPDATE: US negotiators are working on a one-month ceasefire with Iran, during which talks will be held over 15 items. https://t.co/AnSlliv9XQ",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/ripster47/status/2036544240889586023",
-    "tweetedAt": "2026-03-24T20:42:38.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036544240889586023",
+      "verdict": "watch",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "commodities",
+        "macro",
+        "policy",
+        "narrative"
+      ],
+      "keyData": [
+        {
+          "k": "谈判周期",
+          "v": "一个月"
+        },
+        {
+          "k": "谈判议题数",
+          "v": "15项"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "美伊可能达成短期停火，地缘风险缓和，避险资产承压"
+      },
+      "suggestions": "关注黄金白银短期回调风险"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "🚨Market Going Bonkers After hours 🚨 Silver , Gold, S&amp;P , $QQQ All higher UPDATE: US negotiators are working on a on…",
@@ -924,13 +1832,27 @@
   },
   {
     "tweetId": "2036610356362309677",
-    "authorName": "Jerry Liu",
-    "authorScreen": "jerryjliu0",
+    "author": "Jerry Liu (@jerryjliu0)",
     "text": "There’s not that many fast, free, non-VLM document parsers out there: there’s PyPDF, PyMuPDF, Markitdown, OpenDataLoader.\n\nLast week, we launched LiteParse ⚡️📄: a fast, free, and non-VLM based document parser that provides the highest quality context to AI agents compared to other tools out there.\n\n✅ It extracts document text into an interpretable spatial representation\n✅ It has native screenshotting capabilities to let agents (e.g. Claude Code) to do a “fast and light” text parsing step, and then a “deep-dive” into specific page content by feeding the screenshot into itself.\n✅ It supports out-of-the-box integrations with other tools like PaddleOCR (@PaddlePaddle)\n\nCheck out our benchmark below against the other tools. We use LLM QA performance to measure the ability for LLMs to semantically understand the parsed text, and also measure latency.\n\nIf you try it out, we’d love to get your feedback. The repo is here: https://t.co/JNER0mVcB8\n\nIf you’re looking for a more accurate, VLM-native solution that can parse any document at scale, LlamaParse might be better for you! https://t.co/TqP6OT5U5O",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/jerryjliu0/status/2036610356362309677",
-    "tweetedAt": "2026-03-25T01:05:22.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036610356362309677",
+      "verdict": "watch",
+      "importance": 3,
+      "domain": "ai",
+      "tags": [
+        "ai-product",
+        "tech"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "AI文档解析工具LiteParse发布，基准测试有优势但未涉及融资/并购"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 4,
       "summary": "Jerry Liu发布LiteParse文档解析工具，包含benchmark对比和集成功能",
@@ -943,13 +1865,45 @@
   },
   {
     "tweetId": "2034737578247950548",
-    "authorName": "蓝色胖头鱼 | BlueChubbyFish",
-    "authorScreen": "chaojidigua",
+    "author": "蓝色胖头鱼 | BlueChubbyFish (@chaojidigua)",
     "text": "汽油柴油短缺, 主要是因为抢购囤积.\n\n各国政府应该释放更多原油储备!\n\n====\n\n在霍尔木兹海峡关闭之际，沙特阿拉伯正在加大石油出口力度：\n\n沙特阿拉伯红海沿岸港口延布的原油日出货量高达 419 万桶。\n\n这比伊朗战争爆发前 2 月份该港口每天约 147 万桶的吞吐量增加了 185%。\n\n此次石油产量激增得益于一条长达 746 英里的输油管道，该管道将原油从东部油田改道输送到延布，完全绕过了被封锁的霍尔木兹海峡。\n\n自 1 月份的日均 129 万桶以来，原油出货量也增加了一倍多。\n\n因此，沙特阿拉伯已经恢复了战前约700万桶/日的出口能力的一半以上。\n\n此外，至少有 32 艘大型油轮在延布附近等待装货，还有更多油轮正驶往港口。\n\n沙特阿拉伯正积极寻求绕过霍尔木兹海峡。",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/chaojidigua/status/2034737578247950548",
-    "tweetedAt": "2026-03-19T21:03:36.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2034737578247950548",
+      "verdict": "watch",
+      "summary": "沙特延布港原油日出口419万桶，比战前增185%，通过746英里管道绕过霍尔木兹海峡",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "延布港日出货量",
+          "v": "419万桶"
+        },
+        {
+          "k": "较战前增幅",
+          "v": "185%"
+        },
+        {
+          "k": "管道长度",
+          "v": "746英里"
+        },
+        {
+          "k": "等待油轮数",
+          "v": "32艘"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "地缘事件影响能源供应预期，需观察持续性"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "actionable",
       "importance": 5,
       "summary": "沙特延布港日出货量419万桶创历史新高，比2月增185%，32艘油轮等待装货",
@@ -962,13 +1916,41 @@
   },
   {
     "tweetId": "2034997887701328273",
-    "authorName": "Writer 🔶 BNB",
-    "authorScreen": "zhuilong888",
+    "author": "Writer 🔶 BNB (@zhuilong888)",
     "text": "Aster上线了质押，散户可以将 ASTER 代币，委托给网络验证节点，并按周获得收益。\n\n最多可以锁 208 周。奖励权重由 veASTER 数量决定，veASTER 数量是根据锁定时长决定；比如你锁满时间可能是1:1的兑换，但如果你只锁定一周，可能一个ASTER只给你0.1个eASTER的数量。\n\n锁定奖励按周计算，所以如果要参与，应该在周一 00:00 UTC 前进行质押，否则你锁定的当周可能就不计算奖励，什么意思呢；比如你周一 00:00 UTC前面几分钟质押，下周你就有奖励，如果你在周一 00:00 UTC后面几分钟质押，那你质押的当周的奖励也就没了！\n\n目前整体APY好像还不错，年化大概30-40%左右",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/zhuilong888/status/2034997887701328273",
-    "tweetedAt": "2026-03-20T14:17:59.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2034997887701328273",
+      "verdict": "watch",
+      "summary": "Aster质押机制：锁仓最多208周，veASTER决定权重，周一UTC前质押可获周奖励，APY约30-40%",
+      "importance": 3,
+      "domain": "crypto",
+      "tags": [
+        "yield",
+        "token"
+      ],
+      "keyData": [
+        {
+          "k": "最大锁仓期",
+          "v": "208周"
+        },
+        {
+          "k": "APY",
+          "v": "30-40%"
+        },
+        {
+          "k": "奖励快照时间",
+          "v": "周一00:00 UTC"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "DeFi新项目质押信息，需观察实际收益持续性"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "actionable",
       "importance": 5,
       "summary": "【Aster】质押锁208周/周奖励/APY约30-40%，需周一00:00 UTC前参与",
@@ -981,13 +1963,27 @@
   },
   {
     "tweetId": "2036257115115831667",
-    "authorName": "Kevin Lepsoe",
-    "authorScreen": "lepsoe",
+    "author": "Kevin Lepsoe (@lepsoe)",
     "text": "RT @Ethprofit: 📢 BREAKING: SWIFT confirms 25+ banks going live by June, settling on Ethereum for 24/7 cross-border payments. 🚀\n\nSource: htt…",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/lepsoe/status/2036257115115831667",
-    "tweetedAt": "2026-03-24T01:41:42.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036257115115831667",
+      "verdict": "ignore",
+      "summary": "RT转发的SWIFT银行接入以太坊消息，无来源无时间细节",
+      "importance": 1,
+      "domain": null,
+      "tags": [
+        "other"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "更久",
+        "reason": "转发内容缺关键信源和具体数据"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "actionable",
       "importance": 5,
       "summary": "SWIFT 确认 25+ 银行 6 月在以太坊上线 24/7 跨境支付结算",
@@ -1000,13 +1996,37 @@
   },
   {
     "tweetId": "2034619781652070892",
-    "authorName": "Oguz Erkan",
-    "authorScreen": "oguzerkan",
+    "author": "Oguz Erkan (@oguzerkan)",
     "text": "$KLAR is retesting the support zone after popping up following a $50 million insider purchase by the Chairman.\n\nIf this zone holds and they deliver satisfying Q1 results, we'll have a perfect fundamental and technical setup for a recovery toward the $18 levels. https://t.co/xLlOqoTbPS",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/oguzerkan/status/2034619781652070892",
-    "tweetedAt": "2026-03-19T13:15:32.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2034619781652070892",
+      "verdict": "watch",
+      "summary": "$KLAR主席内部购买500万美元后回测支撑位，若Q1财报满足预期有望反弹至18美元",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "equities",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "内部购买金额",
+          "v": "500万美元"
+        },
+        {
+          "k": "目标价",
+          "v": "18美元"
+        }
+      ],
+      "impact": {
+        "direction": "利好",
+        "horizon": "1-7天",
+        "reason": "需Q1财报验证，等待催化剂触发"
+      },
+      "suggestions": "若Q1财报超预期可考虑买入，目标18美元，止损需等财报后确认支撑"
+    },
+    "baseline": {
       "verdict": "actionable",
       "importance": 5,
       "summary": "KLAR主席 insider purchase $50M，若支撑位守住且Q1业绩好，有望反弹至$18",
@@ -1019,13 +2039,27 @@
   },
   {
     "tweetId": "2034638189361811740",
-    "authorName": "Marty Chargin",
-    "authorScreen": "MartyChargin",
+    "author": "Marty Chargin (@MartyChargin)",
     "text": "$SNDK ... This stock may sell off today? It is up 12% this week and has broken out of its high tight flag pattern...  $800 next stop? https://t.co/2QztjPJwza",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/MartyChargin/status/2034638189361811740",
-    "tweetedAt": "2026-03-19T14:28:40.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2034638189361811740",
+      "verdict": "ignore",
+      "summary": "$SNDK技术面突破但无基本面催化，周涨幅12%后可能回调",
+      "importance": 2,
+      "domain": "finance",
+      "tags": [
+        "trading"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "不确定",
+        "horizon": "立即",
+        "reason": "纯技术面分析缺乏催化剂支撑"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "actionable",
       "importance": 5,
       "summary": "$SNDK本周涨12%突破high tight flag形态，目标800",
@@ -1038,13 +2072,53 @@
   },
   {
     "tweetId": "2035514645788721410",
-    "authorName": "StockMarket.News",
-    "authorScreen": "_Investinq",
+    "author": "StockMarket.News (@_Investinq)",
     "text": "Trump just gave Iran 48 hours to open the world's most important waterway, or the United States will destroy its power grid.\n\nOne month ago, the US and Israel launched Operation Epic Fury, nearly 900 strikes in 12 hours  killing Iran's Supreme Leader in the opening wave.\n\nIran's response was not surrender but rather the Strait of Hormuz.\n\nThat narrow 33-kilometer stretch of water carries roughly 20% of the entire world's oil supply every single day, and Iran shut it down.\n\nBut here is what almost no one is talking about. \n\nLook at a map of Iran, really look at it.\n\nIran is surrounded by two of the most brutal mountain ranges on earth, and they have protected this country from every invader for thousands of years.\n\nTo the west stands the Zagros Mountains, over 1,500 kilometers long, with peaks above 4,000 meters. \n\nTo the north runs the Alborz range, with Mount Damavand rising to 5,610 meters, the highest peak in the entire Middle East.\n\nBetween those two mountain walls sit two of the most inhospitable deserts on the planet and Iran as a whole is geographically larger than Germany, France, Spain, Belgium, the Netherlands, and Italy combined.\n\nThere are zero US boots on the ground inside Iran, and the terrain is the reason.\n\nIran tunneled its nuclear and missile sites deep into the Zagros Mountains, carving facilities into folded limestone and sandstone so the geology itself becomes the armor.\n\nThat is why nearly 900 air strikes have not ended this war. \n\nYou can bomb what you can find, and the mountain fortress is hiding what you cannot.\n\nOil prices have surged 40-50% since the war began, Brent crude is now trading around $103 a barrel, and Bloomberg called it the worst supply disruption in the history of the oil market.\n\nIran has also mined the strait, fired missiles at Gulf energy facilities, and banned all ships flagged to the US- Israel, and their allies from passing through.\n\nAnd tonight at 7:44 PM, Trump posted directly on Truth Social: \n\n\"If Iran doesn't FULLY OPEN the Strait of Hormuz within 48 HOURS, the United States will hit and obliterate their POWER PLANTS, starting with the BIGGEST ONE FIRST.\"\n\nThat biggest plant is almost certainly Bushehr , Iran's nuclear power plant sitting directly on the Persian Gulf coast and Iran's own Foreign Minister has already said its targeting would trigger \"zero restraint.\"\n\nThis is the same Trump who told PBS just days ago that he had deliberately avoided power plants because the civilian damage would be catastrophic. \n\nTonight he is threatening exactly that.\n\nJust hours before this ultimatum, Trump posted that the US was considering winding down military operations entirely. \n\nThen came this threat.\n\nThe Pentagon simultaneously announced the deployment of three more warships and 2,500 additional Marines, the second such deployment in a single week  bringing total US forces in the region to roughly 50,000 troops.\n\nThe mountains absorbed 900 air strikes and protected Iran's most critical infrastructure. \n\nNow, unable to finish the war from the air, Trump is threatening to turn off the lights for 90 million people instead.\n\nThe 48-hour clock started at 7:44 PM Eastern on Saturday, March 21, and the deadline hits late Monday night. \n\nEvery barrel of oil on earth is now priced against what happens next",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/_Investinq/status/2035514645788721410",
-    "tweetedAt": "2026-03-22T00:31:24.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2035514645788721410",
+      "verdict": "watch",
+      "summary": "特朗普48小时通牒要求伊朗重开霍尔木兹海峡，否则打击伊朗核电站。海峡承载全球20%石油供应，油价已涨40-50%至$103。",
+      "importance": 4,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "commodities"
+      ],
+      "keyData": [
+        {
+          "k": "海峡石油运输占比",
+          "v": "全球20%"
+        },
+        {
+          "k": "布伦特原油价格",
+          "v": "$103/桶"
+        },
+        {
+          "k": "油价涨幅",
+          "v": "40-50%"
+        },
+        {
+          "k": "美国在伊部署兵力",
+          "v": "约50000人"
+        },
+        {
+          "k": "通牒截止时间",
+          "v": "美东时间周六晚7:44起48小时"
+        },
+        {
+          "k": "空袭次数",
+          "v": "约900次"
+        }
+      ],
+      "impact": {
+        "direction": "利好石油/利空风险资产",
+        "horizon": "1-7天",
+        "reason": "48小时通牒若触发，油价可能暴涨导致全球供应链冲击"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 5,
       "summary": "Trump威胁48小时内攻击伊朗最大发电厂，油价已涨40-50%至$103，中东美军增至5万",
@@ -1058,13 +2132,45 @@
   },
   {
     "tweetId": "2036070458320445707",
-    "authorName": "The Kobeissi Letter",
-    "authorScreen": "KobeissiLetter",
+    "author": "The Kobeissi Letter (@KobeissiLetter)",
     "text": "You can't make this up:\n\nExactly 23 days into the Iran War, and our \"Conflict Playbook\" is literally tracking down to the day.\n\nPresident Trump has just announced peace talks between the US and Iran are ongoing, with Step #9 of our playbook imminent.\n\nWhile many called for World War 3, we called for a 2-4 week conflict, and we are right in the middle of that timeline.\n\nThe S&P 500 just swung $3 TRILLION in market cap, oil prices are below $89/barrel, gold is up +$300/oz in hours, and bonds are rebounding.\n\nAs we have seen endlessly over the last 12 months, objective investors are winning the most in this market.\n\nWhile there will be much more volatility, it appears that Step #9 and #10 of our playbook are imminent.\n\nKeep following our playbook.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/KobeissiLetter/status/2036070458320445707",
-    "tweetedAt": "2026-03-23T13:20:00.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2036070458320445707",
+      "verdict": "watch",
+      "summary": "Kobeissi Letter称美伊和平谈判进行中，称其冲突剧本预测2-4周冲突进程。提及万亿美元市值波动、油价回落、黄金大涨。",
+      "importance": 3,
+      "domain": "finance",
+      "tags": [
+        "macro",
+        "trading"
+      ],
+      "keyData": [
+        {
+          "k": "S&P500市值波动",
+          "v": "$3万亿美元"
+        },
+        {
+          "k": "油价",
+          "v": "<$89/桶"
+        },
+        {
+          "k": "黄金涨幅",
+          "v": "+$300/盎司"
+        },
+        {
+          "k": "预测冲突周期",
+          "v": "2-4周"
+        }
+      ],
+      "impact": {
+        "direction": "中性",
+        "horizon": "更久",
+        "reason": "和平谈判消息但缺乏官方来源确认，信息待验证"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "actionable",
       "importance": 5,
       "summary": "美伊和谈进展符合冲突剧本，油价跌破89美元/桶，黄金涨300美元",
@@ -1078,13 +2184,28 @@
   },
   {
     "tweetId": "2034728972605354393",
-    "authorName": "Watcher.Guru",
-    "authorScreen": "WatcherGuru",
+    "author": "Watcher.Guru (@WatcherGuru)",
     "text": "JUST IN: North Carolina introduces bill to \"establish a strategic Bitcoin reserve for the state.\" https://t.co/88p29JVM94",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/WatcherGuru/status/2034728972605354393",
-    "tweetedAt": "2026-03-19T20:29:25.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2034728972605354393",
+      "verdict": "watch",
+      "summary": "北卡罗来纳州提出法案建立州级比特币储备，属美国首例州级BTC储备立法，具有政策示范意义。",
+      "importance": 4,
+      "domain": "crypto",
+      "tags": [
+        "policy",
+        "token"
+      ],
+      "keyData": [],
+      "impact": {
+        "direction": "利好BTC",
+        "horizon": "更久",
+        "reason": "若法案通过将开创州级BTC储备先例，可能引发其他州效仿"
+      },
+      "suggestions": ""
+    },
+    "baseline": {
       "verdict": "actionable",
       "importance": 5,
       "summary": "北卡罗来纳州提出法案建立该州战略比特币储备",
@@ -1098,13 +2219,52 @@
   },
   {
     "tweetId": "2035680133974266292",
-    "authorName": "PeckShieldAlert",
-    "authorScreen": "PeckShieldAlert",
+    "author": "PeckShieldAlert (@PeckShieldAlert)",
     "text": "#PeckShieldAlert The @ResolvLabs protocol has been exploited for ~$25M. \nThe exploiter used 200K USDC to mint 80M $USR and then staked them for $wstUSR to bypass low liquidity. \nBy swapping $wstUSR for Stablecoins and finally into $ETH, the exploiter has exited most of the position. \nThe exploiter currently holds 11.4K $ETH (~$24M) & 20M $wstUSR (~$1.3M), as $USR price has plummeted -80%.",
     "lang": "en",
-    "tweetUrl": "https://twitter.com/PeckShieldAlert/status/2035680133974266292",
-    "tweetedAt": "2026-03-22T11:28:59.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2035680133974266292",
+      "verdict": "actionable",
+      "summary": "Resolv协议遭黑客攻击，损失约$25M。攻击者通过USDC杠杆铸造8000万USR，兑换后持有11.4K ETH($24M)及2000万wstUSR，USR价格暴跌80%。",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "security"
+      ],
+      "keyData": [
+        {
+          "k": "攻击损失",
+          "v": "约$25M"
+        },
+        {
+          "k": "攻击者USDC初始成本",
+          "v": "20万"
+        },
+        {
+          "k": "铸造USR数量",
+          "v": "8000万"
+        },
+        {
+          "k": "攻击者持有ETH",
+          "v": "11.4K(约$24M)"
+        },
+        {
+          "k": "USR跌幅",
+          "v": "-80%"
+        },
+        {
+          "k": "攻击者持有wstUSR",
+          "v": "2000万(约$1.3M)"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "立即",
+        "reason": "安全漏洞导致稳定币脱锚，链上资金仍在移动，受损用户需立即行动"
+      },
+      "suggestions": "持有USR用户应立即评估持仓风险，密切关注链上资金动向及官方公告"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 5,
       "summary": "ResolvLabs协议被黑约2500万美元，攻击者通过USDC铸USR绕过流动性套利",
@@ -1117,13 +2277,48 @@
   },
   {
     "tweetId": "2035641652841427308",
-    "authorName": "0x思远",
-    "authorScreen": "nftsiy",
+    "author": "0x思远 (@nftsiy)",
     "text": "USR的脱锚还在加速恶化。\n\n继早些时候跌至0.049美元后，HTX最新行情显示USR现报0.29美元，24小时跌幅69.1%。RESOLV同步下挫超10%，现报0.0549美元。\n\n攻击手法已经浮出水面——\n\n攻击者仅用20万枚USDC，铸造出8000万枚USR。随后将USR转换为wstUSR，再套现为USDC和USDT，最终用1724万美元买入9111枚ETH，悄然转移资产。\n\n用20万撬动8000万，这不是漏洞，这是一道敞开的门。\n\nResolv团队此前声称\"底层资产暂未损失\"，但攻击者的操作路径清晰显示，协议的铸造机制已被系统性利用。稳定币的锚，不是靠声明维持的。\n\n目前链上资金仍在移动，事件尚未结束。\n\n对于还持有USR的用户来说，等待官方调查结果的每一分钟，代价都在实时计算。",
     "lang": "zh",
-    "tweetUrl": "https://twitter.com/nftsiy/status/2035641652841427308",
-    "tweetedAt": "2026-03-22T08:56:05.000Z",
-    "currentInsight": {
+    "output": {
+      "tweetId": "2035641652841427308",
+      "verdict": "actionable",
+      "summary": "中文详解Resolv攻击手法：攻击者用20万USDC铸造8000万USR→转换wstUSR→套现USDC/USDT→买入9111 ETH。攻击者仍在转移资产，事件未结束。",
+      "importance": 5,
+      "domain": "crypto",
+      "tags": [
+        "security"
+      ],
+      "keyData": [
+        {
+          "k": "攻击者购买ETH",
+          "v": "9111枚"
+        },
+        {
+          "k": "资金转出额",
+          "v": "1724万美元"
+        },
+        {
+          "k": "USR现价",
+          "v": "$0.29"
+        },
+        {
+          "k": "24小时跌幅",
+          "v": "69.1%"
+        },
+        {
+          "k": "RESOLV现价",
+          "v": "$0.0549"
+        }
+      ],
+      "impact": {
+        "direction": "利空",
+        "horizon": "立即",
+        "reason": "攻击路径清晰显示协议铸造机制被系统性利用，稳定币脱锚加速恶化"
+      },
+      "suggestions": "持有USR用户应立即关注官方调查进度，链上资金每分钟都在变化，风险实时计算"
+    },
+    "baseline": {
       "verdict": "watch",
       "importance": 5,
       "summary": "USR稳定币脱锚暴跌69.1%，攻击者用20万USDC铸造8000万USR换1724万美元ETH",

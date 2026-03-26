@@ -1,0 +1,362 @@
+[
+  {
+    "tweetId": "2036768768312160264",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Personal anecdote about depositing into multiple yield platforms and joining complaint groups. No actionable info, no specific yields or risks identified."
+  },
+  {
+    "tweetId": "2036784465566126490",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Generic engagement-bait question from Morph Network with zero information content. Pure marketing post."
+  },
+  {
+    "tweetId": "2036770123013579041",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Life philosophy joke about rich/poor/middle class fears. Completely irrelevant to any investment domain."
+  },
+  {
+    "tweetId": "2036787132384305596",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "NFT mint promotion retweet with no details on project fundamentals, price, or significance. Pure hype."
+  },
+  {
+    "tweetId": "2036766647260745995",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Single-word reply tagging Hyperliquid. Zero information content."
+  },
+  {
+    "tweetId": "2036657433733382256",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "WSJ report on Iran's extreme ceasefire demands (close US Gulf bases, lift all sanctions, no missile limits, Hormuz tolls). These demands signal negotiations are far apart, implying prolonged conflict risk which directly affects oil prices and energy-exposed positions."
+  },
+  {
+    "tweetId": "2036629453460078788",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Analysis suggesting Thursday US-Iran talks may not happen given Iran's high preconditions. If confirmed, this extends conflict uncertainty and supports elevated oil/commodity prices. Supplements the WSJ report with actionable timeline (Thursday talks)."
+  },
+  {
+    "tweetId": "2036687077845393636",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "Bernstein analyst BTC price target of $150K year-end is notable from a reputable firm, but the tweet is a news aggregator summary without the underlying analysis or rationale. Worth noting the institutional view but not urgent."
+  },
+  {
+    "tweetId": "2036728796028498065",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "Commentary on OpenAI shutting down Sora over deepfake concerns. The Sora shutdown itself is a real product event, but this tweet is mostly editorial opinion about crypto grift culture rather than analysis of the business impact."
+  },
+  {
+    "tweetId": "2036729538051232003",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Vague ETH price speculation ('retest and pump?') with no analysis, no levels, no reasoning. Pure low-quality price commentary."
+  },
+  {
+    "tweetId": "2036662891940905023",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "RT of Iran's ceasefire demands from a credible OSINT source. Duplicate of the WSJ report content but from an English-language perspective with additional reach. Confirms the geopolitical risk to energy markets."
+  },
+  {
+    "tweetId": "2036660813511942256",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Speculative BTC $300K prediction for 2027 based on wishful hypotheticals (rate cuts, Saylor buying, bull market). No analysis, no data. Pure hopium."
+  },
+  {
+    "tweetId": "2036768750968430779",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Self-promotional RT about a Bittensor/TAO research report with a 2x gain claim. No new information or analysis in this tweet, just marketing for past calls."
+  },
+  {
+    "tweetId": "2036743193975558417",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "HashKey thought piece on on-chain finance replacing intermediaries. Generic institutional narrative about tokenization with no specific product launch, partnership, or timeline. Educational but not investment-relevant."
+  },
+  {
+    "tweetId": "2036717518807822700",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "User testing Binance AI Pro trading bot with 500U. Interesting as early signal that Binance is launching AI-assisted trading products, but no results yet and could be promotional content. Worth tracking the product launch."
+  },
+  {
+    "tweetId": "2036607175620173875",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "US state-level wealth migration data (red vs blue states) is interesting macro background but the data is from 2023, and the political framing reduces analytical value. Not actionable for portfolio decisions."
+  },
+  {
+    "tweetId": "2036642361967571132",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Former Goldman CEO philosophical observation about public vs private company incentives. Interesting business wisdom but contains no market signal, no current event, no actionable insight."
+  },
+  {
+    "tweetId": "2036776306369839258",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Promotional thread for RIVER token with vague claims about cross-chain infrastructure via Stargate. Reads like paid content with no verifiable metrics, TVL data, or differentiation from dozens of similar projects."
+  },
+  {
+    "tweetId": "2036687500899758369",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "LIKWID self-promotion about AI agent payments infrastructure. Generic AI+crypto narrative with buzzwords (ERC-8004, x402) but no product launch, no metrics, no traction data. Marketing content."
+  },
+  {
+    "tweetId": "2036646469890195589",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "IRGC official statement explicitly threatening energy supply disruption and declaring no negotiation with the US. Direct from Iran's military command, this signals continued Hormuz blockade risk and sustained elevated oil prices. The mention of 'previous prices of energy and oil' is a direct threat to commodity markets."
+  },
+  {
+    "tweetId": "2036722279925870907",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "First-hand claim from someone who spoke with Meta executives about the Manus acquisition. If true, Meta acquiring Manus is an AI industry M&A event worth tracking, though the editorializing reduces reliability. The 'small money to eliminate competition' framing has strategic implications for AI startup valuations."
+  },
+  {
+    "tweetId": "2036649339632955659",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Rumor of Trump-Xi meeting end of April with the trader acting on it (buying FXI calls). If confirmed, a US-China summit would be a major macro catalyst for Chinese equities and trade-sensitive sectors. The rumor status and unverified source limit importance."
+  },
+  {
+    "tweetId": "2036619455971864846",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Google launching a WebSim competitor using Gemini 3.1 Flash-Lite. Signals Google's competitive moves in AI-powered web tools. Relevant for tracking AI product landscape and Google's model deployment strategy, but not directly investment-actionable."
+  },
+  {
+    "tweetId": "2036769170348806368",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Promotional content for Zeru Finance's incentive scoring system. Generic DeFi sybil-resistance narrative with no traction data, no TVL, no unique mechanism details. Marketing thread."
+  },
+  {
+    "tweetId": "2036609462501523568",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "Google TurboQuant achieving 6x KV-cache memory reduction with 8x speedup at zero accuracy loss is a significant AI infrastructure breakthrough. The author correctly flags Jevons paradox implications: cheaper inference increases demand for memory chips, which is bullish for $MU/$SK Hynix despite the apparent efficiency gain. Directly affects AI chip investment thesis."
+  },
+  {
+    "tweetId": "2036609094929600925",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Oil prices down 5%+ is a major intraday move from a credible breaking news source (Spectator Index). Requires immediate assessment of energy positions, commodity-linked equities, and inflation expectations. A 5% oil move directly impacts portfolio allocation decisions across multiple asset classes."
+  },
+  {
+    "tweetId": "2036660141941256464",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "JPMorgan reducing Freshpet target from $80 to $66 is a specific analyst action but on a mid-cap consumer stock with limited portfolio relevance for a multi-strategy investor. Only notable if already holding FRPT."
+  },
+  {
+    "tweetId": "2036645546052755967",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Brett Adcock promoting his hardware company Hark with vague claims about 'new era of computing.' Pure startup marketing with no product specs, no launch date, no funding round. Not investment-relevant."
+  },
+  {
+    "tweetId": "2036655086445740093",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "AeroVironment ($AVAV) announcing directed energy C-UAS with $5/shot vs $100K+ missile economics is a meaningful defense tech development, especially with the Iran conflict ongoing. Already deployed near El Paso. Worth tracking for defense sector positioning."
+  },
+  {
+    "tweetId": "2036773238970491139",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "Ark Invest buying $16.34M in Circle equity while Circle stock drops 20% on the same day is a significant divergence signal. Combined with the Clarity Act stablecoin yield ban (covered in another tweet), this shows a major institutional investor taking the other side of a regulatory scare. Directly relevant to USDC/crypto regulatory positioning."
+  },
+  {
+    "tweetId": "2036615743828328523",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "SpaceX IPO filing this week is one of the most anticipated public offerings in years. Would be the largest tech IPO in history and a benchmark event for private-to-public valuations across the space/defense sector. Direct impact on portfolio allocation and related holdings."
+  },
+  {
+    "tweetId": "2036759268397912417",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Comprehensive Bittensor/TAO research resource list. Useful for someone researching TAO specifically, but this is a curated link list with no original analysis or time-sensitive information."
+  },
+  {
+    "tweetId": "2036601488454328791",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Detailed TLT bull thesis arguing war-driven inflation shock will break into demand destruction, triggering bond rally. The framework (inflation shock -> something breaks -> recession -> bonds win) is a coherent macro thesis with specific positioning (60% bonds allocation). Worth considering for fixed income allocation, though it is one person's view and the trade has been painful."
+  },
+  {
+    "tweetId": "2036614187451847073",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Sequoia's Shaun Maguire writing a hardware investment manifesto arguing most returns over 25 years will come from hardware is a notable signal from a top-tier VC. Relevant for understanding institutional capital flow direction in AI/tech, though the tweet is truncated and lacks specifics."
+  },
+  {
+    "tweetId": "2036671921224298980",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "MoonPay integrating headless Apple Pay on Solana is a meaningful crypto payments development. Apple Pay integration lowers friction for mainstream crypto adoption. Announced at an official Solana event, increasing credibility. Could drive SOL ecosystem growth."
+  },
+  {
+    "tweetId": "2036551389778792581",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "NYT-sourced report that the US sent a 15-point ceasefire agreement to Iran with terms around nuclear weapons control and sanctions lifting. This is the most concrete ceasefire development yet and directly explains the oil price drop and equity rally. Any multi-strategy portfolio must immediately reassess energy, commodities, and risk-on/risk-off positioning."
+  },
+  {
+    "tweetId": "2036571121642877115",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Senate draft bill targeting stablecoin yields is a direct regulatory attack on Circle/USDC business model and the entire DeFi yield ecosystem. The Clarity Act would ban yield on stablecoin holdings even through third parties like Coinbase (whose stablecoin revenue was $355M in Q3 2025). This impacts CRCL, COIN, ETH as settlement layer, and the entire stablecoin thesis. Requires immediate position review."
+  },
+  {
+    "tweetId": "2036602160171901387",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "SpaceX IPO filing reportedly this week per The Information. Corroborates the Japanese source. The Information is a highly credible tech publication. This is confirmatory signal strengthening the SpaceX IPO thesis."
+  },
+  {
+    "tweetId": "2036539181518954796",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "Israel's Channel 12 reporting US-Iran one-month ceasefire with 15-item negotiation framework. An independent source (Israeli media) confirming ceasefire talks adds credibility and reduces the probability this is just political posturing. Directly explains market moves in oil, gold, and equities."
+  },
+  {
+    "tweetId": "2036542183462044116",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "OpenAI COO warning about HBM chip shortages through 2030 with 20% supply deficit (per SK Group). The author astutely notes the market is selling $MU despite this structural demand thesis. Directly actionable for semiconductor positioning: MU, SK Hynix, Samsung are all affected. The supply-demand gap has clear investment implications."
+  },
+  {
+    "tweetId": "2036574980289470527",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Jim Bianco (respected macro researcher) showing Fed funds futures swung from pricing 2.5 rate cuts to 0.2 rate hikes since the Iran war started. This is a massive shift in monetary policy expectations that affects every asset class: bonds, equities, crypto, and real estate. From a top-credibility source with specific data points."
+  },
+  {
+    "tweetId": "2036508273290125597",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Extremely detailed breakdown of the Clarity Act's stablecoin yield ban with specific mechanisms: ban on passive yield, third-party loophole closure, 3200+ bankers lobbying. Includes specific impact analysis on Circle (CRCL -22%), Coinbase ($355M quarterly revenue at risk), and USDC demand. Most comprehensive coverage of this regulatory event in the dataset. Requires immediate review of all stablecoin and crypto exchange positions."
+  },
+  {
+    "tweetId": "2036538856309436582",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Braze ($BRZE) guiding FY2027 revenue $884-889M vs consensus $858M is a meaningful beat on guidance. Relevant for SaaS/cloud software investors as it shows enterprise software spending remains healthy despite macro headwinds."
+  },
+  {
+    "tweetId": "2036594385983512591",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "SK Hynix confidentially filing for US ADR listing targeting end of 2026. This is a major event: the world's #2 HBM memory maker going public in the US would be one of the year's biggest listings. Directly relevant to AI infrastructure investment thesis and memory chip supply dynamics. Combined with the HBM shortage thesis, this is highly actionable."
+  },
+  {
+    "tweetId": "2036530374944399417",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "FT-sourced report of ships paying up to $2M to Iran for Hormuz passage. This quantifies the real-world cost of the blockade and confirms Iran is monetizing the strait closure. Directly relevant to shipping costs, oil price premiums, and global trade disruption estimates."
+  },
+  {
+    "tweetId": "2036500987070857560",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Kratos ($KTOS) winning $447M Space Force contract for missile tracking is a large defense contract win supporting the Golden Dome initiative. Material for KTOS holders and defense sector positioning. The contract size and strategic importance (missile defense during active conflict) add weight."
+  },
+  {
+    "tweetId": "2036486857559580897",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Brad Setser (former Treasury official, highly respected macro analyst) noting zero aggregate dollar reserve accumulation over 10 years after massive prior accumulation. This challenges both dollar-bull and de-dollarization narratives with hard data. Important macro context for FX and bond positioning."
+  },
+  {
+    "tweetId": "2036496959318663370",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Benchmark initiating buy recommendation on $TTD with specific thesis that Publicis/Omnicom are attacking TTD's fee transparency to distract from their own opaque pricing. Specific analyst call with clear reasoning on a major adtech name."
+  },
+  {
+    "tweetId": "2036544240889586023",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "After-hours market reaction to ceasefire news: silver, gold, S&P, QQQ all rallying. This is real-time market confirmation that the ceasefire talks are moving prices. Combined with the specific ceasefire news from multiple sources, this validates the trade: risk-on assets rallying on de-escalation."
+  },
+  {
+    "tweetId": "2036610356362309677",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "LiteParse document parser launch by LlamaIndex founder Jerry Liu. Useful AI developer tool but not investment-grade news. No funding, no revenue model, no competitive moat discussion. More relevant for AI practitioners than investors."
+  },
+  {
+    "tweetId": "2034737578247950548",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Saudi Arabia ramping Yanbu port exports to 4.19M barrels/day (up 185% from Feb) with 32 tankers waiting, effectively bypassing the Hormuz blockade via a 746-mile pipeline. This is critical supply-side data: Saudi recovering 50%+ of pre-war export capacity through the Red Sea route fundamentally changes the oil supply disruption calculus. Directly affects oil price outlook and energy positions."
+  },
+  {
+    "tweetId": "2034997887701328273",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "Aster staking details with 30-40% APY and 208-week max lock. Specific DeFi yield opportunity but on a small/unknown protocol. The APY is attractive but the token risk is high. Only relevant for active DeFi yield farmers, not portfolio-level decision."
+  },
+  {
+    "tweetId": "2036257115115831667",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "SWIFT confirming 25+ banks going live by June settling on Ethereum for 24/7 cross-border payments is, if true, one of the most significant institutional crypto adoption events ever. This would fundamentally change ETH's value proposition as settlement infrastructure. However, the source is a RT of @Ethprofit which may not be fully verified. Still demands immediate attention and verification."
+  },
+  {
+    "tweetId": "2034619781652070892",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "$KLAR chairman making a $50M insider purchase is a significant insider buying signal. Technical setup at support zone with potential $18 target. However, this is a less well-known stock and the tweet is from March 19, making it less time-sensitive. The insider purchase amount is noteworthy."
+  },
+  {
+    "tweetId": "2034638189361811740",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Technical analysis speculation on $SNDK with vague 'high tight flag' pattern claim and question-mark price target of $800. No fundamental backing, no volume data, reads as promotional price pumping."
+  },
+  {
+    "tweetId": "2035514645788721410",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Comprehensive situation report on the Iran-US conflict: Trump's 48-hour ultimatum to Iran to open Hormuz or face power grid attacks, oil at $103/barrel (up 40-50%), 50K US troops deployed, Bushehr nuclear plant as potential target. This is a critical geopolitical escalation with direct impact on oil, defense stocks, safe havens, and overall risk sentiment. The level of detail (specific deployment numbers, oil prices, timeline) makes this highly actionable."
+  },
+  {
+    "tweetId": "2036070458320445707",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Kobeissi Letter (widely-followed macro research) reporting: S&P swung $3T in market cap, oil below $89/barrel, gold up $300/oz, bonds rebounding, all on peace talks. Multiple specific data points confirming the ceasefire trade is massive. Oil dropping from $103 to below $89 in days is a historic move. Requires immediate portfolio rebalancing."
+  },
+  {
+    "tweetId": "2034728972605354393",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "North Carolina introducing a strategic Bitcoin reserve bill adds to the growing state-level BTC adoption narrative. While individual state bills may not pass, the trend of multiple US states proposing BTC reserves strengthens the institutional demand thesis and has psychological market impact."
+  },
+  {
+    "tweetId": "2035680133974266292",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "PeckShield (credible security firm) reporting $25M exploit of Resolv Labs protocol. Specific attack vector: 200K USDC to mint 80M USR, bypassing liquidity via wstUSR. Attacker holds 11.4K ETH (~$24M). USR price down 80%. This is a major DeFi security incident requiring immediate check of any exposure to Resolv, USR, or related protocols."
+  },
+  {
+    "tweetId": "2035641652841427308",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Detailed follow-up on the USR depeg: price at $0.29 (down 69.1%), attack used 200K USDC to mint 80M USR, converted to 9111 ETH ($17.24M). On-chain funds still moving, event ongoing. For anyone with DeFi exposure, this is an active security event requiring immediate position verification."
+  }
+]

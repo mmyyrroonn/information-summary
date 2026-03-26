@@ -1,0 +1,722 @@
+[
+  {
+    "tweetId": "2036817208672940411",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036803683631972439",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036801138625012112",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036801772707311951",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036812385051385946",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036820758551318920",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036806233722679642",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036811154123526366",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Geopolitical/energy event upgrade: affects energy positions and market sentiment"
+  },
+  {
+    "tweetId": "2036820748900434313",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Brief price mention without analysis"
+  },
+  {
+    "tweetId": "2036806055804690943",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Geopolitical/energy event upgrade: affects energy positions and market sentiment"
+  },
+  {
+    "tweetId": "2036758468301041679",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036767577146331415",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036815214591520776",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036813660086218821",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036769373403103516",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036790200567759187",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036762810164597078",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036786973394739528",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036775103904543217",
+    "verdict": "watch",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036795115965129104",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036784219523817943",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Geopolitical/energy event upgrade: affects energy positions and market sentiment"
+  },
+  {
+    "tweetId": "2036784654242771320",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036813070732034481",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036785030916170084",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Geopolitical/energy event upgrade: affects energy positions and market sentiment"
+  },
+  {
+    "tweetId": "2036782789194903850",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Geopolitical/energy event upgrade: affects energy positions and market sentiment"
+  },
+  {
+    "tweetId": "2036779423152624020",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036782494620496155",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "Major geopolitical event: energy/commodity impact requires immediate position review"
+  },
+  {
+    "tweetId": "2036776854514708793",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Geopolitical/energy event upgrade: affects energy positions and market sentiment"
+  },
+  {
+    "tweetId": "2036784987299827928",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036769919317000318",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036811640809627770",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036779136019017950",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036776986194870630",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "Major geopolitical event: energy/commodity impact requires immediate position review"
+  },
+  {
+    "tweetId": "2036745284689273082",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036786818608500955",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036820755783073853",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036781949394829389",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036565335441133841",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036606440673255784",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036719783681393119",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Pure technical analysis without catalyst: low investment value"
+  },
+  {
+    "tweetId": "2036617535412388051",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036637964378452224",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036774830675288458",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Top institution action: high-signal market indicator"
+  },
+  {
+    "tweetId": "2036763776738021790",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036705750043509128",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036636256541749321",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036723398630334761",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036634365611163779",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036758794366324932",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036596281624195160",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036627255330484433",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036593920659038366",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036658164561531320",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036604458122330261",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "Major geopolitical event: energy/commodity impact requires immediate position review"
+  },
+  {
+    "tweetId": "2036595377365725417",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036632366782034315",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036684505898230169",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036698451552117073",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036821790014476632",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036588290065997883",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036769080158593029",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036630323509813557",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036604887371530652",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Large financial event ($6.3B+): institutional-grade signal"
+  },
+  {
+    "tweetId": "2036735823937216742",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "Major geopolitical event: energy/commodity impact requires immediate position review"
+  },
+  {
+    "tweetId": "2036589039458066497",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036730045503344791",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036640958809587971",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036631822067458054",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036641722290127172",
+    "verdict": "actionable",
+    "importance": 4,
+    "reasoning": "Major geopolitical event: energy/commodity impact requires immediate position review"
+  },
+  {
+    "tweetId": "2036784566350868658",
+    "verdict": "watch",
+    "importance": 3,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036815539566260383",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036489938917794031",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036615029982724150",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Commodity price move +4%: requires immediate position review"
+  },
+  {
+    "tweetId": "2036795234395582757",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036787767045144925",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036784878612607484",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036627067140526293",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036783669541568717",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036648751281078473",
+    "verdict": "ignore",
+    "importance": 1,
+    "reasoning": "Pure noise/marketing/sentiment: no investment value"
+  },
+  {
+    "tweetId": "2036723762700198152",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036823114319901070",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036759526959988740",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036754239788376412",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Security incident with specific amounts: immediate action needed"
+  },
+  {
+    "tweetId": "2036737081763074475",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036786225135157705",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036661345358413953",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036777618251350417",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036669195564560459",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036762344450396627",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036788694343156058",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036610758239207604",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036795939818713299",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036655712219414835",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036787075731570920",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036719692036055304",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036558315392561590",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036786536663208153",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036696100439003239",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036536250207969562",
+    "verdict": "watch",
+    "importance": 4,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036585953725399136",
+    "verdict": "ignore",
+    "importance": 2,
+    "reasoning": "Pure technical analysis without catalyst: low investment value"
+  },
+  {
+    "tweetId": "2036542116730388641",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2033527473795903848",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2033144900179394814",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Security incident with specific amounts: immediate action needed"
+  },
+  {
+    "tweetId": "2033520097927766109",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2033868100886503472",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2032487665459757328",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Security incident with specific amounts: immediate action needed"
+  },
+  {
+    "tweetId": "2034062695821894114",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2034537187216146455",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2035996235006394415",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2035617331582255212",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Security incident with specific amounts: immediate action needed"
+  },
+  {
+    "tweetId": "2036616558756213026",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2034741293285277950",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2033170874594107706",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036010080420917638",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036457267076407487",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2033530132829220964",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2034641234434707578",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2036472449269629038",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2034499275137364001",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  },
+  {
+    "tweetId": "2034014725076332887",
+    "verdict": "actionable",
+    "importance": 5,
+    "reasoning": "Baseline from production classification"
+  }
+]
