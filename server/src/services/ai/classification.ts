@@ -828,9 +828,9 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
   const hasHint = normalizedHint && normalizedHint !== TAG_FALLBACK_KEY && allowedTags.includes(normalizedHint);
   if (!hasHint) {
     const importanceHint =
-      '重要度校准：4-5 用于高信号事件（安全漏洞/重大融资/政策/IPO/具体交易计划等），有可验证数据即可给4+；不确定的可给3观察。注意不要矫枉过正把真正有价值的信息降得太低。';
+      '重要度校准：4-5 用于高信号事件。常见错误是过度保守——如果推文包含可验证的重大事件（大额资金>$100M/重要机构/地缘军事升级/安全漏洞/重大政策落地/IPO），应给4-5而非3。3是"信息不完整需追踪"的兜底分，不应作为有明确信号的事件的评分。';
     const importanceRubric = [
-      'importance=5：可立即行动且条件清晰（交易窗口/漏洞紧急/政策落地/重大资金事件），含关键数字或明确步骤；或：来自高可信源的独家重大信息，即使表述非正式',
+      'importance=5：重大事件需立即关注——安全漏洞/地缘军事升级+能源价格突破/重大政策落地/顶级机构(AUM>$100B)极端预期(>100%涨跌幅)/大额异常交易(>$1B)+内幕指控/主要稳定币安全事件；或：来自高可信源的独家重大信息。不要吝啬给5分——真正重大的事件就是5',
       'importance=4：高信号事件（机构/融资/升级/监管/重大产品发布），有可验证数据或可信来源；或：资深从业者的一手经验判断/内部观察，信息别处难以获取',
       'importance=3：有价值但不完整——缺数据/时间/来源确认，或口述洞察缺乏具体细节，仍值得记录观察',
       'importance<=2：低信号/复读/纯情绪宣泄/无任何洞察的泛泛评论/广告软文'
@@ -845,7 +845,7 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
       '恐慌贪婪指数',
       '爆仓金额(不带关键价位/结构变化/催化)',
       'AI营销软文(无产品细节/无benchmark/无可用时间)',
-      '股价涨跌播报(无财报/无催化事件)',
+      '股价涨跌播报(无财报/无催化事件)——注意：大宗商品(原油/黄金/天然气)日内波动超3%不属于常规播报，属于重大异动，应至少 watch',
       '无具体公司的泛泛美股/港股评论',
       '纯技术面画线(无催化事件/无基本面支撑)'
     ].join('；');
@@ -872,7 +872,7 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
     const template = {
       goal: '逐条评估推文情报价值并输出结构化洞察（中文），用于后续日报汇总；强过滤低价值噪音，只保留可验证/可行动信息。涵盖加密货币(crypto)、人工智能(ai)、传统金融(finance)三大领域。',
       constraints: [
-        '【最重要】summary 和 importance 是每条推文的必填字段，绝对不可省略或留空，包括 verdict=ignore 的推文：summary 50字以内中文摘要（含主体名+关键信息），importance 必须是整数1-5。',
+        '【最重要】summary 和 importance 是每条推文的必填字段，绝对不可省略或留空，包括 verdict=ignore 的推文：summary 50字以内中文摘要（含主体名+关键信息），importance 必须是整数1-5（不允许0、null、空字符串）。',
         '只允许输出一个 JSON 对象，禁止任何额外文字/Markdown/代码块。',
         '必须覆盖所有输入 tweetId：items 长度必须等于输入条数，且每个 tweetId 恰好出现一次。',
         `tweetId 必须来自 allowedTweetIds：${JSON.stringify(allowedTweetIds)}；不得新增/编造 tweetId。`,
@@ -884,10 +884,13 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
         `低价值黑名单（默认ignore，除非同时出现新催化+可验证数据+明确影响）：${lowValueBlacklist}`,
         `高价值白名单（满足其一至少watch）：${highValueWhitelist}`,
         yieldPriority,
-        '去重：如果只是复述已广泛传播的旧闻且无新增视角/数字/进展/来源=>importance<=2 且 ignore。',
+        '去重：如果只是复述已广泛传播的旧闻且无新增视角/数字/进展/来源=>importance<=2 且 ignore。注意：正在进行中的地缘事件（如战争/谈判/制裁），每次新的分析/要求/声明/市场反应都是新信息，不应视为"旧闻复述"。',
         '评估推文价值时，不要仅凭表述是否正式/是否有数据来判断；一条口语化但包含独特洞察或早期信号的推文，可能比一篇数据详尽但信息已被广泛传播的正式文章更有价值。',
         '信号稀缺性原则：如果一条信息的核心内容在主流媒体/公开渠道上尚未出现，即使表述粗糙也应适当提高重要度。',
-        '地缘政治/军事事件评估：涉及主要经济体或产油国（美国/中国/俄罗斯/中东）的军事冲突、制裁、战争进展，如果可能影响能源/大宗商品/全球供应链/市场情绪，至少 importance=3 且 watch。知名分析师对市场影响的深度分析也至少 watch。',
+        '地缘政治/军事事件评估（分层）：基线——涉及主要经济体或产油国（美国/中国/俄罗斯/中东）的军事冲突/制裁/战争进展 → 至少 watch + importance≥3；升级——能源价格突破关键位(如油价$100)/多国参战/供应链中断有实际数据/重大停火协议或谈判 → importance≥4，考虑 actionable；升级——正在进行的军事行动（轰炸/空袭/封锁/重要谈判条款披露）→ importance≥4。知名分析师/机构对地缘+市场影响的深度分析 → 至少 watch + importance≥3。',
+        'AI工具实际应用评估：详细描述AI工具（Claude/GPT/AI Agent等）用于投资/交易/链上操作的实践案例，含具体技术方案+可复制步骤/工具链 → 至少 watch + importance≥3。AI+交易/DeFi的交叉应用属于高价值早期信号。',
+        '稳定币/加密监管事件：涉及主要稳定币发行商（Circle/Tether/USDC/USDT）的监管法案/审计事件/大幅价格波动(>10%)/脱锚事件 → 至少 watch + importance≥3；影响稳定币收益模式的法规变化 → importance≥4。',
+        '简单规则：当 importance≥4 且事件属于”投资者需要立即反应”的类型（能源价格剧烈波动/地缘军事升级或停火/DeFi安全漏洞/重大监管法案/利率预期转向），默认标 actionable 而非 watch。',
         '任何”传闻/可能/听说”且无来源=>最多 watch 且 importance<=3。',
         'domain 字段：crypto(加密货币/区块链/DeFi)、ai(人工智能/大模型/AI公司)、finance(股票/债券/大宗商品/外汇/宏观经济)；跨领域或无法判断填 null。',
         'domain 与 tags 一致性：crypto 领域专属 tags(yield/token/airdrop/onchain/exchange)只能搭配 domain=crypto；ai 领域专属(model-release/ai-product/ai-company)搭配 domain=ai；finance 专属(equities/bonds/commodities/forex)搭配 domain=finance；通用 tags(macro/policy/security/funding/tech/trading/narrative)可搭配任何 domain。',
@@ -895,7 +898,7 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
         '涉及融资/估值/回购/解锁/激励规模等资金事件：tags 应包含 funding/token/airdrop 中最贴切者。',
         '涉及央行/监管/合规：tags 必须包含 policy。',
         '涉及漏洞/攻击/盗币/安全修复：tags 必须包含 security。',
-        'actionable 只能在给出明确可执行动作时使用：步骤/窗口/参数齐全。交易类在 suggestions 中写明 entry/stop/target。'
+        'actionable 的两条路径：(1) 推文给出明确可执行步骤（申领/投票/漏洞修复/交易计划 entry/stop/target）；(2) 重大突发事件需投资者立即评估仓位风险（安全漏洞/地缘军事升级/重大政策落地/大额异常交易/能源价格剧烈波动/稳定币脱锚），即使推文本身不含具体操作步骤，也应标 actionable——因为投资者需要立即采取行动（调仓/对冲/止损评估）。'
       ],
       examples: [
         {
@@ -929,6 +932,31 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
           reason: '含完整交易计划（entry/stop/target），具体可执行'
         },
         {
+          text: '中东局势急速升级，布伦特原油涨超4%突破100美元/桶，沙特开放法赫德空军基地给美军',
+          expected: { verdict: 'actionable', importance: 5, tags: ['commodities', 'macro'] },
+          reason: '重大地缘事件+能源价格突破关键心理位+多国参战升级，所有能源/避险仓位需立即评估'
+        },
+        {
+          text: 'SWIFT confirms 25+ banks going live by June, settling on Ethereum for 24/7 cross-border payments',
+          expected: { verdict: 'actionable', importance: 5, tags: ['token', 'macro'] },
+          reason: 'SWIFT级别基础设施+Ethereum结算+明确时间线(June)+银行数量(25+)，对ETH和整个crypto市场有重大影响'
+        },
+        {
+          text: 'Fed funds futures swung from pricing 2.5 rate cuts to 0.2 rate hikes since the Iran strikes began',
+          expected: { verdict: 'actionable', importance: 5, tags: ['macro', 'bonds'] },
+          reason: '利率预期从降息2.5次到加息0.2次是巨大转向，影响所有资产类别，投资者需立即重新评估组合'
+        },
+        {
+          text: 'PeckShield: Resolv Labs protocol exploited for $25M. 200K USDC minted 80M USR, converted to 91K SOL',
+          expected: { verdict: 'actionable', importance: 5, tags: ['security', 'onchain'] },
+          reason: 'DeFi安全事件+具体金额($25M)+具体攻击路径，持有相关资产需立即检查'
+        },
+        {
+          text: 'BREAKING: Oil prices down by over 5%',
+          expected: { verdict: 'actionable', importance: 5, tags: ['commodities'] },
+          reason: '大宗商品日内>5%波动是重大异动，不是常规价格播报——投资者需立即评估能源仓位和关联资产'
+        },
+        {
           text: 'GPT-5要来了要来了！AI要改变世界！🚀🚀🚀',
           expected: { verdict: 'ignore', importance: 1, tags: ['other'] },
           reason: '纯情绪表达，无任何具体信息/时间/来源，属于噪音'
@@ -950,7 +978,7 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
         {
           verdict: 'actionable',
           criteria:
-            '存在明确可立即执行动作（申领/投票/漏洞处置/交易窗口），且给出可验证数据与风险点；交易类必须有 entry/stop/target'
+            '两条路径均可：(1) 存在明确可执行动作（申领/投票/漏洞处置/交易窗口 entry/stop/target）；(2) 重大突发事件需投资者立即行动（地缘升级+能源波动/安全漏洞/重大政策落地/稳定币脱锚/大额异常交易+内幕指控）'
         }
       ],
       importanceHint,
