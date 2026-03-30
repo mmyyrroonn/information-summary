@@ -390,6 +390,14 @@ export interface TweetStatsResponse {
   };
 }
 
+export interface ClassificationFailureStats {
+  abandonedTotal: number;
+  abandonedByReason: Array<{ reason: string; count: number }>;
+  aiRunFailed: number;
+  aiRunTotal: number;
+  failureRate: number | null;
+}
+
 export interface TweetRoutingStatsResponse {
   range: {
     startTime: string | null;
@@ -407,4 +415,5 @@ export interface TweetRoutingStatsResponse {
     pending: number;
     ignoredOther: number;
   };
+  classification: ClassificationFailureStats;
 }

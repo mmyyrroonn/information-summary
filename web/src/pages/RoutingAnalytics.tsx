@@ -67,6 +67,7 @@ export function RoutingAnalyticsPage() {
   }
 
   const totals = stats?.totals;
+  const classification = stats?.classification;
   const totalTweets = totals?.totalTweets ?? null;
   const embeddingHigh = totals?.embeddingHigh ?? null;
   const embeddingLow = totals?.embeddingLow ?? null;
@@ -76,6 +77,11 @@ export function RoutingAnalyticsPage() {
   const llmRouted = totals?.llmRouted ?? null;
   const ignoredOther = totals?.ignoredOther ?? null;
   const pending = totals?.pending ?? null;
+  const abandonedTotal = classification?.abandonedTotal ?? null;
+  const aiRunFailed = classification?.aiRunFailed ?? null;
+  const aiRunTotal = classification?.aiRunTotal ?? null;
+  const failureRate = classification?.failureRate ?? null;
+  const abandonedByReason = classification?.abandonedByReason ?? [];
 
   const embeddingHighRatio = useMemo(() => {
     if (totalTweets === null) return null;
@@ -269,7 +275,70 @@ export function RoutingAnalyticsPage() {
             </tbody>
           </table>
         </section>
+
+        <section className="analytics-panel">
+          <div className="section-head">
+            <div>
+              <h3>分类失败统计</h3>
+              <p className="hint">LLM 分类过程中被放弃的推文和失败的 AI 运行。</p>
+            </div>
+          </div>
+
+          <div className="analytics-summary" style={{ marginBottom: '1rem' }}>
+            <div className="summary-item">
+              <span>失败率</span>
+              <strong className="analytics-mono">{formatPercent(failureRate, 2)}</strong>
+              <p className="hint">已放弃 / (已完成 + 已放弃)</p>
+            </div>
+            <div className="summary-item">
+              <span>放弃推文</span>
+              <strong className="analytics-mono">{formatCount(abandonedTotal)}</strong>
+              <p className="hint">分类失败被放弃</p>
+            </div>
+            <div className="summary-item">
+              <span>AI 运行失败</span>
+              <strong className="analytics-mono">{formatCount(aiRunFailed)}</strong>
+              <p className="hint">共 {formatCount(aiRunTotal)} 次运行</p>
+            </div>
+          </div>
+
+          {abandonedByReason.length > 0 && (
+            <table className="analytics-table">
+              <thead>
+                <tr>
+                  <th>放弃原因</th>
+                  <th>数量</th>
+                  <th>占放弃总量</th>
+                </tr>
+              </thead>
+              <tbody>
+                {abandonedByReason.map((item) => (
+                  <tr key={item.reason}>
+                    <td>{reasonLabel(item.reason)}</td>
+                    <td className="analytics-mono">{formatCount(item.count)}</td>
+                    <td className="analytics-mono">
+                      {abandonedTotal
+                        ? formatPercent(item.count / abandonedTotal, 1)
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
       </div>
     </>
   );
+}
+
+function reasonLabel(reason: string): string {
+  switch (reason) {
+    case 'content-risk':
+      return '内容风控 (content-risk)';
+    case 'max-retries':
+      return '重试耗尽 (max-retries)';
+    default:
+      return reason;
+  }
 }
