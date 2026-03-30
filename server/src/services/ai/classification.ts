@@ -31,6 +31,9 @@ const CLASSIFY_TAG_MIN_TWEETS = Math.max(1, config.CLASSIFY_TAG_MIN_TWEETS ?? 10
 const CLASSIFY_TAG_MAX_WAIT_HOURS = Math.max(0, config.CLASSIFY_TAG_MAX_WAIT_HOURS ?? 2);
 const CLASSIFY_MAX_RETRIES = 3;
 const CLASSIFY_RETRY_DELAY_MS = 1500;
+// Throttle delay between batch completions to stay under API quota (1500 calls / 5h ≈ 5 calls/min)
+// Each batch = 1 API call, so ~12s between calls is safe; default 2s per batch with concurrency control
+const CLASSIFY_BATCH_THROTTLE_MS = Math.max(0, config.CLASSIFY_BATCH_THROTTLE_MS ?? 2000);
 const TAG_PROMPT_PROFILES: Record<
   string,
   {
@@ -428,12 +431,17 @@ export async function dispatchLlmClassificationJobs(options?: DispatchOptions): 
 async function abandonTweetBatch(
   tweets: Tweet[],
   reason: TweetBatchFailureReason,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown>,
+  lastErrorMessage?: string
 ) {
   if (!tweets.length) {
     return;
   }
   const now = new Date();
+  // Store reason + truncated error detail for post-mortem analysis
+  const detail = lastErrorMessage
+    ? `${reason}: ${lastErrorMessage.slice(0, 200)}`
+    : reason;
   await prisma.tweet.updateMany({
     where: {
       id: {
@@ -442,11 +450,12 @@ async function abandonTweetBatch(
     },
     data: {
       abandonedAt: now,
-      abandonReason: reason
+      abandonReason: detail
     }
   });
   logger.warn('Marked tweets as abandoned after AI failure', {
     reason,
+    lastErrorMessage: lastErrorMessage?.slice(0, 300),
     tweetIds: tweets.map((tweet) => tweet.tweetId),
     ...(context ?? {})
   });
@@ -629,6 +638,9 @@ async function runLlmClassificationBatches(
 
   try {
     let totalInsights = autoInsights;
+    // Tweets from content-risk batches get reshuffled and retried once
+    const contentRiskRetryPool: Tweet[] = [];
+
     logger.info('Tweet classification run started', {
       aiRunId: aiRun.id,
       batches: batches.length,
@@ -637,40 +649,7 @@ async function runLlmClassificationBatches(
       ...context
     });
 
-    await runWithConcurrency(batches, CLASSIFY_CONCURRENCY, async (batch, batchIndex) => {
-      logger.info('Submitting batch for AI classification', {
-        aiRunId: aiRun.id,
-        batchIndex: batchIndex + 1,
-        batchSize: batch.tweets.length,
-        tag: batch.tag ?? null
-      });
-      let batchInsights: TweetInsightPayload[] = [];
-      try {
-        batchInsights = await runTweetBatchWithRetry(batch.tweets, batchIndex, batch.tag);
-        logger.info('AI classification batch completed', {
-          aiRunId: aiRun.id,
-          batchIndex: batchIndex + 1,
-          insights: batchInsights.length,
-          tag: batch.tag ?? null
-        });
-      } catch (error) {
-        if (error instanceof TweetBatchFailedError) {
-          logger.error('AI classification batch abandoned', {
-            aiRunId: aiRun.id,
-            batchIndex: batchIndex + 1,
-            reason: error.reason,
-            attempts: error.attempts,
-            lastError: error.lastErrorMessage,
-            tag: batch.tag ?? null
-          });
-          await abandonTweetBatch(batch.tweets, error.reason, {
-            aiRunId: aiRun.id,
-            batchIndex: batchIndex + 1
-          });
-          return;
-        }
-        throw error;
-      }
+    async function persistBatchInsights(batchInsights: TweetInsightPayload[]) {
       for (const insight of batchInsights) {
         const targetTweet = tweetMap.get(insight.tweetId);
         if (!targetTweet) continue;
@@ -704,7 +683,104 @@ async function runLlmClassificationBatches(
         });
         totalInsights += 1;
       }
+    }
+
+    // ── Pass 1: run all batches ──
+    await runWithConcurrency(batches, CLASSIFY_CONCURRENCY, async (batch, batchIndex) => {
+      if (CLASSIFY_BATCH_THROTTLE_MS > 0 && batchIndex > 0) {
+        await delay(CLASSIFY_BATCH_THROTTLE_MS);
+      }
+      logger.info('Submitting batch for AI classification', {
+        aiRunId: aiRun.id,
+        batchIndex: batchIndex + 1,
+        batchSize: batch.tweets.length,
+        tag: batch.tag ?? null
+      });
+      try {
+        const batchInsights = await runTweetBatchWithRetry(batch.tweets, batchIndex, batch.tag);
+        logger.info('AI classification batch completed', {
+          aiRunId: aiRun.id,
+          batchIndex: batchIndex + 1,
+          insights: batchInsights.length,
+          tag: batch.tag ?? null
+        });
+        await persistBatchInsights(batchInsights);
+      } catch (error) {
+        if (error instanceof TweetBatchFailedError) {
+          if (error.reason === 'content-risk') {
+            // Don't abandon yet — collect for reshuffled retry
+            contentRiskRetryPool.push(...batch.tweets);
+            logger.warn('Content-risk batch queued for reshuffle retry', {
+              aiRunId: aiRun.id,
+              batchIndex: batchIndex + 1,
+              tweets: batch.tweets.length
+            });
+          } else {
+            logger.error('AI classification batch abandoned', {
+              aiRunId: aiRun.id,
+              batchIndex: batchIndex + 1,
+              reason: error.reason,
+              attempts: error.attempts,
+              lastError: error.lastErrorMessage,
+              tag: batch.tag ?? null
+            });
+            await abandonTweetBatch(batch.tweets, error.reason, {
+              aiRunId: aiRun.id,
+              batchIndex: batchIndex + 1
+            }, error.lastErrorMessage);
+          }
+          return;
+        }
+        throw error;
+      }
     });
+
+    // ── Pass 2: reshuffle content-risk tweets into new batches and retry once ──
+    if (contentRiskRetryPool.length > 0) {
+      // Shuffle to break up problematic combinations
+      for (let i = contentRiskRetryPool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = contentRiskRetryPool[i]!;
+        contentRiskRetryPool[i] = contentRiskRetryPool[j]!;
+        contentRiskRetryPool[j] = tmp;
+      }
+      const retryBatches: Tweet[][] = chunk(contentRiskRetryPool, CLASSIFY_BATCH_SIZE);
+      logger.info('Retrying content-risk tweets with reshuffled batches', {
+        aiRunId: aiRun.id,
+        tweets: contentRiskRetryPool.length,
+        batches: retryBatches.length
+      });
+
+      for (let i = 0; i < retryBatches.length; i++) {
+        const retryBatch = retryBatches[i]!;
+        if (CLASSIFY_BATCH_THROTTLE_MS > 0) {
+          await delay(CLASSIFY_BATCH_THROTTLE_MS);
+        }
+        try {
+          const insights = await runTweetBatch(retryBatch);
+          await persistBatchInsights(insights);
+          logger.info('Reshuffled retry batch completed', {
+            aiRunId: aiRun.id,
+            retryBatch: i + 1,
+            insights: insights.length
+          });
+        } catch (error) {
+          const failure = classifyBatchError(error);
+          logger.warn('Reshuffled retry batch failed, abandoning', {
+            aiRunId: aiRun.id,
+            retryBatch: i + 1,
+            reason: failure.reason,
+            error: failure.message,
+            tweets: retryBatch.length
+          });
+          await abandonTweetBatch(retryBatch, failure.reason, {
+            aiRunId: aiRun.id,
+            retryBatch: i + 1,
+            reshuffleRetry: true
+          }, failure.message);
+        }
+      }
+    }
 
     await prisma.aiRun.update({
       where: { id: aiRun.id },
@@ -715,6 +791,7 @@ async function runLlmClassificationBatches(
       processed: targetTweets.length + autoInsights,
       insights: totalInsights,
       autoIgnored: autoInsights,
+      contentRiskRetried: contentRiskRetryPool.length,
       ...context
     });
     return { processed: targetTweets.length + autoInsights, insights: totalInsights };
@@ -753,6 +830,14 @@ async function runTweetBatch(batch: Tweet[], tag?: string): Promise<TweetInsight
   return normalizeBatchInsights(parsed.items ?? [], batch);
 }
 
+async function retryDelayMs(attempt: number, reason?: TweetBatchFailureReason) {
+  // Exponential backoff with jitter; longer wait for rate-limit
+  const base = reason === 'rate-limit' ? 8000 : CLASSIFY_RETRY_DELAY_MS;
+  const exponential = base * Math.pow(2, attempt - 1);
+  const jitter = Math.random() * exponential * 0.3;
+  return Math.min(exponential + jitter, 60_000); // cap at 60s
+}
+
 async function runTweetBatchWithRetry(batch: Tweet[], batchIndex: number, tag?: string) {
   let attempt = 0;
   let lastFailure: { reason: TweetBatchFailureReason; message: string } | null = null;
@@ -770,12 +855,14 @@ async function runTweetBatchWithRetry(batch: Tweet[], batchIndex: number, tag?: 
         error: failure.message,
         tag: tag ?? null
       };
+
       if (!failure.retryable || attempt >= CLASSIFY_MAX_RETRIES) {
         logger.error('AI classification batch failed', payload);
         break;
       }
       logger.warn('AI classification batch failed, retrying', payload);
-      await delay(CLASSIFY_RETRY_DELAY_MS * attempt);
+      const waitMs = await retryDelayMs(attempt, failure.reason);
+      await delay(waitMs);
     }
   }
   const meta: TweetBatchFailureMeta = {
@@ -795,8 +882,21 @@ function classifyBatchError(error: unknown): {
   retryable: boolean;
 } {
   const message = getErrorMessage(error);
+  const lower = message.toLowerCase();
   if (isContentRiskMessage(message)) {
     return { reason: 'content-risk', message, retryable: false };
+  }
+  if (lower.includes('access denied') || lower.includes('unauthorized') || lower.includes('overdue')) {
+    return { reason: 'auth-error', message, retryable: false };
+  }
+  if (lower.includes('rate limit') || lower.includes('too many requests') || lower.includes('429')) {
+    return { reason: 'rate-limit', message, retryable: true };
+  }
+  if (lower.includes('timed out') || lower.includes('timeout') || lower.includes('etimedout')) {
+    return { reason: 'timeout', message, retryable: true };
+  }
+  if (lower.includes('bad gateway') || lower.includes('502') || lower.includes('503') || lower.includes('service unavailable')) {
+    return { reason: 'bad-gateway', message, retryable: true };
   }
   return { reason: 'max-retries', message, retryable: true };
 }

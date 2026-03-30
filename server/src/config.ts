@@ -41,6 +41,7 @@ const envSchema = z.object({
   CLASSIFY_TAG_MIN_TWEETS: z.coerce.number().default(10),
   CLASSIFY_TAG_MAX_WAIT_HOURS: z.coerce.number().default(2),
   CLASSIFY_CONCURRENCY: z.coerce.number().default(6),
+  CLASSIFY_BATCH_THROTTLE_MS: z.coerce.number().default(2000),
   REPORT_TIMEZONE: z.string().default('Asia/Shanghai'),
   BASE_WEB_URL: z.string().default('http://localhost:5173'),
   AI_LOCK_TTL_MS: z.coerce.number().default(60 * 60 * 1000),

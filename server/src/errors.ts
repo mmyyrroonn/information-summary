@@ -5,7 +5,14 @@ export class AiLockUnavailableError extends Error {
   }
 }
 
-export type TweetBatchFailureReason = 'content-risk' | 'max-retries' | 'unknown';
+export type TweetBatchFailureReason =
+  | 'content-risk'
+  | 'rate-limit'
+  | 'timeout'
+  | 'bad-gateway'
+  | 'auth-error'
+  | 'max-retries'
+  | 'unknown';
 
 export interface TweetBatchFailureMeta {
   reason: TweetBatchFailureReason;
