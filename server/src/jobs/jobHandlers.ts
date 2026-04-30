@@ -3,6 +3,7 @@ import { logger } from '../logger';
 import { config } from '../config';
 import { prisma } from '../db';
 import { fetchAllSubscriptions } from '../services/ingestService';
+import { fetchSourceList } from '../services/sourceListService';
 import {
   classifyTweets,
   classifyTweetsByIdsWithTag,
@@ -20,6 +21,10 @@ import { withAiProcessingLock } from '../services/lockService';
 import { enqueueJob, JobPayloadMap, QueuedJob } from './jobQueue';
 
 export async function handleFetchSubscriptionsJob(job: QueuedJob<'fetch-subscriptions'>) {
+  if (!config.LEGACY_FETCH_ENABLED && job.payload?.force !== true) {
+    logger.warn('Legacy fetch job skipped because LEGACY_FETCH_ENABLED=false', { jobId: job.id });
+    return;
+  }
   const payload = (job.payload ?? {}) as JobPayloadMap['fetch-subscriptions'];
   const batchSize = Math.max(1, payload.limit ?? config.FETCH_BATCH_SIZE);
   const startedAt = Date.now();
@@ -46,7 +51,34 @@ export async function handleFetchSubscriptionsJob(job: QueuedJob<'fetch-subscrip
   });
 }
 
+export async function handleSourceListFetchJob(job: QueuedJob<'source-list-fetch'>) {
+  const payload = (job.payload ?? {}) as JobPayloadMap['source-list-fetch'];
+  const startedAt = Date.now();
+  logger.info('Running source list fetch job', {
+    sourceListId: payload.sourceListId,
+    trigger: payload.trigger ?? 'queue',
+    limit: payload.limit ?? null,
+    force: payload.force ?? false,
+    startedAt: new Date(startedAt).toISOString()
+  });
+  const result = await fetchSourceList(payload.sourceListId, {
+    ...(typeof payload.limit === 'number' ? { limit: payload.limit } : {}),
+    ...(typeof payload.force === 'boolean' ? { force: payload.force } : {})
+  });
+  const completedAt = Date.now();
+  logger.info('Source list fetch job completed', {
+    sourceListId: payload.sourceListId,
+    completedAt: new Date(completedAt).toISOString(),
+    durationMs: completedAt - startedAt,
+    ...result
+  });
+}
+
 export async function handleClassifyTweetsJob(job: QueuedJob<'classify-tweets'>) {
+  if (!config.LEGACY_CLASSIFY_ENABLED && job.payload?.force !== true) {
+    logger.warn('Legacy classification job skipped because LEGACY_CLASSIFY_ENABLED=false', { jobId: job.id });
+    return;
+  }
   const payload = (job.payload ?? {}) as JobPayloadMap['classify-tweets'];
   const startedAt = Date.now();
   logger.info('Starting classification job', {
@@ -79,6 +111,10 @@ export async function handleClassifyTweetsJob(job: QueuedJob<'classify-tweets'>)
 }
 
 export async function handleClassifyTweetsDispatchJob(job: QueuedJob<'classify-tweets-dispatch'>) {
+  if (!config.LEGACY_CLASSIFY_ENABLED && job.payload?.source !== 'manual') {
+    logger.warn('Legacy classification dispatch skipped because LEGACY_CLASSIFY_ENABLED=false', { jobId: job.id });
+    return;
+  }
   const payload = (job.payload ?? {}) as JobPayloadMap['classify-tweets-dispatch'];
   const startedAt = Date.now();
   logger.info('Starting classification dispatch job', {
@@ -350,6 +386,9 @@ export async function handleJob(job: QueuedJob) {
   switch (job.type) {
     case 'fetch-subscriptions':
       await handleFetchSubscriptionsJob(job as QueuedJob<'fetch-subscriptions'>);
+      break;
+    case 'source-list-fetch':
+      await handleSourceListFetchJob(job as QueuedJob<'source-list-fetch'>);
       break;
     case 'classify-tweets':
       await handleClassifyTweetsJob(job as QueuedJob<'classify-tweets'>);

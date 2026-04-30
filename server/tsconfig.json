@@ -45,5 +45,5 @@
     "resolveJsonModule": true,
     "moduleResolution": "node"
   },
-  "exclude": ["scripts/prompt-opt"]
+  "exclude": ["dist", "scripts/prompt-opt"]
 }

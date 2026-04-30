@@ -71,6 +71,7 @@ export interface RoutingTagListResponse {
 export type RoutingCategory = 'embedding-high' | 'embedding-low' | 'llm' | 'ignored-other' | 'pending';
 
 export type SubscriptionStatus = 'SUBSCRIBED' | 'UNSUBSCRIBED';
+export type SourcePlatform = 'TWITTER' | 'YOUTUBE' | 'BILIBILI' | 'WECHAT';
 
 export interface Subscription {
   id: string;
@@ -144,6 +145,40 @@ export interface FetchResult {
   reason?: string;
 }
 
+export interface Source {
+  id: string;
+  listId: string;
+  platform: SourcePlatform;
+  identifier: string;
+  displayName?: string | null;
+  url?: string | null;
+  tags: string[];
+  enabled: boolean;
+  lastFetchedAt?: string | null;
+  lastError?: string | null;
+  lastErrorAt?: string | null;
+  subscriptionId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SourceList {
+  id: string;
+  name: string;
+  description?: string | null;
+  enabled: boolean;
+  scheduleCron: string;
+  batchSize: number;
+  sourceCooldownHours: number;
+  createdAt: string;
+  updatedAt: string;
+  sources?: Source[];
+  _count?: {
+    sources: number;
+    reportProfiles: number;
+  };
+}
+
 export interface NotificationConfig {
   tgBotToken: string | null;
   tgChatId: string | null;
@@ -212,7 +247,7 @@ export interface SocialImagePromptResult {
   periodEnd: string;
 }
 
-export type ReportProfileGroupBy = 'cluster' | 'tag' | 'author';
+export type ReportProfileGroupBy = 'cluster' | 'tag' | 'domain' | 'platform' | 'source' | 'author';
 
 export interface ReportProfile {
   id: string;
@@ -232,6 +267,7 @@ export interface ReportProfile {
   aiFilterEnabled: boolean;
   aiFilterPrompt?: string | null;
   aiFilterMaxKeepPerChunk?: number | null;
+  sourceListId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

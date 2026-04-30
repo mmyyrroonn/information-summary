@@ -41,6 +41,13 @@ enum SubscriptionStatus {
   UNSUBSCRIBED
 }
 
+enum SourcePlatform {
+  TWITTER
+  YOUTUBE
+  BILIBILI
+  WECHAT
+}
+
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
@@ -71,9 +78,51 @@ model Subscription {
   user          User?    @relation(fields: [userId], references: [id])
   
   tweets        Tweet[]
+  sources       Source[]
 
   @@index([status, lastFetchedAt])
   @@index([userId])
+}
+
+model SourceList {
+  id                  String   @id @default(uuid())
+  name                String
+  description         String?
+  enabled             Boolean  @default(true)
+  scheduleCron        String   @default("*/15 * * * *")
+  batchSize           Int      @default(20)
+  sourceCooldownHours Int      @default(6)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  sources        Source[]
+  reportProfiles ReportProfile[]
+
+  @@index([enabled, scheduleCron])
+}
+
+model Source {
+  id             String         @id @default(uuid())
+  list           SourceList     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listId         String
+  platform       SourcePlatform
+  identifier     String
+  displayName    String?
+  url            String?
+  tags           String[]       @default([])
+  enabled        Boolean        @default(true)
+  lastFetchedAt  DateTime?
+  lastError      String?
+  lastErrorAt    DateTime?
+  subscription   Subscription?  @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  subscriptionId String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([listId, platform, identifier])
+  @@index([listId, enabled, lastFetchedAt])
+  @@index([platform, identifier])
+  @@index([subscriptionId])
 }
 
 model Tweet {
@@ -225,11 +274,14 @@ model ReportProfile {
   aiFilterEnabled        Boolean  @default(true)
   aiFilterPrompt         String?
   aiFilterMaxKeepPerChunk Int?
+  sourceList             SourceList? @relation(fields: [sourceListId], references: [id], onDelete: SetNull)
+  sourceListId           String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
   reports                Report[]
 
   @@index([enabled, scheduleCron])
+  @@index([sourceListId])
 }
 
 model NotificationConfig {

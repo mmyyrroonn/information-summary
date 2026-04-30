@@ -9,6 +9,8 @@ import type {
   ReportPublishResult,
   ReportProfile,
   ReportProfileGroupBy,
+  SourceList,
+  SourcePlatform,
   FetchResult,
   TweetListResponse,
   SubscriptionImportResult,
@@ -68,6 +70,17 @@ async function safeError(response: Response) {
 
 interface ApiClient {
   listSubscriptions: () => Promise<Subscription[]>;
+  listSourceLists: () => Promise<SourceList[]>;
+  createSourceList: (payload: SourceListCreatePayload) => Promise<SourceList>;
+  addSourceToList: (
+    listId: string,
+    payload: { platform: SourcePlatform; identifier: string; displayName?: string; tags?: string[]; enabled?: boolean }
+  ) => Promise<unknown>;
+  importSubscriptionsToSourceList: (
+    listId: string,
+    payload: { subscriptionIds?: string[]; screenNames?: string[]; tags?: string[]; pauseUnlisted?: boolean; dryRun?: boolean }
+  ) => Promise<unknown>;
+  runSourceListFetch: (listId: string, payload?: { limit?: number; force?: boolean; dedupe?: boolean }) => Promise<JobEnqueueResponse>;
   createSubscription: (payload: { screenName: string; displayName?: string }) => Promise<Subscription>;
   deleteSubscription: (id: string) => Promise<void>;
   updateSubscriptionStatus: (id: string, status: SubscriptionStatus) => Promise<Subscription>;
@@ -177,13 +190,30 @@ type ReportProfileBasePayload = {
   aiFilterEnabled?: boolean;
   aiFilterPrompt?: string | null;
   aiFilterMaxKeepPerChunk?: number | null;
+  sourceListId?: string | null;
 };
 
 type ReportProfileCreatePayload = ReportProfileBasePayload;
 type ReportProfileUpdatePayload = Partial<ReportProfileBasePayload>;
+type SourceListCreatePayload = {
+  name: string;
+  description?: string | null;
+  enabled?: boolean;
+  scheduleCron?: string;
+  batchSize?: number;
+  sourceCooldownHours?: number;
+};
 
 export const api: ApiClient = {
   listSubscriptions: () => request<Subscription[]>('/subscriptions'),
+  listSourceLists: () => request<SourceList[]>('/source-lists'),
+  createSourceList: (payload) => request<SourceList>('/source-lists', { method: 'POST', body: JSON.stringify(payload) }),
+  addSourceToList: (listId, payload) =>
+    request(`/source-lists/${listId}/sources`, { method: 'POST', body: JSON.stringify(payload) }),
+  importSubscriptionsToSourceList: (listId, payload) =>
+    request(`/source-lists/${listId}/import/subscriptions`, { method: 'POST', body: JSON.stringify(payload) }),
+  runSourceListFetch: (listId, payload = {}) =>
+    request<JobEnqueueResponse>(`/source-lists/${listId}/fetch`, { method: 'POST', body: JSON.stringify(payload) }),
   createSubscription: (payload) => request<Subscription>('/subscriptions', { method: 'POST', body: JSON.stringify(payload) }),
   deleteSubscription: (id) => request<null>(`/subscriptions/${id}`, { method: 'DELETE' }).then(() => undefined),
   updateSubscriptionStatus: (id, status) =>

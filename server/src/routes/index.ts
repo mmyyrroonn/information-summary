@@ -8,6 +8,7 @@ import devRouter from './tasksDev';
 import reportProfilesRouter from './reportProfiles';
 import tagsRouter from './tags';
 import authRouter from './auth';
+import sourceListsRouter from './sourceLists';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use('/subscriptions', subscriptionsRouter);
 router.use('/tasks', tasksRouter);
 router.use('/reports', reportsRouter);
 router.use('/report-profiles', reportProfilesRouter);
+router.use('/source-lists', sourceListsRouter);
 router.use('/config', configRouter);
 router.use('/tweets', tweetsRouter);
 router.use('/dev', devRouter);

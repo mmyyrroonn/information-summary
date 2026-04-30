@@ -4,6 +4,7 @@ import { logger } from '../logger';
 
 export type BackgroundJobType =
   | 'fetch-subscriptions'
+  | 'source-list-fetch'
   | 'classify-tweets'
   | 'classify-tweets-dispatch'
   | 'classify-tweets-llm'
@@ -17,6 +18,12 @@ export interface JobPayloadMap {
   'fetch-subscriptions': {
     limit?: number;
     force?: boolean;
+  };
+  'source-list-fetch': {
+    sourceListId: string;
+    limit?: number;
+    force?: boolean;
+    trigger?: string;
   };
   'classify-tweets': {
     source?: string;

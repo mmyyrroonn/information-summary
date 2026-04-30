@@ -16,6 +16,7 @@ router.use(adminOnly);
 const jobTypeSchema = z.enum(
   [
     'fetch-subscriptions',
+    'source-list-fetch',
     'classify-tweets',
     'classify-tweets-dispatch',
     'classify-tweets-llm',

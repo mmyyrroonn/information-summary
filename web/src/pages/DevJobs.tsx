@@ -6,6 +6,7 @@ import type {
   JobEnqueueResponse,
   ReportProfile,
   ReportProfileGroupBy,
+  SourceList,
   TagOption,
   TagOptionsResponse
 } from '../types';
@@ -13,6 +14,7 @@ import type {
 const typeOptions = [
   { value: '', label: '全部类型' },
   { value: 'fetch-subscriptions', label: '抓取推文' },
+  { value: 'source-list-fetch', label: 'SourceList 抓取' },
   { value: 'classify-tweets', label: '规则筛选' },
   { value: 'classify-tweets-dispatch', label: '特征提取分类' },
   { value: 'classify-tweets-llm', label: 'LLM 评估' },
@@ -37,6 +39,9 @@ const PROFILE_DEFAULT_CRON = '0 9 * * *';
 const groupByOptions: { value: ReportProfileGroupBy; label: string }[] = [
   { value: 'cluster', label: '聚类' },
   { value: 'tag', label: '标签' },
+  { value: 'domain', label: '领域' },
+  { value: 'platform', label: '平台' },
+  { value: 'source', label: '来源' },
   { value: 'author', label: '作者' }
 ];
 
@@ -63,6 +68,7 @@ type ProfileDraft = {
   aiFilterEnabled: boolean;
   aiFilterPrompt: string;
   aiFilterMaxKeepPerChunk: string;
+  sourceListId: string;
 };
 
 type ProfileRunOptions = {
@@ -71,6 +77,19 @@ type ProfileRunOptions = {
 };
 
 type WorkflowTask = 'fetch' | 'analyze';
+
+type SourceListDraft = {
+  name: string;
+  scheduleCron: string;
+  batchSize: string;
+  sourceCooldownHours: string;
+};
+
+type SourceListImportDraft = {
+  screenNames: string;
+  tags: string;
+  pauseUnlisted: boolean;
+};
 
 type WorkflowJobState = {
   job?: BackgroundJobSummary;
@@ -97,7 +116,8 @@ function createEmptyDraft(): ProfileDraft {
     verdicts: [],
     aiFilterEnabled: true,
     aiFilterPrompt: '',
-    aiFilterMaxKeepPerChunk: ''
+    aiFilterMaxKeepPerChunk: '',
+    sourceListId: ''
   };
 }
 
@@ -202,7 +222,8 @@ function buildProfilePayload(draft: ProfileDraft) {
     verdicts: draft.verdicts,
     aiFilterEnabled: draft.aiFilterEnabled,
     aiFilterPrompt: draft.aiFilterPrompt.trim() ? draft.aiFilterPrompt.trim() : null,
-    ...(Number.isFinite(maxKeep) && maxKeep > 0 ? { aiFilterMaxKeepPerChunk: maxKeep } : {})
+    ...(Number.isFinite(maxKeep) && maxKeep > 0 ? { aiFilterMaxKeepPerChunk: maxKeep } : {}),
+    sourceListId: draft.sourceListId || null
   };
 }
 
@@ -222,12 +243,30 @@ function profileToDraft(profile: ReportProfile): ProfileDraft {
     verdicts: profile.verdicts ?? [],
     aiFilterEnabled: profile.aiFilterEnabled,
     aiFilterPrompt: profile.aiFilterPrompt ?? '',
-    aiFilterMaxKeepPerChunk: profile.aiFilterMaxKeepPerChunk ? String(profile.aiFilterMaxKeepPerChunk) : ''
+    aiFilterMaxKeepPerChunk: profile.aiFilterMaxKeepPerChunk ? String(profile.aiFilterMaxKeepPerChunk) : '',
+    sourceListId: profile.sourceListId ?? ''
   };
 }
 
 function toggleVerdict(list: string[], value: string) {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+}
+
+function createEmptySourceListDraft(): SourceListDraft {
+  return {
+    name: '',
+    scheduleCron: '*/15 * * * *',
+    batchSize: '20',
+    sourceCooldownHours: '6'
+  };
+}
+
+function createEmptySourceListImportDraft(): SourceListImportDraft {
+  return {
+    screenNames: '',
+    tags: '',
+    pauseUnlisted: false
+  };
 }
 
 export function DevJobsPage() {
@@ -243,6 +282,11 @@ export function DevJobsPage() {
   const [testMessage, setTestMessage] = useState('');
   const [testing, setTesting] = useState(false);
   const [profiles, setProfiles] = useState<ReportProfile[]>([]);
+  const [sourceLists, setSourceLists] = useState<SourceList[]>([]);
+  const [sourceListDraft, setSourceListDraft] = useState<SourceListDraft>(() => createEmptySourceListDraft());
+  const [sourceListImportDrafts, setSourceListImportDrafts] = useState<Record<string, SourceListImportDraft>>({});
+  const [sourceListMessage, setSourceListMessage] = useState<string | null>(null);
+  const [sourceListBusy, setSourceListBusy] = useState<string | null>(null);
   const [profilesLoading, setProfilesLoading] = useState(false);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [tagOptions, setTagOptions] = useState<TagOptionsResponse>({ tweetTags: [], authorTags: [] });
@@ -269,6 +313,10 @@ export function DevJobsPage() {
 
   useEffect(() => {
     void refreshProfiles();
+  }, []);
+
+  useEffect(() => {
+    void refreshSourceLists();
   }, []);
 
   useEffect(() => {
@@ -498,6 +546,95 @@ export function DevJobsPage() {
     }
   }
 
+  async function refreshSourceLists() {
+    try {
+      setSourceListMessage(null);
+      const response = await api.listSourceLists();
+      setSourceLists(response);
+    } catch (error) {
+      setSourceListMessage(error instanceof Error ? error.message : '加载 SourceList 失败');
+    }
+  }
+
+  function getImportDraft(listId: string) {
+    return sourceListImportDrafts[listId] ?? createEmptySourceListImportDraft();
+  }
+
+  function updateImportDraft(listId: string, patch: Partial<SourceListImportDraft>) {
+    setSourceListImportDrafts((prev) => ({
+      ...prev,
+      [listId]: { ...getImportDraft(listId), ...patch }
+    }));
+  }
+
+  async function handleCreateSourceList() {
+    const batchSize = Number(sourceListDraft.batchSize);
+    const sourceCooldownHours = Number(sourceListDraft.sourceCooldownHours);
+    if (!sourceListDraft.name.trim()) {
+      setSourceListMessage('请填写 SourceList 名称');
+      return;
+    }
+    try {
+      setSourceListBusy('create');
+      setSourceListMessage(null);
+      await api.createSourceList({
+        name: sourceListDraft.name.trim(),
+        scheduleCron: sourceListDraft.scheduleCron.trim(),
+        batchSize: Number.isFinite(batchSize) && batchSize > 0 ? batchSize : 20,
+        sourceCooldownHours: Number.isFinite(sourceCooldownHours) && sourceCooldownHours >= 0 ? sourceCooldownHours : 6
+      });
+      setSourceListDraft(createEmptySourceListDraft());
+      setSourceListMessage('SourceList 已创建');
+      await refreshSourceLists();
+    } catch (error) {
+      setSourceListMessage(error instanceof Error ? error.message : '创建 SourceList 失败');
+    } finally {
+      setSourceListBusy(null);
+    }
+  }
+
+  async function handleImportSourceList(list: SourceList) {
+    const draft = getImportDraft(list.id);
+    const screenNames = parseList(draft.screenNames);
+    const tags = parseList(draft.tags);
+    if (!screenNames.length && !tags.length) {
+      setSourceListMessage('请填写 screenName 或订阅标签');
+      return;
+    }
+    try {
+      setSourceListBusy(`import:${list.id}`);
+      setSourceListMessage(null);
+      const result = await api.importSubscriptionsToSourceList(list.id, {
+        screenNames,
+        tags,
+        pauseUnlisted: draft.pauseUnlisted
+      });
+      const summary = result as { imported?: number; matched?: number; paused?: number };
+      setSourceListMessage(
+        `导入完成：匹配 ${summary.matched ?? 0}，加入 ${summary.imported ?? 0}，暂停 ${summary.paused ?? 0}`
+      );
+      await refreshSourceLists();
+    } catch (error) {
+      setSourceListMessage(error instanceof Error ? error.message : '导入 SourceList 失败');
+    } finally {
+      setSourceListBusy(null);
+    }
+  }
+
+  async function handleRunSourceListFetch(list: SourceList) {
+    try {
+      setSourceListBusy(`fetch:${list.id}`);
+      setSourceListMessage(null);
+      const result = await api.runSourceListFetch(list.id, { dedupe: true });
+      setSourceListMessage(`SourceList 抓取已入队（${shortJobId(result.job.id)}）`);
+      await refreshJobs();
+    } catch (error) {
+      setSourceListMessage(error instanceof Error ? error.message : '触发 SourceList 抓取失败');
+    } finally {
+      setSourceListBusy(null);
+    }
+  }
+
   async function refreshTagOptions() {
     try {
       setTagOptionsLoading(true);
@@ -652,6 +789,129 @@ export function DevJobsPage() {
   return (
     <section>
       <div className="section-head">
+        <h2>DEV · SourceList 管理</h2>
+        <button type="button" onClick={refreshSourceLists}>
+          刷新
+        </button>
+      </div>
+      {sourceListMessage && <p className="status">{sourceListMessage}</p>}
+      <div className="dev-profiles">
+        <div className="profile-card">
+          <div className="profile-row-head">
+            <div>
+              <h3>新建 SourceList</h3>
+              <p className="hint">默认 15 分钟扫描，单源 6 小时冷却。</p>
+            </div>
+          </div>
+          <div className="profile-form">
+            <label>
+              名称
+              <input
+                value={sourceListDraft.name}
+                onChange={(e) => setSourceListDraft((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="例如：高频白名单"
+              />
+            </label>
+            <label>
+              Cron 表达式
+              <input
+                value={sourceListDraft.scheduleCron}
+                onChange={(e) => setSourceListDraft((prev) => ({ ...prev, scheduleCron: e.target.value }))}
+              />
+            </label>
+            <label>
+              每批源数量
+              <input
+                type="number"
+                value={sourceListDraft.batchSize}
+                onChange={(e) => setSourceListDraft((prev) => ({ ...prev, batchSize: e.target.value }))}
+              />
+            </label>
+            <label>
+              单源冷却小时
+              <input
+                type="number"
+                value={sourceListDraft.sourceCooldownHours}
+                onChange={(e) => setSourceListDraft((prev) => ({ ...prev, sourceCooldownHours: e.target.value }))}
+              />
+            </label>
+          </div>
+          <div className="profile-actions">
+            <button type="button" onClick={handleCreateSourceList} disabled={sourceListBusy === 'create'}>
+              {sourceListBusy === 'create' ? '创建中...' : '创建 SourceList'}
+            </button>
+          </div>
+        </div>
+
+        <div className="profile-list">
+          {sourceLists.length === 0 && <p className="empty">暂无 SourceList</p>}
+          {sourceLists.map((list) => {
+            const importDraft = getImportDraft(list.id);
+            return (
+              <div className="profile-row" key={list.id}>
+                <div className="profile-row-head">
+                  <div>
+                    <h3>{list.name}</h3>
+                    <p className="hint">
+                      {list.enabled ? '启用中' : '已停用'} · {list.scheduleCron} · 每批 {list.batchSize} · 冷却{' '}
+                      {list.sourceCooldownHours}h · 来源 {list._count?.sources ?? list.sources?.length ?? 0}
+                    </p>
+                  </div>
+                  <div className="profile-actions">
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => handleRunSourceListFetch(list)}
+                      disabled={sourceListBusy === `fetch:${list.id}`}
+                    >
+                      {sourceListBusy === `fetch:${list.id}` ? '入队中...' : '立即抓取'}
+                    </button>
+                  </div>
+                </div>
+                <div className="profile-form">
+                  <label>
+                    screenName
+                    <input
+                      value={importDraft.screenNames}
+                      onChange={(e) => updateImportDraft(list.id, { screenNames: e.target.value })}
+                      placeholder="@openai, @sama"
+                    />
+                  </label>
+                  <label>
+                    订阅标签
+                    <input
+                      value={importDraft.tags}
+                      onChange={(e) => updateImportDraft(list.id, { tags: e.target.value })}
+                      placeholder="ai, macro"
+                    />
+                  </label>
+                  <label className="notify-toggle">
+                    <input
+                      type="checkbox"
+                      checked={importDraft.pauseUnlisted}
+                      onChange={(e) => updateImportDraft(list.id, { pauseUnlisted: e.target.checked })}
+                    />
+                    暂停未加入白名单的 Twitter 订阅
+                  </label>
+                  <div className="profile-actions">
+                    <button
+                      type="button"
+                      onClick={() => handleImportSourceList(list)}
+                      disabled={sourceListBusy === `import:${list.id}`}
+                    >
+                      {sourceListBusy === `import:${list.id}` ? '导入中...' : '从订阅导入'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="dev-divider" />
+
+      <div className="section-head">
         <h2>DEV · Profile 管理</h2>
         <button type="button" onClick={refreshProfiles} disabled={profilesLoading}>
           {profilesLoading ? '刷新中...' : '刷新'}
@@ -718,6 +978,20 @@ export function DevJobsPage() {
                 {groupByOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              SourceList
+              <select
+                value={createDraft.sourceListId}
+                onChange={(e) => setCreateDraft((prev) => ({ ...prev, sourceListId: e.target.value }))}
+              >
+                <option value="">全部来源</option>
+                {sourceLists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
                   </option>
                 ))}
               </select>
@@ -853,6 +1127,12 @@ export function DevJobsPage() {
                 </div>
                 <div className="profile-meta">
                   <span>分组：{groupByOptions.find((item) => item.value === profile.groupBy)?.label ?? profile.groupBy}</span>
+                  <span>
+                    SourceList：
+                    {profile.sourceListId
+                      ? sourceLists.find((list) => list.id === profile.sourceListId)?.name ?? profile.sourceListId
+                      : '全部来源'}
+                  </span>
                   <span>最低重要度：{profile.minImportance}</span>
                   <span>推文标签（包含）：{formatList(profile.includeTweetTags) || '不限'}</span>
                   <span>推文标签（排除）：{formatList(profile.excludeTweetTags) || '无'}</span>
@@ -931,6 +1211,20 @@ export function DevJobsPage() {
                           {groupByOptions.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        SourceList
+                        <select
+                          value={editDraft.sourceListId}
+                          onChange={(e) => setEditDraft((prev) => ({ ...prev, sourceListId: e.target.value }))}
+                        >
+                          <option value="">全部来源</option>
+                          {sourceLists.map((list) => (
+                            <option key={list.id} value={list.id}>
+                              {list.name}
                             </option>
                           ))}
                         </select>

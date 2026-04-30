@@ -23,7 +23,7 @@ router.use(authMiddleware);
 router.use(adminOnly);
 
 const verdictSchema = z.enum(['ignore', 'watch', 'actionable']);
-const groupBySchema = z.enum(['cluster', 'tag', 'author']);
+const groupBySchema = z.enum(['cluster', 'tag', 'domain', 'platform', 'source', 'author']);
 const cronSchema = z.string().min(1).refine((value) => cron.validate(value), { message: 'Invalid cron expression' });
 
 function normalizeStringList(input?: string[]) {
@@ -69,7 +69,8 @@ const profileCreateSchema = z.object({
   groupBy: groupBySchema.optional(),
   aiFilterEnabled: z.boolean().optional(),
   aiFilterPrompt: z.string().optional().nullable(),
-  aiFilterMaxKeepPerChunk: z.number().int().positive().optional()
+  aiFilterMaxKeepPerChunk: z.number().int().positive().optional(),
+  sourceListId: z.string().uuid().optional().nullable()
 });
 
 const profileUpdateSchema = profileCreateSchema.partial();
@@ -118,7 +119,7 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const body = profileCreateSchema.parse(req.body ?? {});
-    const profile = await createReportProfile({
+    const createData: Prisma.ReportProfileCreateInput = {
       name: body.name.trim(),
       enabled: body.enabled ?? true,
       scheduleCron: body.scheduleCron.trim(),
@@ -135,7 +136,11 @@ router.post('/', async (req, res, next) => {
       aiFilterEnabled: body.aiFilterEnabled ?? true,
       aiFilterPrompt: normalizePrompt(body.aiFilterPrompt),
       aiFilterMaxKeepPerChunk: body.aiFilterMaxKeepPerChunk ?? null
-    });
+    };
+    if (body.sourceListId) {
+      createData.sourceList = { connect: { id: body.sourceListId } };
+    }
+    const profile = await createReportProfile(createData);
     await refreshReportProfileSchedules();
     res.status(201).json(profile);
   } catch (error) {
@@ -195,6 +200,9 @@ router.put('/:id', async (req, res, next) => {
     }
     if (body.aiFilterMaxKeepPerChunk !== undefined) {
       data.aiFilterMaxKeepPerChunk = body.aiFilterMaxKeepPerChunk;
+    }
+    if (body.sourceListId !== undefined) {
+      data.sourceList = body.sourceListId ? { connect: { id: body.sourceListId } } : { disconnect: true };
     }
     const updated = await updateReportProfile(params.id, data);
     await refreshReportProfileSchedules();

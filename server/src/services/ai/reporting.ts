@@ -33,9 +33,11 @@ const SOCIAL_IMAGE_ITEM_MAX_LENGTH = 48;
 const SOCIAL_IMAGE_HIGHLIGHT_MAX_LENGTH = 28;
 const SOCIAL_IMAGE_TITLE_MAX_LENGTH = 24;
 
-type InsightWithTweet = Prisma.TweetInsightGetPayload<{ include: { tweet: { include: { subscription: true } } } }>;
+type InsightWithTweet = Prisma.TweetInsightGetPayload<{
+  include: { tweet: { include: { subscription: { include: { sources: true } } } } };
+}>;
 type InsightWithTweetEmbedding = Prisma.TweetInsightGetPayload<{
-  include: { tweet: { include: { subscription: true; embedding: true } } };
+  include: { tweet: { include: { subscription: { include: { sources: true } }; embedding: true } } };
 }>;
 type ClusterCandidateWithLang = ClusterCandidate & { lang?: string | null };
 
@@ -72,7 +74,7 @@ interface ReportPayload {
 
 type ReportSection = NonNullable<ReportPayload['sections']>[number];
 type ReportWindow = { start: Date; end: Date };
-type ReportGroupBy = 'cluster' | 'tag' | 'author';
+type ReportGroupBy = 'cluster' | 'tag' | 'domain' | 'platform' | 'source' | 'author';
 type SocialDigestItem = {
   summary: string;
   text?: string;
@@ -383,6 +385,88 @@ function buildAuthorReportPayload(
   };
 }
 
+function buildGenericBucketReportPayload(
+  insights: InsightWithTweet[],
+  window: { start: Date; end: Date },
+  timezone: string,
+  mode: 'domain' | 'platform' | 'source',
+  headline?: string,
+  sourceListId?: string | null
+): ReportPayload {
+  const sections = buildGenericBucketSectionsFromInsights(insights, mode, sourceListId);
+  const title = headline ?? `${formatDisplayDate(window.end, timezone)} 分类资讯汇总`;
+  const overview = ensureOverviewList(buildTagReportOverview(sections, insights.length), insights.length);
+  return { headline: title, overview, sections };
+}
+
+function buildGenericBucketSectionsFromInsights(
+  insights: InsightWithTweet[],
+  mode: 'domain' | 'platform' | 'source',
+  sourceListId?: string | null
+): ReportSection[] {
+  const buckets = new Map<string, TagBucket>();
+
+  insights.forEach((insight) => {
+    const bucketTitle = resolveGenericBucketTitle(insight, mode, sourceListId);
+    const key = bucketTitle.trim().toLowerCase() || TAG_FALLBACK_KEY;
+    const bucket = buckets.get(key) ?? { key, title: bucketTitle, items: [] };
+    const sectionItem: ReportSectionInsight = {
+      tweetId: insight.tweetId,
+      summary: getInsightSummary(insight),
+      tags: insight.tags ?? [],
+      tweetUrl: resolveTweetUrl(insight.tweet)
+    };
+    if (typeof insight.importance === 'number') {
+      sectionItem.importance = insight.importance;
+    }
+    bucket.items.push({
+      data: sectionItem,
+      tweetedAt: insight.tweet.tweetedAt.getTime(),
+      importance: insight.importance ?? 0
+    });
+    buckets.set(key, bucket);
+  });
+
+  const orderedBuckets = Array.from(buckets.values()).map((bucket) => sortBucketItems(bucket));
+  orderedBuckets.sort((a, b) => {
+    const diff = bucketPeakImportance(b) - bucketPeakImportance(a);
+    if (diff !== 0) return diff;
+    if (b.items.length !== a.items.length) return b.items.length - a.items.length;
+    return a.title.localeCompare(b.title, 'zh-Hans');
+  });
+  return orderedBuckets.map((bucket) => ({
+    title: bucket.title,
+    insight: describeBucket(bucket),
+    items: bucket.items.map((entry) => entry.data)
+  }));
+}
+
+function resolveGenericBucketTitle(
+  insight: InsightWithTweet,
+  mode: 'domain' | 'platform' | 'source',
+  sourceListId?: string | null
+) {
+  if (mode === 'domain') {
+    return insight.domain?.trim() || '未分类领域';
+  }
+  const source = resolveInsightSource(insight, sourceListId);
+  if (mode === 'platform') {
+    return source?.platform ? source.platform.toLowerCase() : 'twitter';
+  }
+  if (source?.displayName) {
+    return source.displayName;
+  }
+  return formatAuthorTitle(insight.tweet);
+}
+
+function resolveInsightSource(insight: InsightWithTweet, sourceListId?: string | null) {
+  const sources = insight.tweet.subscription?.sources ?? [];
+  if (sourceListId) {
+    return sources.find((source) => source.listId === sourceListId) ?? sources[0] ?? null;
+  }
+  return sources[0] ?? null;
+}
+
 function buildAuthorSectionsFromInsights(insights: InsightWithTweet[]): ReportSection[] {
   const buckets = new Map<string, AuthorBucket>();
 
@@ -644,7 +728,14 @@ function hasOverlap(values: string[], filter: Set<string>) {
 }
 
 function normalizeGroupBy(value?: string | null): ReportGroupBy {
-  if (value === 'tag' || value === 'author' || value === 'cluster') {
+  if (
+    value === 'tag' ||
+    value === 'author' ||
+    value === 'cluster' ||
+    value === 'domain' ||
+    value === 'platform' ||
+    value === 'source'
+  ) {
     return value;
   }
   return 'cluster';
@@ -1059,7 +1150,7 @@ export async function generateSocialDigestFromReport(
 
   const insights = await prisma.tweetInsight.findMany({
     where: { tweetId: { in: candidateIds } },
-    include: { tweet: { include: { subscription: true } } }
+    include: { tweet: { include: { subscription: { include: { sources: true } } } } }
   });
 
   insights.sort((a, b) => (orderMap.get(a.tweetId) ?? 0) - (orderMap.get(b.tweetId) ?? 0));
@@ -1247,11 +1338,14 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
   const insights = await prisma.tweetInsight.findMany({
     where: {
       tweet: {
-        tweetedAt: { gte: reportWindow.start, lte: reportWindow.end }
+        tweetedAt: { gte: reportWindow.start, lte: reportWindow.end },
+        ...(profile.sourceListId
+          ? { subscription: { sources: { some: { listId: profile.sourceListId } } } }
+          : {})
       },
       verdict: { not: 'ignore' }
     },
-    include: { tweet: { include: { subscription: true, embedding: true } } },
+    include: { tweet: { include: { subscription: { include: { sources: true } }, embedding: true } } },
     orderBy: { createdAt: 'asc' }
   });
 
@@ -1336,6 +1430,39 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
       return report;
     }
 
+    if (groupBy === 'domain' || groupBy === 'platform' || groupBy === 'source') {
+      const blueprint = buildGenericBucketReportPayload(
+        reportInsights,
+        reportWindow,
+        timezone,
+        groupBy,
+        headline,
+        profile.sourceListId
+      );
+      if (!blueprint.sections?.length) {
+        logger.info('Profile bucket report builder produced no sections', { ...windowMeta, groupBy });
+        await completeAiRun();
+        return null;
+      }
+      const markdown = renderReportMarkdown(blueprint, reportWindow, timezone);
+      const report = await prisma.report.create({
+        data: {
+          periodStart: reportWindow.start,
+          periodEnd: reportWindow.end,
+          headline: blueprint.headline,
+          content: markdown,
+          outline: blueprint as unknown as Prisma.JsonObject,
+          aiRunId: aiRun.id,
+          profileId: profile.id
+        }
+      });
+      await prisma.aiRun.update({
+        where: { id: aiRun.id },
+        data: { status: AiRunStatus.COMPLETED, completedAt: new Date() }
+      });
+      return report;
+    }
+
     const embeddingStats = await ensureTweetSummaryEmbeddingsForInsights(reportInsights);
     logger.info('Profile tweet summary embedding preparation completed', { ...windowMeta, ...embeddingStats });
 
@@ -1344,7 +1471,7 @@ export async function generateReportForProfile(profile: ReportProfile, windowEnd
       embeddingStats.updated > 0
         ? await prisma.tweetInsight.findMany({
             where: { tweetId: { in: reportInsights.map((insight) => insight.tweetId) } },
-            include: { tweet: { include: { subscription: true, embedding: true } } },
+            include: { tweet: { include: { subscription: { include: { sources: true } }, embedding: true } } },
             orderBy: { createdAt: 'asc' }
           })
         : (reportInsights as InsightWithTweetEmbedding[]);
@@ -1523,7 +1650,7 @@ export async function generateReport(window?: ReportWindow | null) {
       },
       verdict: { not: 'ignore' }
     },
-    include: { tweet: { include: { subscription: true, embedding: true } } },
+    include: { tweet: { include: { subscription: { include: { sources: true } }, embedding: true } } },
     orderBy: { createdAt: 'asc' }
   });
 
@@ -1547,7 +1674,7 @@ export async function generateReport(window?: ReportWindow | null) {
       embeddingStats.updated > 0
         ? await prisma.tweetInsight.findMany({
             where: { tweetId: { in: reportInsights.map((insight) => insight.tweetId) } },
-            include: { tweet: { include: { subscription: true, embedding: true } } },
+            include: { tweet: { include: { subscription: { include: { sources: true } }, embedding: true } } },
             orderBy: { createdAt: 'asc' }
           })
         : (reportInsights as InsightWithTweetEmbedding[]);
@@ -2117,7 +2244,7 @@ async function collectSocialImageSource(report: Report, limit: number) {
   const selectedIds = tweetIds.slice(0, Math.max(limit, 12));
   const insights = await prisma.tweetInsight.findMany({
     where: { tweetId: { in: selectedIds } },
-    include: { tweet: { include: { subscription: true } } }
+    include: { tweet: { include: { subscription: { include: { sources: true } } } } }
   });
   const source = insights.map((insight) => ({
     summary: getInsightSummary(insight),
