@@ -31,6 +31,16 @@ router.get('/', async (req: AuthRequest, res: Response, next) => {
     };
     const subscriptions = await prisma.subscription.findMany({
       where: whereClause,
+      include: {
+        sources: {
+          select: {
+            id: true,
+            listId: true,
+            platform: true,
+            identifier: true
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' },
     });
     res.json(subscriptions);

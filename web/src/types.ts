@@ -82,6 +82,7 @@ export interface Subscription {
   unsubscribedAt?: string | null;
   lastFetchedAt?: string | null;
   createdAt: string;
+  sources?: Array<Pick<Source, 'id' | 'listId' | 'platform' | 'identifier'>>;
 }
 
 export interface SubscriptionTweetStats {

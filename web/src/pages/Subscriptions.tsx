@@ -1,6 +1,13 @@
 import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from 'react';
 import { api } from '../api';
-import type { AutoUnsubscribeResponse, Subscription, SubscriptionImportResult, SubscriptionStatus, SubscriptionTweetStats } from '../types';
+import type {
+  AutoUnsubscribeResponse,
+  SourceList,
+  Subscription,
+  SubscriptionImportResult,
+  SubscriptionStatus,
+  SubscriptionTweetStats
+} from '../types';
 
 function normalizeHandle(value: string) {
   return value.replace(/^@/, '').trim().toLowerCase();
@@ -47,6 +54,8 @@ export function SubscriptionsPage() {
   const [bulkResult, setBulkResult] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [sourceLists, setSourceLists] = useState<SourceList[]>([]);
+  const [selectedSourceListId, setSelectedSourceListId] = useState('');
   const [listImportForm, setListImportForm] = useState({ listId: '', cursor: '' });
   const [listImportLogs, setListImportLogs] = useState<string[]>([]);
   const [followingImportForm, setFollowingImportForm] = useState({ screenName: '', userId: '', cursor: '' });
@@ -72,7 +81,11 @@ export function SubscriptionsPage() {
   }, []);
 
   async function refreshSubscriptions() {
-    const [subsResult, statsResult] = await Promise.allSettled([api.listSubscriptions(), api.getSubscriptionStats()]);
+    const [subsResult, statsResult, sourceListsResult] = await Promise.allSettled([
+      api.listSubscriptions(),
+      api.getSubscriptionStats(),
+      api.listSourceLists()
+    ]);
     if (subsResult.status === 'fulfilled') {
       setSubscriptions(subsResult.value);
     } else {
@@ -90,6 +103,13 @@ export function SubscriptionsPage() {
     } else {
       setStatsById({});
       setStatsItems([]);
+    }
+    if (sourceListsResult.status === 'fulfilled') {
+      const enabledLists = sourceListsResult.value.filter((list) => list.enabled);
+      setSourceLists(enabledLists);
+      setSelectedSourceListId((current) =>
+        current && enabledLists.some((list) => list.id === current) ? current : enabledLists[0]?.id ?? ''
+      );
     }
   }
 
@@ -177,6 +197,25 @@ export function SubscriptionsPage() {
       await refreshSubscriptions();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : `${nextStatusText}失败`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleAddToSourceList(sub: Subscription) {
+    const sourceListId = selectedSourceListId || sourceLists[0]?.id;
+    if (!sourceListId) {
+      setStatusMessage('请先创建并启用 SourceList');
+      return;
+    }
+    setBusy(`source-list-${sub.id}`);
+    try {
+      await api.importSubscriptionsToSourceList(sourceListId, { subscriptionIds: [sub.id] });
+      const listName = sourceLists.find((list) => list.id === sourceListId)?.name ?? 'SourceList';
+      setStatusMessage(`@${sub.screenName} 已加入 ${listName}`);
+      await refreshSubscriptions();
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : '加入 SourceList 失败');
     } finally {
       setBusy(null);
     }
@@ -374,6 +413,7 @@ export function SubscriptionsPage() {
     if (sub.displayName && sub.displayName.toLowerCase().includes(normalizedListQuery)) return true;
     return false;
   });
+  const selectedSourceList = sourceLists.find((list) => list.id === selectedSourceListId) ?? null;
 
   function formatImportResult(source: string, identifier: string, result: SubscriptionImportResult) {
     const timestamp = new Date().toLocaleTimeString();
@@ -556,6 +596,31 @@ export function SubscriptionsPage() {
               {subscriptions.filter((s) => s.status === 'UNSUBSCRIBED').length}
             </p>
           </div>
+        </div>
+        <div className="source-list-toolbar">
+          <label>
+            <span>目标 SourceList</span>
+            <select
+              value={selectedSourceListId}
+              onChange={(e) => setSelectedSourceListId(e.target.value)}
+              disabled={!sourceLists.length}
+            >
+              {sourceLists.length === 0 ? (
+                <option value="">暂无启用列表</option>
+              ) : (
+                sourceLists.map((list) => (
+                  <option key={list.id} value={list.id}>
+                    {list.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+          <p className="hint">
+            {selectedSourceList
+              ? `点击账号卡片里的“加入 SourceList”，会加入 ${selectedSourceList.name}。`
+              : '请先在 DEV 工具里创建并启用 SourceList。'}
+          </p>
         </div>
         <div className="stats-summary">
           <div className="stats-summary-head">
@@ -767,6 +832,8 @@ export function SubscriptionsPage() {
           <div className="list">
             {filteredSubscriptions.map((sub) => {
               const stats = statsById[sub.id];
+              const joinedSelectedSourceList =
+                Boolean(selectedSourceListId) && sub.sources?.some((source) => source.listId === selectedSourceListId);
               return (
                 <div key={sub.id} className="list-item">
                   <div>
@@ -787,6 +854,22 @@ export function SubscriptionsPage() {
                     )}
                   </div>
                   <div className="item-actions">
+                    <button
+                      type="button"
+                      className={joinedSelectedSourceList ? 'ghost' : undefined}
+                      onClick={() => handleAddToSourceList(sub)}
+                      disabled={
+                        busy === `source-list-${sub.id}` ||
+                        !selectedSourceListId ||
+                        joinedSelectedSourceList
+                      }
+                    >
+                      {busy === `source-list-${sub.id}`
+                        ? '加入中'
+                        : joinedSelectedSourceList
+                          ? '已加入'
+                          : '加入 SourceList'}
+                    </button>
                     {sub.status === 'UNSUBSCRIBED' ? (
                       <button
                         onClick={() => handleSetStatus(sub, 'SUBSCRIBED')}
