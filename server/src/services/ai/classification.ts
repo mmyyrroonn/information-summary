@@ -522,7 +522,8 @@ type RoutingOutcome = {
 
 async function routeTweetsForClassification(tweets: Tweet[], context: Record<string, unknown> = {}): Promise<RoutingOutcome> {
   const limitedTweets = tweets.slice(0, CLASSIFY_MAX_TWEETS);
-  const ruleResult = applyRuleBasedRouting(limitedTweets);
+  const trustedSourceMode = config.CLASSIFY_TRUSTED_SOURCE_MODE;
+  const ruleResult = applyRuleBasedRouting(limitedTweets, { trustedSourceMode });
   const ignoredCombined = [...ruleResult.ignored];
   const analyzeTweets = [...ruleResult.analyze];
   const routingRecords: RoutingRecord[] = [];
@@ -560,6 +561,7 @@ async function routeTweetsForClassification(tweets: Tweet[], context: Record<str
     routeIgnored: 0,
     routeAutoHigh: 0,
     llmQueued: targetTweets.length,
+    trustedSourceMode,
     reasons: reasonCounts,
     ...context
   });
@@ -947,6 +949,7 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
     typeof tagHint === 'string' ? normalizeTagAlias(tagHint.trim().toLowerCase()) : '';
   const allowedTags = CLASSIFY_ALLOWED_TAGS as readonly string[];
   const hasHint = normalizedHint && normalizedHint !== TAG_FALLBACK_KEY && allowedTags.includes(normalizedHint);
+  const trustedSourceMode = config.CLASSIFY_TRUSTED_SOURCE_MODE;
   if (!hasHint) {
     const importanceHint =
       '重要度校准：4-5 用于高信号事件。常见错误是过度保守——如果推文包含可验证的重大事件（大额资金>$100M/重要机构/地缘军事升级/安全漏洞/重大政策落地/IPO），应给4-5而非3。3是"信息不完整需追踪"的兜底分，不应作为有明确信号的事件的评分。';
@@ -956,7 +959,7 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
       'importance=3：有价值但不完整——缺数据/时间/来源确认，或口述洞察缺乏具体细节，仍值得记录观察',
       'importance<=2：低信号/复读/纯情绪宣泄/无任何洞察的泛泛评论/广告软文'
     ].join('；');
-    const lowValueBlacklist = [
+    const strictLowValueBlacklist = [
       '24h涨跌幅/现价播报',
       '交易所上新交易对/上币传闻(无官方来源)',
       '泛地址数/关注量/热度(无可交易含义)',
@@ -970,6 +973,14 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
       '无具体公司的泛泛美股/港股评论',
       '纯技术面画线(无催化事件/无基本面支撑)'
     ].join('；');
+    const trustedLowValueBlacklist = [
+      '纯广告/返佣/营销号内容',
+      '纯情绪喊单且没有任何观察或上下文',
+      '完全无关的生活闲聊/段子/转发抽奖',
+      '重复旧闻且没有新增角度',
+      '只有价格播报且没有仓位/结构/催化/风险含义'
+    ].join('；');
+    const lowValueBlacklist = trustedSourceMode ? trustedLowValueBlacklist : strictLowValueBlacklist;
     const highValueWhitelist = [
       '监管政策/ETF/合规/制裁/税务/稳定币监管框架',
       '重大融资>=$10M/并购/回购销毁/真实营收',
@@ -991,7 +1002,9 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
     const outputSchema =
       '{"items":[{"tweetId":"必填","verdict":"ignore|watch|actionable","summary":"必填<=50字中文","importance":"必填整数1-5","domain":"crypto|ai|finance|null","tags":["tag"],"keyData":[{"k":"指标","v":"值"}],"impact":{"direction":"利好|利空|中性|不确定","horizon":"立即|1-7天|更久","reason":"<=40字"},"suggestions":"可选"}]}';
     const template = {
-      goal: '逐条评估推文情报价值并输出结构化洞察（中文），用于后续日报汇总；强过滤低价值噪音，只保留可验证/可行动信息。涵盖加密货币(crypto)、人工智能(ai)、传统金融(finance)三大领域。',
+      goal: trustedSourceMode
+        ? '逐条评估高信任白名单来源的推文情报价值并输出结构化洞察（中文），用于后续日报汇总；默认保留有观察、线索、观点或早期信号的内容，只过滤明显无关/广告/纯情绪噪音。涵盖加密货币(crypto)、人工智能(ai)、传统金融(finance)三大领域。'
+        : '逐条评估推文情报价值并输出结构化洞察（中文），用于后续日报汇总；强过滤低价值噪音，只保留可验证/可行动信息。涵盖加密货币(crypto)、人工智能(ai)、传统金融(finance)三大领域。',
       constraints: [
         '【最重要】summary 和 importance 是每条推文的必填字段，绝对不可省略或留空，包括 verdict=ignore 的推文：summary 50字以内中文摘要（含主体名+关键信息），importance 必须是整数1-5（不允许0、null、空字符串）。',
         '只允许输出一个 JSON 对象，禁止任何额外文字/Markdown/代码块。',
@@ -1002,7 +1015,12 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
         'summary 补充说明：对于无关推文可简述为何无关（如”纯情绪帖，与行业无关”）；禁止直接复制原文。',
         'keyData 必须尽量提取原文出现的数字/金额/百分比/价位/期限/链/地址/txhash（没有就留空数组）。',
         `重要度分档：${importanceRubric}；${importanceHint}`,
-        `低价值黑名单（默认ignore，除非同时出现新催化+可验证数据+明确影响）：${lowValueBlacklist}`,
+        trustedSourceMode
+          ? '可信来源宽松规则：来源已由人工白名单筛选，不要因为推文短、口语化、暂缺数字、像碎片线索就直接 ignore；只要包含观察、判断、项目线索、市场结构变化、经验分享、早期信号或值得后续跟踪的信息，至少给 watch + importance>=2。'
+          : '普通来源强过滤规则：来源未必可信，低价值噪音要严格过滤；缺少事件、数据、因果或行动含义时可以 ignore。',
+        trustedSourceMode
+          ? `可信来源低价值黑名单（命中才倾向ignore）：${lowValueBlacklist}`
+          : `低价值黑名单（默认ignore，除非同时出现新催化+可验证数据+明确影响）：${lowValueBlacklist}`,
         `高价值白名单（满足其一至少watch）：${highValueWhitelist}`,
         yieldPriority,
         '去重：如果只是复述已广泛传播的旧闻且无新增视角/数字/进展/来源=>importance<=2 且 ignore。注意：正在进行中的地缘事件（如战争/谈判/制裁），每次新的分析/要求/声明/市场反应都是新信息，不应视为"旧闻复述"。',
@@ -1090,7 +1108,12 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
       ],
       outputSchema,
       verdictRules: [
-        { verdict: 'ignore', criteria: '低价值黑名单、纯情绪/段子/广告、无数据无因果、复读旧闻无新增信息' },
+        {
+          verdict: 'ignore',
+          criteria: trustedSourceMode
+            ? '只用于明显广告/返佣、完全无关、纯情绪且无观察、重复旧闻无新增角度。不要把短推、口语化、一手碎片线索自动归为 ignore'
+            : '低价值黑名单、纯情绪/段子/广告、无数据无因果、复读旧闻无新增信息'
+        },
         {
           verdict: 'watch',
           criteria:
@@ -1131,6 +1154,11 @@ function buildBatchPrompt(batch: Tweet[], tagHint?: string) {
     '分析类：若引用正式文件/数据并给出清晰影响路径，可判 watch；否则按低价值处理。',
     `tags 只能来自 allowedTags；若无法归类，请使用 ${TAG_FALLBACK_KEY}。`
   ];
+  if (trustedSourceMode) {
+    rules.push(
+      '可信来源宽松规则：来源已由人工白名单筛选，不要因为推文短、口语化、暂缺数字或像碎片线索就直接 ignore；只要包含观察、判断、项目线索、市场结构变化、经验分享、早期信号或值得后续跟踪的信息，至少给 watch + importance>=2。'
+    );
+  }
   if (hasHint) {
     rules.push(`路由标签：${normalizedHint}。若明显不匹配则改用 ${TAG_FALLBACK_KEY}。`);
   }

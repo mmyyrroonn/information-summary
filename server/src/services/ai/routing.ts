@@ -1239,7 +1239,11 @@ export async function applyTagRouting(tweets: Tweet[]): Promise<TagRoutingResult
   return { analyzeByTag, ignored, autoHigh, decisions, reasonCounts };
 }
 
-export function applyRuleBasedRouting(tweets: Tweet[]) {
+type RuleBasedRoutingOptions = {
+  trustedSourceMode?: boolean;
+};
+
+export function applyRuleBasedRouting(tweets: Tweet[], options: RuleBasedRoutingOptions = {}) {
   const analyze: Tweet[] = [];
   const ignored: Array<{ tweet: Tweet; reason: string }> = [];
   const domainHints = new Map<string, Domain | null>();
@@ -1263,6 +1267,12 @@ export function applyRuleBasedRouting(tweets: Tweet[]) {
     // 检测领域
     const domainHint = detectDomainFromText(cleaned);
     domainHints.set(tweet.id, domainHint);
+
+    if (options.trustedSourceMode) {
+      analyze.push(tweet);
+      bumpReason('trusted-source-keep');
+      continue;
+    }
 
     const shouldAnalyze =
       highSignal ||
