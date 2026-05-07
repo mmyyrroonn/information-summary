@@ -7,7 +7,7 @@ import { chunk } from '../../utils/chunk';
 import { enqueueJob } from '../../jobs/jobQueue';
 import { withAiProcessingLock } from '../lockService';
 import { TweetBatchFailedError, TweetBatchFailureMeta, TweetBatchFailureReason } from '../../errors';
-import { runStructuredCompletion } from './openaiClient';
+import { ChatProvider, runStructuredCompletion } from './openaiClient';
 import { applyRuleBasedRouting } from './routing';
 import {
   CLASSIFY_ALLOWED_TAGS,
@@ -232,6 +232,26 @@ type RoutingRecord = {
 };
 
 const CLASSIFY_ALLOWED_VERDICTS = ['ignore', 'watch', 'actionable'] as const;
+
+export function resolveClassificationChatOptions(): { model: string; provider: ChatProvider } {
+  const configuredProvider = config.SOCIAL_DIGEST_PROVIDER.trim().toLowerCase();
+  if (configuredProvider === 'dashscope') {
+    return {
+      model: config.SOCIAL_DIGEST_DASHSCOPE_MODEL,
+      provider: 'dashscope'
+    };
+  }
+  if (configuredProvider === 'minimax') {
+    return {
+      model: config.SOCIAL_DIGEST_MINIMAX_MODEL,
+      provider: 'minimax'
+    };
+  }
+  return {
+    model: config.SOCIAL_DIGEST_DEEPSEEK_MODEL,
+    provider: 'deepseek'
+  };
+}
 
 export async function countPendingTweets() {
   return prisma.tweet.count({
@@ -811,9 +831,10 @@ async function runLlmClassificationBatches(
 
 async function runTweetBatch(batch: Tweet[], tag?: string): Promise<TweetInsightPayload[]> {
   const prompt = buildBatchPrompt(batch, tag);
+  const chatOptions = resolveClassificationChatOptions();
   const parsed = await runStructuredCompletion<{ items?: TweetInsightPayload[] }>(
     {
-      model: config.MINIMAX_MODEL,
+      model: chatOptions.model,
       temperature: 0.2,
       messages: [
         {
@@ -825,7 +846,7 @@ async function runTweetBatch(batch: Tweet[], tag?: string): Promise<TweetInsight
       ]
     },
     { stage: 'tweet-classify', batchSize: batch.length },
-    { provider: 'minimax' }
+    { provider: chatOptions.provider }
   );
   return normalizeBatchInsights(parsed.items ?? [], batch);
 }
