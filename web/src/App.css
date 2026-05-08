@@ -167,6 +167,10 @@ textarea.bulk-input {
   white-space: pre-wrap;
 }
 
+.error-text {
+  color: #dc2626;
+}
+
 button {
   border: none;
   border-radius: 0.75rem;
@@ -200,6 +204,28 @@ button.ghost {
 
 .list-empty {
   margin-top: 1.5rem;
+}
+
+.list-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pager-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pager-controls span {
+  color: #475569;
+  font-weight: 600;
+  min-width: 4.5rem;
+  text-align: center;
 }
 
 .list-item {

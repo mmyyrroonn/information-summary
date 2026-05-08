@@ -1,4 +1,4 @@
-import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FormEvent, SetStateAction, useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import type {
   AutoUnsubscribeResponse,
@@ -8,6 +8,9 @@ import type {
   SubscriptionStatus,
   SubscriptionTweetStats
 } from '../types';
+import { getPagedItems } from './subscriptionPagination';
+
+const SUBSCRIPTION_PAGE_SIZE = 100;
 
 function normalizeHandle(value: string) {
   return value.replace(/^@/, '').trim().toLowerCase();
@@ -62,6 +65,8 @@ export function SubscriptionsPage() {
   const [followingImportLogs, setFollowingImportLogs] = useState<string[]>([]);
   const [statsById, setStatsById] = useState<Record<string, SubscriptionTweetStats>>({});
   const [statsItems, setStatsItems] = useState<SubscriptionTweetStats[]>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
   const [highScoreMinImportance, setHighScoreMinImportance] = useState<number>(4);
   const [includeUnsubscribedInStats, setIncludeUnsubscribedInStats] = useState(false);
   const [autoRule, setAutoRule] = useState({
@@ -75,15 +80,21 @@ export function SubscriptionsPage() {
   const [autoResultFilter, setAutoResultFilter] = useState<'changes' | 'unsubscribe' | 'resubscribe'>('changes');
   const [autoResultQuery, setAutoResultQuery] = useState('');
   const [listQuery, setListQuery] = useState('');
+  const [listPage, setListPage] = useState(1);
+  const statsRequestId = useRef(0);
 
   useEffect(() => {
     refreshSubscriptions();
   }, []);
 
+  useEffect(() => {
+    setListPage(1);
+  }, [listQuery, subscriptions.length]);
+
   async function refreshSubscriptions() {
-    const [subsResult, statsResult, sourceListsResult] = await Promise.allSettled([
+    void refreshSubscriptionStats();
+    const [subsResult, sourceListsResult] = await Promise.allSettled([
       api.listSubscriptions(),
-      api.getSubscriptionStats(),
       api.listSourceLists()
     ]);
     if (subsResult.status === 'fulfilled') {
@@ -91,25 +102,40 @@ export function SubscriptionsPage() {
     } else {
       setStatusMessage(subsResult.reason instanceof Error ? subsResult.reason.message : '加载订阅失败');
     }
-    if (statsResult.status === 'fulfilled') {
-      setHighScoreMinImportance(statsResult.value.highScoreMinImportance);
-      setAutoRule((prev) => ({ ...prev, highScoreMinImportance: statsResult.value.highScoreMinImportance }));
-      const next: Record<string, SubscriptionTweetStats> = {};
-      for (const item of statsResult.value.items) {
-        next[item.subscriptionId] = item;
-      }
-      setStatsById(next);
-      setStatsItems(statsResult.value.items);
-    } else {
-      setStatsById({});
-      setStatsItems([]);
-    }
     if (sourceListsResult.status === 'fulfilled') {
       const enabledLists = sourceListsResult.value.filter((list) => list.enabled);
       setSourceLists(enabledLists);
       setSelectedSourceListId((current) =>
         current && enabledLists.some((list) => list.id === current) ? current : enabledLists[0]?.id ?? ''
       );
+    }
+  }
+
+  async function refreshSubscriptionStats() {
+    const requestId = statsRequestId.current + 1;
+    statsRequestId.current = requestId;
+    setStatsLoading(true);
+    setStatsError('');
+    try {
+      const stats = await api.getSubscriptionStats();
+      if (statsRequestId.current !== requestId) return;
+      setHighScoreMinImportance(stats.highScoreMinImportance);
+      setAutoRule((prev) => ({ ...prev, highScoreMinImportance: stats.highScoreMinImportance }));
+      const next: Record<string, SubscriptionTweetStats> = {};
+      for (const item of stats.items) {
+        next[item.subscriptionId] = item;
+      }
+      setStatsById(next);
+      setStatsItems(stats.items);
+    } catch (error) {
+      if (statsRequestId.current !== requestId) return;
+      setStatsById({});
+      setStatsItems([]);
+      setStatsError(error instanceof Error ? error.message : '加载订阅统计失败');
+    } finally {
+      if (statsRequestId.current === requestId) {
+        setStatsLoading(false);
+      }
     }
   }
 
@@ -413,6 +439,7 @@ export function SubscriptionsPage() {
     if (sub.displayName && sub.displayName.toLowerCase().includes(normalizedListQuery)) return true;
     return false;
   });
+  const pagedSubscriptions = getPagedItems(filteredSubscriptions, listPage, SUBSCRIPTION_PAGE_SIZE);
   const selectedSourceList = sourceLists.find((list) => list.id === selectedSourceListId) ?? null;
 
   function formatImportResult(source: string, identifier: string, result: SubscriptionImportResult) {
@@ -638,6 +665,8 @@ export function SubscriptionsPage() {
             统计口径：均分=importance 平均；高分=importance≥{highScoreMinImportance}；高分占比=高分/有评分推文数。
             当前样本：{visibleStatsItems.length} 人（其中有评分 {scoredUsers.length} 人，高分人数 {usersWithHighScore.length} 人，高分占比≥50% {usersWithHighRatio.length} 人）。
           </p>
+          {statsLoading && <p className="hint">统计加载中，订阅列表可先使用。</p>}
+          {statsError && <p className="hint error-text">统计加载失败：{statsError}</p>}
           <p className="hint">
             自动同步规则的保护：可选开启“两周保护”，开启时订阅创建时间两周内的账号不参与本次变更。
           </p>
@@ -822,7 +851,37 @@ export function SubscriptionsPage() {
             清空
           </button>
         </div>
-        <p className="hint">匹配 {filteredSubscriptions.length} / {subscriptions.length}</p>
+        <div className="list-pagination">
+          <p className="hint">
+            匹配 {filteredSubscriptions.length} / {subscriptions.length}
+            {filteredSubscriptions.length > 0
+              ? `，显示 ${pagedSubscriptions.start}-${pagedSubscriptions.end}`
+              : ''}
+          </p>
+          {filteredSubscriptions.length > SUBSCRIPTION_PAGE_SIZE && (
+            <div className="pager-controls">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setListPage((page) => Math.max(1, page - 1))}
+                disabled={pagedSubscriptions.page <= 1}
+              >
+                上一页
+              </button>
+              <span>
+                {pagedSubscriptions.page} / {pagedSubscriptions.pageCount}
+              </span>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setListPage((page) => Math.min(pagedSubscriptions.pageCount, page + 1))}
+                disabled={pagedSubscriptions.page >= pagedSubscriptions.pageCount}
+              >
+                下一页
+              </button>
+            </div>
+          )}
+        </div>
 
         {subscriptions.length === 0 ? (
           <p className="empty list-empty">暂无订阅</p>
@@ -830,7 +889,7 @@ export function SubscriptionsPage() {
           <p className="empty list-empty">没有匹配的订阅</p>
         ) : (
           <div className="list">
-            {filteredSubscriptions.map((sub) => {
+            {pagedSubscriptions.items.map((sub) => {
               const stats = statsById[sub.id];
               const joinedSelectedSourceList =
                 Boolean(selectedSourceListId) && sub.sources?.some((source) => source.listId === selectedSourceListId);
