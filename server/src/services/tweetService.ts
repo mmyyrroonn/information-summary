@@ -3,6 +3,7 @@ import { config } from '../config';
 import { prisma } from '../db';
 import { buildEmbeddingText } from './ai/embeddingText';
 import { createEmbeddings, embeddingsEnabled } from './embeddingService';
+import { buildSourceTweetScopeFilter } from './sourceTweetScope';
 import { extractTweetMedia } from './tweetMedia';
 
 export interface ListTweetsOptions {
@@ -22,6 +23,8 @@ export interface ListTweetsOptions {
   embeddingQuery?: string;
   importanceMin?: number;
   importanceMax?: number;
+  sourceListId?: string;
+  sourceId?: string;
 }
 
 const EMBEDDING_TEXT_MAX_LENGTH = 320;
@@ -130,6 +133,23 @@ export async function listTweets(options: ListTweetsOptions) {
     : options.startTime;
 
   const where: Prisma.TweetWhereInput = {};
+  if (options.sourceListId || options.sourceId) {
+    const sourceWhere: Prisma.SourceWhereInput = options.sourceId
+      ? {
+          id: options.sourceId,
+          ...(options.sourceListId ? { listId: options.sourceListId } : {})
+        }
+      : { listId: options.sourceListId ?? '' };
+    const sources = await prisma.source.findMany({
+      where: sourceWhere,
+      select: {
+        platform: true,
+        identifier: true,
+        subscriptionId: true
+      }
+    });
+    appendAndFilter(where, buildSourceTweetScopeFilter(sources));
+  }
   if (options.subscriptionId) {
     where.subscriptionId = options.subscriptionId;
   }

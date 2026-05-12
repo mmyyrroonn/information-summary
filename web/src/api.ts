@@ -71,6 +71,7 @@ async function safeError(response: Response) {
 interface ApiClient {
   listSubscriptions: () => Promise<Subscription[]>;
   listSourceLists: () => Promise<SourceList[]>;
+  getSourceList: (id: string) => Promise<SourceList>;
   createSourceList: (payload: SourceListCreatePayload) => Promise<SourceList>;
   addSourceToList: (
     listId: string,
@@ -148,6 +149,8 @@ interface ApiClient {
     routingScoreMin?: number;
     routingScoreMax?: number;
     subscriptionId?: string;
+    sourceListId?: string;
+    sourceId?: string;
     startTime?: string;
     endTime?: string;
     q?: string;
@@ -207,6 +210,7 @@ type SourceListCreatePayload = {
 export const api: ApiClient = {
   listSubscriptions: () => request<Subscription[]>('/subscriptions'),
   listSourceLists: () => request<SourceList[]>('/source-lists'),
+  getSourceList: (id) => request<SourceList>(`/source-lists/${id}`),
   createSourceList: (payload) => request<SourceList>('/source-lists', { method: 'POST', body: JSON.stringify(payload) }),
   addSourceToList: (listId, payload) =>
     request(`/source-lists/${listId}/sources`, { method: 'POST', body: JSON.stringify(payload) }),
@@ -357,6 +361,12 @@ export const api: ApiClient = {
     }
     if (params.subscriptionId) {
       search.set('subscriptionId', params.subscriptionId);
+    }
+    if (params.sourceListId) {
+      search.set('sourceListId', params.sourceListId);
+    }
+    if (params.sourceId) {
+      search.set('sourceId', params.sourceId);
     }
     if (params.startTime) {
       search.set('startTime', params.startTime);

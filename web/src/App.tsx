@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { DashboardPage } from './pages/Dashboard';
 import { SubscriptionsPage } from './pages/Subscriptions';
 import { TweetsPage } from './pages/Tweets';
+import { SourceListTweetsPage } from './pages/SourceListTweets';
 import { DevJobsPage } from './pages/DevJobs';
 import { AnalyticsPage } from './pages/Analytics';
 import { RoutingAnalyticsPage } from './pages/RoutingAnalytics';
@@ -10,17 +11,20 @@ import { LoginPage } from './pages/Login';
 import { getStoredAuth, clearAuth, AuthUser } from './auth';
 import './App.css';
 
-type TabKey = 'dashboard' | 'tweets' | 'analytics' | 'routing-analytics' | 'subscriptions' | 'embedding-cache' | 'dev';
+type TabKey =
+  | 'dashboard'
+  | 'tweets'
+  | 'source-list-tweets'
+  | 'analytics'
+  | 'routing-analytics'
+  | 'subscriptions'
+  | 'embedding-cache'
+  | 'dev';
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => getStoredAuth().user);
   const [showLogin, setShowLogin] = useState(false);
-
-  useEffect(() => {
-    const auth = getStoredAuth();
-    setUser(auth.user);
-  }, []);
 
   function handleLogout() {
     clearAuth();
@@ -73,6 +77,12 @@ function App() {
                 数据分析
               </button>
               <button
+                className={activeTab === 'source-list-tweets' ? 'active' : ''}
+                onClick={() => setActiveTab('source-list-tweets')}
+              >
+                SourceList 推文
+              </button>
+              <button
                 className={activeTab === 'routing-analytics' ? 'active' : ''}
                 onClick={() => setActiveTab('routing-analytics')}
               >
@@ -97,6 +107,7 @@ function App() {
 
       {activeTab === 'dashboard' && <DashboardPage isAdmin={isAdmin} />}
       {activeTab === 'tweets' && <TweetsPage isAdmin={isAdmin} />}
+      {isAdmin && activeTab === 'source-list-tweets' && <SourceListTweetsPage />}
       {isAdmin && activeTab === 'analytics' && <AnalyticsPage />}
       {isAdmin && activeTab === 'routing-analytics' && <RoutingAnalyticsPage />}
       {isAdmin && activeTab === 'subscriptions' && <SubscriptionsPage />}

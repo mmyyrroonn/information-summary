@@ -30,7 +30,7 @@ export function getStoredAuth(): AuthState {
   }
 }
 
-export function setAuth(token: string, _user: AuthUser): void {
+export function setAuth(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
 }
 

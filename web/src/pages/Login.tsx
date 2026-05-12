@@ -40,16 +40,13 @@ export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
       }
       
       const data: LoginResponse = await response.json();
-      setAuth(data.token, {
+      const authUser: AuthUser = {
         userId: data.user.id,
         username: data.user.username,
         role: data.user.role as 'admin' | 'user',
-      });
-      onLogin({
-        userId: data.user.id,
-        username: data.user.username,
-        role: data.user.role as 'admin' | 'user',
-      });
+      };
+      setAuth(data.token);
+      onLogin(authUser);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
