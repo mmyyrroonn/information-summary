@@ -284,6 +284,13 @@ export interface TweetInsight {
   updatedAt: string;
 }
 
+export interface TweetMedia {
+  type: 'photo' | 'video' | 'animated_gif' | 'unknown';
+  url: string;
+  expandedUrl?: string;
+  shortUrl?: string;
+}
+
 export interface TweetRecord {
   id: string;
   tweetId: string;
@@ -305,6 +312,7 @@ export interface TweetRecord {
   abandonedAt?: string | null;
   abandonReason?: string | null;
   embeddingScore?: number | null;
+  media?: TweetMedia[];
   insights?: TweetInsight | null;
 }
 

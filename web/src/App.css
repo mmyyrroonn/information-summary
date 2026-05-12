@@ -1156,6 +1156,45 @@ button.ghost {
   line-height: 1.5;
 }
 
+.tweet-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.tweet-media-count-1 {
+  grid-template-columns: 1fr;
+}
+
+.tweet-media-item {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: #f8fafc;
+  aspect-ratio: 16 / 10;
+}
+
+.tweet-media-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tweet-media-type {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  background: rgba(15, 23, 42, 0.82);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .tweet-routing {
   margin: 0;
   font-size: 0.82rem;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import type { RoutingCategory, Subscription, TweetRecord } from '../types';
+import type { RoutingCategory, Subscription, TweetMedia, TweetRecord } from '../types';
 
 const PAGE_SIZE = 20;
 
@@ -139,6 +139,51 @@ function buildRoutingLine(tweet: TweetRecord) {
     parts.push(`原因 ${formatRoutingReason(tweet.routingReason)}`);
   }
   return parts.join(' · ');
+}
+
+function formatMediaTypeLabel(type: TweetMedia['type']) {
+  switch (type) {
+    case 'video':
+      return '视频';
+    case 'animated_gif':
+      return 'GIF';
+    default:
+      return '';
+  }
+}
+
+function TweetMediaPreview({ tweet }: { tweet: TweetRecord }) {
+  const mediaItems = tweet.media?.slice(0, 4) ?? [];
+  if (!mediaItems.length) {
+    return null;
+  }
+
+  return (
+    <div className={`tweet-media-grid tweet-media-count-${mediaItems.length}`}>
+      {mediaItems.map((media, index) => {
+        const label = formatMediaTypeLabel(media.type);
+        return (
+          <a
+            key={`${media.url}-${index}`}
+            className="tweet-media-item"
+            href={media.expandedUrl ?? media.url}
+            target="_blank"
+            rel="noreferrer"
+            title={media.expandedUrl ?? media.shortUrl ?? media.url}
+          >
+            <img
+              src={media.url}
+              alt={`${tweet.authorName} 推文图片 ${index + 1}`}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+            />
+            {label ? <span className="tweet-media-type">{label}</span> : null}
+          </a>
+        );
+      })}
+    </div>
+  );
 }
 
 export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
@@ -713,6 +758,7 @@ export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
                   )}
                 </div>
                 <p className="tweet-text">{tweet.text}</p>
+                <TweetMediaPreview tweet={tweet} />
                 {routingLine ? <p className="tweet-routing">{routingLine}</p> : null}
                 <div className={`tweet-analysis ${tweet.insights ? 'has-insight' : ''}`}>
                   {tweet.insights ? (

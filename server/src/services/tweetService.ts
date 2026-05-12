@@ -3,6 +3,7 @@ import { config } from '../config';
 import { prisma } from '../db';
 import { buildEmbeddingText } from './ai/embeddingText';
 import { createEmbeddings, embeddingsEnabled } from './embeddingService';
+import { extractTweetMedia } from './tweetMedia';
 
 export interface ListTweetsOptions {
   page: number;
@@ -101,6 +102,14 @@ function normalizeVector(vector: number[]) {
     return vector.map(() => 0);
   }
   return vector.map((value) => (value ?? 0) / norm);
+}
+
+function serializeTweet<T extends { raw: unknown }>(tweet: T) {
+  const { raw, ...rest } = tweet;
+  return {
+    ...rest,
+    media: extractTweetMedia(raw)
+  };
 }
 
 export async function listTweets(options: ListTweetsOptions) {
@@ -210,6 +219,7 @@ export async function listTweets(options: ListTweetsOptions) {
     authorName: true,
     authorScreen: true,
     text: true,
+    raw: true,
     tweetUrl: true,
     tweetedAt: true,
     createdAt: true,
@@ -277,7 +287,7 @@ export async function listTweets(options: ListTweetsOptions) {
         return [];
       }
       const { embedding, ...rest } = tweet;
-      return [{ tweet: rest, score }];
+      return [{ tweet: serializeTweet(rest), score }];
     });
 
     matches.sort((a, b) => {
@@ -320,7 +330,7 @@ export async function listTweets(options: ListTweetsOptions) {
       take: pageSize + 1
     });
     const hasMore = tweets.length > pageSize;
-    const items = hasMore ? tweets.slice(0, pageSize) : tweets;
+    const items = (hasMore ? tweets.slice(0, pageSize) : tweets).map(serializeTweet);
 
     return {
       page,
@@ -347,6 +357,6 @@ export async function listTweets(options: ListTweetsOptions) {
     pageSize,
     total,
     hasMore: skip + tweets.length < total,
-    items: tweets
+    items: tweets.map(serializeTweet)
   };
 }
