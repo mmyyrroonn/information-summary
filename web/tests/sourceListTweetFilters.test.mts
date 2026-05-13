@@ -8,9 +8,9 @@ const baseList: SourceList = {
   name: 'AI Builders',
   description: null,
   enabled: true,
-  scheduleCron: '*/15 * * * *',
+  scheduleCron: '0 */2 * * *',
   batchSize: 20,
-  sourceCooldownHours: 6,
+  sourceCooldownHours: 2,
   createdAt: '2026-05-12T00:00:00.000Z',
   updatedAt: '2026-05-12T00:00:00.000Z'
 };

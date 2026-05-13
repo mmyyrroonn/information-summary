@@ -89,9 +89,9 @@ model SourceList {
   name                String
   description         String?
   enabled             Boolean  @default(true)
-  scheduleCron        String   @default("*/15 * * * *")
+  scheduleCron        String   @default("0 */2 * * *")
   batchSize           Int      @default(20)
-  sourceCooldownHours Int      @default(6)
+  sourceCooldownHours Int      @default(2)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -152,8 +152,11 @@ model Tweet {
   insights       TweetInsight?
   embedding      TweetEmbedding?
 
+  @@index([tweetedAt])
+  @@index([subscriptionId, tweetedAt])
   @@index([routingStatus, routingTag])
   @@index([routingStatus, llmQueuedAt])
+  @@index([routingStatus, tweetedAt])
 }
 
 model TweetInsight {

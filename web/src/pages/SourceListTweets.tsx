@@ -97,7 +97,7 @@ export function SourceListTweetsPage() {
       const response = await api.listTweets({
         page,
         pageSize: PAGE_SIZE,
-        includeTotal: true,
+        includeTotal: false,
         sort,
         routing: 'all',
         sourceListId: selectedListId,

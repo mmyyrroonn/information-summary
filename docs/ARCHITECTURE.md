@@ -608,7 +608,7 @@ TG_MESSAGE_THREAD_ID: string
 TG_HIGH_SCORE_MESSAGE_THREAD_ID: string
 
 // 定时任务
-FETCH_CRON_SCHEDULE: string        // */1 * * * *
+FETCH_CRON_SCHEDULE: string        // 0 */2 * * *
 CLASSIFY_CRON_SCHEDULE: string     // */5 * * * *
 REPORT_TIMEZONE: string            // Asia/Shanghai
 

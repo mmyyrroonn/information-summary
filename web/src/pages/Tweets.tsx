@@ -212,7 +212,7 @@ export function TweetsPage({ isAdmin }: { isAdmin: boolean }) {
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
-  const includeTotal = true;
+  const includeTotal = false;
 
   useEffect(() => {
     if (isAdmin) {

@@ -46,10 +46,10 @@
 | `TG_BOT_TOKEN` / `TG_CHAT_ID` | Telegram 推送默认配置，可在 UI 中覆盖 |
 | `TG_MESSAGE_THREAD_ID` | Telegram 话题 (topic) ID，仅超级群话题需要 |
 | `TG_HIGH_SCORE_MESSAGE_THREAD_ID` | Telegram 高分速览推送的话题 ID（只推 importance≥4） |
-| `FETCH_CRON_SCHEDULE` | 批量抓取订阅的 `node-cron` 表达式，默认每 30 分钟一次 |
+| `FETCH_CRON_SCHEDULE` | 批量抓取订阅的 `node-cron` 表达式，默认每 2 小时一次 |
 | `CLASSIFY_CRON_SCHEDULE` | AI 筛选兜底定时器，默认每 20 分钟检查一次 |
 | `FETCH_BATCH_SIZE` | 每个抓取周期处理的订阅数量，默认 5 个，方便分散压力 |
-| `FETCH_COOLDOWN_HOURS` | 单个订阅的抓取冷却时间（小时），默认 12 小时内最多抓取两次 |
+| `FETCH_COOLDOWN_HOURS` | 单个订阅的抓取冷却时间（小时），默认 2 小时 |
 | `CLASSIFY_MIN_TWEETS` | 自动触发 AI 筛选所需的最少待处理推文数量 |
 | `CLASSIFY_TAG_MIN_TWEETS` | LLM 分类按标签触发的最少待处理数量 |
 | `CLASSIFY_TAG_MAX_WAIT_HOURS` | LLM 分类按标签最多等待时间（小时），超过即使数量不足也会触发 |
@@ -119,10 +119,10 @@ Docker Compose 构建前端时使用 `DOCKER_WEB_API_BASE_URL`（默认 `/api`�
 
 ## 功能流程
 1. **订阅管理**：UI 可添加/删除查看订阅，也可单独对某个账号抓取当日推文。
-2. **抓取任务**：`/api/tasks/fetch` 会遍历订阅账号，通过 RapidAPI 拉取当日新推文并落库；同一账号默认 12 小时冷却，可根据 `limit` 参数或定时器设置分批执行。
+2. **抓取任务**：`/api/tasks/fetch` 会遍历订阅账号，通过 RapidAPI 拉取当日新推文并落库；同一账号默认 2 小时冷却，可根据 `limit` 参数或定时器设置分批执行。
 3. **AI 筛选**：`/api/tasks/analyze` 读取未分析推文，调用 DeepSeek 批量打分，结构化写入 `TweetInsight`。
 4. **报告生成**：`/api/tasks/report` 触发默认 Profile 日报，可选择是否推送并指定时间窗口；Profile 定时任务也可生成日报。
-5. **定时器**：抓取任务按 `FETCH_CRON_SCHEDULE` 分批运行（每批遵守 12 小时冷却，只处理少量订阅），积累到一定数量的未处理推文后自动触发 AI 筛选；`CLASSIFY_CRON_SCHEDULE` 兜底检查，报告由 `ReportProfile` 的 `scheduleCron` 驱动生成与推送。
+5. **定时器**：抓取任务按 `FETCH_CRON_SCHEDULE` 分批运行（每批遵守 2 小时冷却，只处理少量订阅），积累到一定数量的未处理推文后自动触发 AI 筛选；`CLASSIFY_CRON_SCHEDULE` 兜底检查，报告由 `ReportProfile` 的 `scheduleCron` 驱动生成与推送。
 6. **前端面板**：
    - 手动触发「抓取/AI/报告」
    - 配置 Telegram token/chat id

@@ -255,9 +255,9 @@ function toggleVerdict(list: string[], value: string) {
 function createEmptySourceListDraft(): SourceListDraft {
   return {
     name: '',
-    scheduleCron: '*/15 * * * *',
+    scheduleCron: '0 */2 * * *',
     batchSize: '20',
-    sourceCooldownHours: '6'
+    sourceCooldownHours: '2'
   };
 }
 
@@ -581,7 +581,7 @@ export function DevJobsPage() {
         name: sourceListDraft.name.trim(),
         scheduleCron: sourceListDraft.scheduleCron.trim(),
         batchSize: Number.isFinite(batchSize) && batchSize > 0 ? batchSize : 20,
-        sourceCooldownHours: Number.isFinite(sourceCooldownHours) && sourceCooldownHours >= 0 ? sourceCooldownHours : 6
+        sourceCooldownHours: Number.isFinite(sourceCooldownHours) && sourceCooldownHours >= 0 ? sourceCooldownHours : 2
       });
       setSourceListDraft(createEmptySourceListDraft());
       setSourceListMessage('SourceList 已创建');
@@ -800,7 +800,7 @@ export function DevJobsPage() {
           <div className="profile-row-head">
             <div>
               <h3>新建 SourceList</h3>
-              <p className="hint">默认 15 分钟扫描，单源 6 小时冷却。</p>
+              <p className="hint">默认 2 小时扫描，单源 2 小时冷却。</p>
             </div>
           </div>
           <div className="profile-form">
