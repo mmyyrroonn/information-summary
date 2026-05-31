@@ -753,9 +753,10 @@ function buildProfileHeadline(profile: ReportProfile, window: ReportWindow) {
   return `${formatDisplayDate(window.end, timezone)} ${profile.name}`;
 }
 
-function applyProfileFilters(insights: InsightWithTweet[], profile: ReportProfile) {
+export function applyProfileFilters(insights: InsightWithTweet[], profile: ReportProfile) {
   const minImportance = Math.max(1, Math.min(5, Math.floor(profile.minImportance ?? PROFILE_DEFAULT_MIN_IMPORTANCE)));
-  const includeTweetTags = new Set(normalizeFilterTags(profile.includeTweetTags));
+  const normalizedIncludeTweetTags = normalizeFilterTags(profile.includeTweetTags);
+  const includeTweetTags = normalizedIncludeTweetTags.length ? new Set(normalizedIncludeTweetTags) : null;
   const excludeTweetTags = new Set(normalizeFilterTags(profile.excludeTweetTags));
   const includeAuthorTags = new Set(normalizeFilterTags(profile.includeAuthorTags));
   const excludeAuthorTags = new Set(normalizeFilterTags(profile.excludeAuthorTags));
@@ -779,7 +780,7 @@ function applyProfileFilters(insights: InsightWithTweet[], profile: ReportProfil
       }
     }
     const tweetTags = normalizeFilterTags(insight.tags ?? []);
-    if (includeTweetTags.size && !hasOverlap(tweetTags, includeTweetTags)) {
+    if (includeTweetTags && !hasOverlap(tweetTags, includeTweetTags)) {
       return false;
     }
     if (excludeTweetTags.size && hasOverlap(tweetTags, excludeTweetTags)) {

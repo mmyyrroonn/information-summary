@@ -1008,7 +1008,7 @@ export function DevJobsPage() {
               label="推文标签（包含）"
               value={createDraft.includeTweetTags}
               options={tagOptions.tweetTags}
-              placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+              placeholder={tagOptionsLoading ? '标签加载中...' : '不填=全选，用逗号分隔标签'}
               onChange={(value) => setCreateDraft((prev) => ({ ...prev, includeTweetTags: value }))}
             />
             <TagInput
@@ -1134,7 +1134,7 @@ export function DevJobsPage() {
                       : '全部来源'}
                   </span>
                   <span>最低重要度：{profile.minImportance}</span>
-                  <span>推文标签（包含）：{formatList(profile.includeTweetTags) || '不限'}</span>
+                  <span>推文标签（包含）：{formatList(profile.includeTweetTags) || '全选'}</span>
                   <span>推文标签（排除）：{formatList(profile.excludeTweetTags) || '无'}</span>
                   <span>作者标签（包含）：{formatList(profile.includeAuthorTags) || '不限'}</span>
                   <span>作者标签（排除）：{formatList(profile.excludeAuthorTags) || '无'}</span>
@@ -1241,7 +1241,7 @@ export function DevJobsPage() {
                         label="推文标签（包含）"
                         value={editDraft.includeTweetTags}
                         options={tagOptions.tweetTags}
-                        placeholder={tagOptionsLoading ? '标签加载中...' : '用逗号分隔标签'}
+                        placeholder={tagOptionsLoading ? '标签加载中...' : '不填=全选，用逗号分隔标签'}
                         onChange={(value) => setEditDraft((prev) => ({ ...prev, includeTweetTags: value }))}
                       />
                       <TagInput
